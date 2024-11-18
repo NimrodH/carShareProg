@@ -1,0 +1,185 @@
+import json
+import boto3
+import os
+
+
+#TODO: set 'API_GATEWAY_ENDPOINT'] & 'URLS_TABLE_NAME' & AVATARS_TABLE_NAME & SIGNS_TABLE_NAME
+dynamodb = boto3.resource('dynamodb')
+#apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.environ['API_GATEWAY_ENDPOINT'])
+urls_table = dynamodb.Table(os.environ['URLS_TABLE_NAME'])
+avatars_table = dynamodb.Table(os.environ['AVATARS_TABLE_NAME'])
+signs_table = dynamodb.Table(os.environ['SIGNS_TABLE_NAME'])
+MAX_RETRIES = 50  # Maximum number of retries if an item is locked
+RETRY_DELAY = 2  # Delay in seconds between retries
+
+
+def lambda_handler(event, context):
+    print('Received event:', json.dumps(event, indent=2))
+    # TODO implement
+    connection_id = event['requestContext']['connectionId']
+    ### get data user entered to wellcome message
+    body = json.loads(event['body'])
+    print(body)
+    avatarID = body['ID']
+    isMan = body['isMan']
+    
+    address = body['address']
+    day1to = body['day1to']
+    day1back = body['day1back']
+    day2to = body['day2to']
+    day2back = body['day2back']
+    day3to = body['day3to']
+    day3back = body['day3back']
+    day4to = body['day4to']
+    day4back = body['day4back']
+    day5to = body['day5to']
+    day5back = body['day5back']
+    
+    ### create line for the avatar in the signs table
+    put_params = {
+        'TableName': signs_table,
+        'Item': {
+            'avatarID': avatarID,
+            'address': address,
+            'day1to': day1to,
+            'day1back': day1back,
+            'day2to': day2to,
+            'day2back': day2back,
+            'day3to': day3to,
+            'day3back': day3back,
+            'day4to': day4to,
+            'day4back': day4back,
+            'day5to': day5to,
+            'day5back': day5back,
+        }
+    }
+
+   #print(f"connectionId in initUser: {connection_id}")
+
+    try:
+        ### Save the item to DynamoDB
+        signs_table.put_item(Item=put_params['Item'])
+    except Exception as error:
+        print(f"Error saving data: {error}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'Failed to save sign data'})
+        }
+        
+     #################
+ 
+    avatar_pos_url = find_and_lock_item()
+    if locked_item:
+        print(f"Locked item details: {avatar_pos_url}")
+    else:
+        print("Could not find or lock any item.")
+        
+    ### create line for the avatar in the avatars table
+    avatar_params = {
+        'TableName': avatars_table,
+        'Item': {
+            'avatarID': avatarID,
+            'x': avatar_pos_url[x],
+            'y': avatar_pos_url[y],
+            'z': avatar_pos_url[z],
+            'targetX': avatar_pos_url[targetX],
+            'targetY': avatar_pos_url[targetY],
+            'targetZ': avatar_pos_url[targetZ],
+            'isTalking': False,
+            'drib=veAgreed': False,
+            'connectionID': connection_id
+        }
+    }
+
+    #print(f"connectionId in initUser: {connection_id}")
+
+    try:
+        ### Save the item to DynamoDB
+        avatars_table.put_item(Item=avatar_params['Item'])
+    except Exception as error:
+        print(f"Error saving data: {error}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'Failed to save avatar data'})
+        }
+    ####################    
+
+        
+    
+    
+    ################
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+
+
+    ###get one of the free items in URLs & palaces table
+def get_unlocked_item(): ## do we need parameter table_name or it is in scope?
+    oneFreePosURL = dynamodb.scan(
+        TableName = urls_table,
+        FilterExpression='attribute_not_exists(isLocked) OR isUsed = :false',
+        ExpressionAttributeValues={':false': {'BOOL': False}},
+        Limit=1  # Only fetch one unlocked item
+    )
+    items = oneFreePosURL.get('Items', [])
+    return items[0] if items else None
+ 
+def lock_item(item_id):
+    try:
+        dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    'Update': {
+                        'TableName': urls_table,
+                        'Key': {'id': {'S': item_id}},
+                        'UpdateExpression': 'SET isUsed = :true',
+                        'ConditionExpression': 'attribute_not_exists(isLocked) OR isLocked = :false',
+                        'ExpressionAttributeValues': {
+                            ':true': {'BOOL': True},
+                            ':false': {'BOOL': False}
+                        }
+                    }
+                }
+            ]
+        )
+        return True
+    except ClientError as e:
+        # If conditional check fails, another session has locked the item
+        if e.response['Error']['Code'] == 'TransactionCanceledException':
+            print(f"Item {item_id} is already locked by another session. tring alternative")
+        else:
+            print(f"Unexpected error: {e}")
+        return False 
+    
+def find_and_lock_item(): 
+    retries = 0
+    while retries < MAX_RETRIES:
+        # Fetch an unlocked item
+        item = get_unlocked_item()
+        if not item:
+            print("No unlocked items found.")
+            return None
+
+        item_id = item['num']['S']
+        print(f"Trying to lock item: {item_id}")
+
+        # Attempt to lock the item
+        if lock_item(item_id):
+            print(f"Item {item_id} locked successfully!")
+            return item
+        
+        # If locking failed, wait and retry
+        retries += 1
+        print(f"Retrying... ({retries}/{MAX_RETRIES})")
+        time.sleep(RETRY_DELAY)
+    
+    print("Max retries reached. Unable to lock an item.")
+    return None
+
+
+
+#continue of  the main program
+

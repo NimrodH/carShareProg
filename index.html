@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>Babylon.js sample code</title>
+
+    <!-- Babylon.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+    <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+    <script src="https://preview.babylonjs.com/ammo.js"></script>
+    <script src="https://preview.babylonjs.com/cannon.js"></script>
+    <script src="https://preview.babylonjs.com/Oimo.js"></script>
+    <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+    <script src="https://preview.babylonjs.com/babylon.js"></script>
+    <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+    <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+    <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+    <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+    <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+    <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+    <script src="avatar.js"></script>
+    <script src="message.js"></script>
+    <script src="world.js"></script>
+    
+
+
+    <style>
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        ///CAMERA//////LIGHT//////SKYBOX//////GROUND///ELEMENTS MENU///MODEL//////NEAR MENU///messages
+        //////////////////// Ort MODE FUNCTIONS/////////////////////////////////
+
+        ////ONLY FOR TEST WILL BE DONE FROM SERVER//////////////////
+        let nextURL = 0
+        let _avatarsURLs = [
+            { URL: "https://models.readyplayer.me/66dab77486c24725e12fed2e.glb", x:1, y:0, z:0 },
+            { URL: "https://models.readyplayer.me/66d95426b7460aedd5563433.glb", x:2, y:0, z:0 },
+            { URL: "https://models.readyplayer.me/66dab77486c24725e12fed2e.glb", x:0, y:0, z:-2 }
+        ]
+
+        async function onServerConnect(scene) {
+            let ID = nextURL;
+            let URL = _avatarsURLs[nextURL].URL;
+            let x = _avatarsURLs[nextURL].x;
+            let y = _avatarsURLs[nextURL].y;
+            let z = _avatarsURLs[nextURL].z;
+            let signData = "foo";
+            await myWorld.addAvatar2World(ID, URL, x, y, z, signData, scene );
+            nextURL++;
+        }
+
+         ////end of ONLY FOR TEST WILL BE DONE FROM SERVER//////////////////
+
+        const menuX = 1;//1;
+        const menuY = 0.5;//abselut position before seting it as child of elementsMenu
+        const modelX = -1;//-15;
+        const elementsMenuY = 0;//-1;///sphere position that is parent of all menu meshes.
+        const scaleFactor = 0.25;
+        const scailingMenuModel = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+        var ground = null;
+        var messageBox = null;
+        var near = null;
+        var camera = null;
+        var myMessage = null;
+        var myWorld = null;
+        ///the  socket URL 
+        const socketUrl = 'wss://j5i50qrird.execute-api.us-east-1.amazonaws.com/production/';
+        var socket = new WebSocket(socketUrl);
+
+// #region///////////////////SOCKET //////////////////////////
+        socket.onopen = function(event) {
+            console.log('Connected to WebSocket Server');
+            /// to remain the connection live more thaen 10 munutes
+            /// will be cleared on students at endSession
+            pingInterval = setInterval(() => {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 300000); // Send a ping every 5 minutes (300 seconds)
+        };
+
+        socket.onmessage = function(event) {
+            console.log('Message returns from server1:', event.data);
+            console.log("event.data.ansStatus: " + JSON.parse(event.data).ansStatus);///missing/wait/continue
+            let eventData = JSON.parse(event.data)
+            ///TODO: listen to and send relevant message
+            if (JSON.parse(event.data).ansStatus == "continue") {
+                messageBox.showStartPart2(eventData.isdealDone, eventData.mySecondsOffered, eventData.pairSecondsOffered);
+            }
+            if (JSON.parse(event.data).ansStatus == "missing") {
+                messageBox.textField.text = "ERROR - other user is not connected";
+            }
+        };
+
+        socket.onclose = function(event) {
+            console.log('Disconnected from WebSocket Server');
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket Error:', error);
+        };
+        
+        // Function to disconnect from the WebSocket server
+        function disconnectSocket() {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.close();
+        }
+        }
+
+// #endregion
+//#region/////////////////// get/post to html api gateway - not in use /////////////////////
+        function getData(url = '', data = {}) {
+            fullURL = url + '?' + new URLSearchParams(data)
+            return fetch(fullURL)
+                .then((data1) => { return data1.json() });
+        }
+
+
+        async function postData(url = '', data = {}) {
+            //console.log(JSON.stringify(data))
+            fullURL = url + '?' + new URLSearchParams(data)
+            fetch(fullURL, {
+                method: 'POST',
+                body: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data2 => console.log("postData done"))
+                .catch(error => console.error("postData error: " + error));
+        }
+//#endregion
+//#region///////////////////// VR stansdart issues ///////////////
+
+        var canvas = document.getElementById("renderCanvas");
+
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+
+        var createDefaultEngine = function () { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false }); };
+
+        var sceneToRender = null;
+
+        /////////// CREATE SCENE ///////////////////////////
+        var createScene = async function () {
+            const scene = new BABYLON.Scene(engine);
+            ///not in use?
+            const gravityVector = new BABYLON.Vector3(0, -9.8, 0);
+            const physicsPlugin = new BABYLON.CannonJSPlugin();
+            scene.enablePhysics(gravityVector, physicsPlugin);
+
+            ///CAMERA///
+            ///////const camera = new BABYLON.ArcRotateCamera("Camera", - Math.PI / 2, Math.PI / 2, 1, BABYLON.Vector3.Zero());///used only for taking pics
+            camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, 3), scene);///used for VR(0, 5, -7)
+            camera.setTarget(new BABYLON.Vector3(0, 1, 0));///used for VR (0, 4, -15)
+            camera.attachControl(canvas, true);///used always
+            ///end camera///
+
+            ///LIGHT///
+            const light1 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -1, 1));
+            const light2 = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0));
+            light1.intensity = 0.75;
+            light2.intensity = 0.5;
+            ///END LIGHT///
+
+            ///SKYBOX///
+            let startSkyFiles = "textures/pink";
+            const skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 1000.0 }, scene);
+            const skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+            skyboxMaterial.backFaceCulling = false;
+            skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(startSkyFiles, scene);
+            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            skybox.material = skyboxMaterial;
+            ///end SKYBOX///
+
+            ///GROUND///
+            ///ground is global to allow changing its line color in changeSky()
+            ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, scene);
+            ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.8, restitution: 0.5, disableBidirectionalTransformation: true }, scene);///not needed
+            ground.checkCollisions = true;///not needed
+            ground.material = new BABYLON.GridMaterial("mat", scene);
+            ////////ground.material.lineColor = colorName2Vector("base");
+            //ground.material.Color3 = new BABYLON.Color3(1, 0, 0);
+            ///end GROUND///
+
+            var environment = scene.createDefaultEnvironment({ createGround: false, skyboxSize: 1000 });////V
+            environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
+
+            ///ELEMENTS MENU///
+            console.log("scene.meshes 0");
+            console.log(scene.meshes);
+
+            myWorld = await new World(scene);
+            
+            
+             /*
+            elementsMenu = BABYLON.MeshBuilder.CreateSphere("elementsMenu", { diameter: 0.01 });
+
+            elementsMenu.position.x = menuX;
+            elementsMenu.position.y = elementsMenuY;///position of center of B1X3 TODO:we need to replace it with virtual mesh
+
+           
+            elementsMenu.metadata = {
+                labelObj: new FbMessages("תפריט אבני בניין", 1, 1, 0)
+            }
+            
+
+            const b1X5 = meshBlock(scene, 5);
+            b1X5.setParent(elementsMenu);
+            b1X5.position.x = -7;//
+            const b1X3 = meshBlock(scene, 3);
+            b1X3.setParent(elementsMenu);
+            b1X3.position.x = -1;
+
+            const b1X2 = meshBlock(scene, 2);
+            b1X2.setParent(elementsMenu);
+            b1X2.position.x = 3;
+
+            const c1 = meshWheel(scene, 1);
+            c1.setParent(elementsMenu);
+            c1.position.x = 6;
+
+
+            elementsMenu.scaling = scailingMenuModel;
+*/            
+            //const avatar1 = scene.getMeshByName(theName);
+
+            ///end ELEMENTS MENU///
+
+            ///MODEL///
+            //currentModel = createModel("one", -5, 0 ,-5 );
+            ///end MODEL///
+
+            ///NEAR MENU///
+            //near = createNearMenu();///called now from messages. implemented in lego 1
+
+            ///end NEAR MENU///
+            /*////////////////////
+            var newPlane = BABYLON.Mesh.CreatePlane("plane", 10);
+              //newPlane.position.y = 1;
+              newPlane.position.z = -25;
+                    newPlane.position.y = 2;/////2
+                    newPlane.position.x = 0;
+              var newADT = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(newPlane);
+              var newImage = new BABYLON.GUI.Image("erji", "textures/pink_py.png");
+              newADT.addControl(newImage);
+            *////////////////////
+            //////messageBox = new Messages();
+
+            const xr = await scene.createDefaultXRExperienceAsync({
+                floorMeshes: [ground]
+            });
+            //console.log("xr"); 
+            //console.log(xr); 
+            xr.pointerSelection.laserPointerDefaultColor = new BABYLON.Color3(1, 1, 0); //....
+
+            /*
+            scene.debugLayer.show({
+                embedMode: true,
+            });
+            */
+            ////scene.debugLayer.show();
+            return scene;
+        };
+        /////// END CREATE SCENE ////////////
+        window.initFunction = async function () {
+            var asyncEngineCreation = async function () {
+                try {
+                    return createDefaultEngine();
+                } catch (e) {
+                    console.log("the available createEngine function failed. Creating the default engine instead");
+                    return createDefaultEngine();
+                }
+            }
+
+            window.engine = await asyncEngineCreation();
+            if (!engine) throw 'engine should not be null.';
+            startRenderLoop(engine, canvas);
+
+            window.scene = await createScene();
+            ///////////
+            // Assuming you have a WebXR experience set up
+            window.scene.onBeforeRenderObservable.add(() => {
+                const xrInput = scene.activeCamera.inputs.attached.webVR || scene.activeCamera.inputs.attached.webXR;
+
+                if (xrInput) {
+                    xrInput.controllers.forEach(controller => {
+                        if (controller.inputSource.gamepad) {
+                            camera.position = new BABYLON.Vector3(0, 5, -7);
+                            const buttons = controller.inputSource.gamepad.buttons;
+
+                            // Check if button A is pressed
+                            if (buttons[0].pressed) {
+                                // React to button A being pressed
+                                console.log("Button A pressed");
+                                camera.position = new BABYLON.Vector3(0, 5, -7);
+                                // Add your action here
+                            }
+                        }
+                    });
+                }
+            });
+
+
+            /////////////            
+
+        };
+
+// #endregion
+        initFunction().then(async () =>  {
+            sceneToRender = scene
+            ////await onServerConnect(scene);///////////////////
+            ////await onServerConnect(scene);///////////////////
+            ////await onServerConnect(scene);///////////////////
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+
+
+    </script>
+</body>
+
+</html>
