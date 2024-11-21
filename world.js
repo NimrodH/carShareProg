@@ -3,8 +3,8 @@
 class World {
     constructor(scene) {
         this._avatarsArr = [];
-         ///this.initAvatars(scene) ///run as test and work well
-         this._wellcome = new Wellcome(this);
+        ///this.initAvatars(scene) ///run as test and work well
+        //this._wellcome = new Wellcome(this);
     }
 
     ///will be called by Message
@@ -13,9 +13,20 @@ class World {
         console.log( "wellcomeDone: " + signData);
         socket.send(JSON.stringify(signData));
     }
-    /// called by the serve 
-    ///URL & position given by the server that take it from boys or girls table (and delete it from there
-    ///signData we got from the welcome message & sent to server and the server now return it to us
+    /**
+     * Asynchronously adds an avatar to the world.
+     *
+     * @param {string} ID - The unique identifier for the avatar.
+     * URL & position given by the server that take it from boys or girls tabl
+     * @param {string} URL - The URL to the avatar's resources.
+     * @param {number} x - The x-coordinate for the avatar's initial position.
+     * @param {number} y - The y-coordinate for the avatar's initial position.
+     * @param {number} z - The z-coordinate for the avatar's initial position.
+     * signData we got from the welcome message & send to server and the server now return it to us 
+     * @param {Object} signData - Additional data required for the avatar's initialization.
+     * @param {Object} scene - The scene object where the avatar will be added.
+     * @returns {Promise<void>} A promise that resolves when the avatar has been added and initialized.
+     */
     async addAvatar2World(ID, URL, x, y, z, signData, scene ) {
         let avatarObj = {
             avatar: new Avatar(ID, URL),
@@ -32,12 +43,13 @@ class World {
         });
     }
 
-/* old ///for test
+///for test
 
     async initAvatars(scene){
 
         this._avatarsArr[0] = {
-            avatar: new Avatar(this._avatarsURLs[0]),
+            //avatar: new Avatar(this._avatarsURLs[0]),
+            avatar: new Avatar(_avatarsURLs[0]),
             avatarID : "A1"
         };
 
@@ -47,5 +59,5 @@ class World {
         this._avatarsArr[2] = new Avatar(this._avatarsURLs[2]);
         await this._avatarsArr[2].initAvatar(0, 0, -3, scene);
     }
-*/
+
 }

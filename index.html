@@ -93,7 +93,7 @@
         socket.onopen = function(event) {
             console.log('Connected to WebSocket Server');
             /// to remain the connection live more thaen 10 munutes
-            /// will be cleared on students at endSession
+            ///TODO: clear this interval when the connection is closed
             pingInterval = setInterval(() => {
                 if (socket.readyState === WebSocket.OPEN) {
                     socket.send(JSON.stringify({ type: 'ping' }));
@@ -339,9 +339,9 @@
 // #endregion
         initFunction().then(async () =>  {
             sceneToRender = scene
-            ////await onServerConnect(scene);///////////////////
-            ////await onServerConnect(scene);///////////////////
-            ////await onServerConnect(scene);///////////////////
+            await onServerConnect(scene);///////////////////test?
+            await onServerConnect(scene);///////////////////test?
+            await onServerConnect(scene);///////////////////test?
         });
 
         // Resize
