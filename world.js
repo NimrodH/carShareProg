@@ -3,14 +3,17 @@
 class World {
     constructor(scene) {
         this._avatarsArr = [];
-        ///this.initAvatars(scene) ///run as test and work well
-        //this._wellcome = new Wellcome(this);
+        /// next line is for test. it will run well if we run onServerConnect from index.html
+        ///and set _avatarsURLs in index.html as test replacment to the server data
+        //this.initAvatars(scene)
+        this._wellcome = new Wellcome(this);
     }
 
     ///will be called by Message
     wellcomeDone(signData) {
         signData.action = 'createAvatar';
-        console.log( "wellcomeDone: " + signData);
+        console.log( "wellcomeDone: " );
+        console.log(  signData);
         socket.send(JSON.stringify(signData));
     }
     /**
