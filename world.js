@@ -5,7 +5,7 @@ class World {
         this._avatarsArr = [];
         /// next line is for test. it will run well if we run onServerConnect from index.html
         ///and set _avatarsURLs in index.html as test replacment to the server data
-        //this.initAvatars(scene)
+        //this.initAvatars(scene) ///for test the function is now commented
         this._wellcome = new Wellcome(this);
     }
 
@@ -13,7 +13,7 @@ class World {
     wellcomeDone(signData) {
         signData.action = 'createAvatar';
         console.log( "wellcomeDone: " );
-        console.log(  signData);
+        //console.log(  signData);
         socket.send(JSON.stringify(signData));
     }
     /**
@@ -30,24 +30,26 @@ class World {
      * @param {Object} scene - The scene object where the avatar will be added.
      * @returns {Promise<void>} A promise that resolves when the avatar has been added and initialized.
      */
-    async addAvatar2World(ID, URL, x, y, z, signData, scene ) {
+    async addAvatar2World(avatarDetails, signData, scene ) {
+        //ID, URL, x, y, z, signData,
+        
         let avatarObj = {
-            avatar: new Avatar(ID, URL),
-            avatarID : ID
+            avatar: new Avatar(avatarDetails.num, avatarDetails.URL),
+            avatarID : avatarDetails.num
         };
         this._avatarsArr.push(avatarObj);
-        await avatarObj.avatar.initAvatar(x, y, z, signData, scene);
+        await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
     }
 
     async addExistingAvatars( existingAvatarsAry) {
         ///ID, URL, x, y, z, signData, scene
         existingAvatarsAry.forEach(avatar => {
-             addAvatar2World(avatar.ID, avatar.URL,avatar.x,avatar.y, avatar.z, avatar.signData, scene )   
+             addAvatar2World(avatarDetails, signData, scene )   
         });
     }
 
 ///for test
-
+/*
     async initAvatars(scene){
 
         this._avatarsArr[0] = {
@@ -62,5 +64,5 @@ class World {
         this._avatarsArr[2] = new Avatar(this._avatarsURLs[2]);
         await this._avatarsArr[2].initAvatar(0, 0, -3, scene);
     }
-
+*/
 }

@@ -94,23 +94,21 @@
             console.log('Connected to WebSocket Server');
             /// to remain the connection live more thaen 10 munutes
             ///TODO: clear this interval when the connection is closed
+            /*
             pingInterval = setInterval(() => {
                 if (socket.readyState === WebSocket.OPEN) {
                     socket.send(JSON.stringify({ type: 'ping' }));
                 }
             }, 300000); // Send a ping every 5 minutes (300 seconds)
+            */
         };
 
         socket.onmessage = function(event) {
             console.log('Message returns from server1:', event.data);
-            console.log("event.data.ansStatus: " + JSON.parse(event.data).ansStatus);///missing/wait/continue
-            let eventData = JSON.parse(event.data)
-            ///TODO: listen to and send relevant message
-            if (JSON.parse(event.data).ansStatus == "continue") {
-                messageBox.showStartPart2(eventData.isdealDone, eventData.mySecondsOffered, eventData.pairSecondsOffered);
-            }
-            if (JSON.parse(event.data).ansStatus == "missing") {
-                messageBox.textField.text = "ERROR - other user is not connected";
+            let data = JSON.parse(event.data);
+            console.log('Message returns from server2:', data);
+            if (data.action === 'createAvatar') {
+                myWorld.addAvatar2World(data.avatarDetails, data.signData ,scene);
             }
         };
 

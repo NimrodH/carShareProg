@@ -217,7 +217,22 @@ class Wellcome {
         }
         console.log(wellcomeData)
         this.world.wellcomeDone(wellcomeData)
+        this.clearInstance();
     }
+
+    clearInstance() {
+        this.advancedTexture.dispose();
+        this.plane.dispose();
+
+        // Remove reference to the instance itself if needed
+        // Assuming `this` is the only reference to the instance
+        for (let prop in this) {
+            if (this.hasOwnProperty(prop)) {
+                delete this[prop];
+            }
+        }
+    }
+
 }
 ////this.nextButton.isEnabled = true;
 

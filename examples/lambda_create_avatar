@@ -10,10 +10,18 @@ import json
 import time
 import boto3
 import os
+from botocore.exceptions import ClientError
+#from decimal import Decimal
 
+#class DecimalEncoder(json.JSONEncoder):
+#    def default(self, obj):
+#        if isinstance(obj, Decimal):
+#            return float(obj)
+#        return super(DecimalEncoder, self).default(obj)
 
 #TODO: set 'API_GATEWAY_ENDPOINT'] & 'URLS_TABLE_NAME' & AVATARS_TABLE_NAME & SIGNS_TABLE_NAME
 dynamodb = boto3.resource('dynamodb')
+dynamodb_client = boto3.client('dynamodb')
 #apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.environ['API_GATEWAY_ENDPOINT'])
 urls_table = dynamodb.Table(os.environ['URLS_TABLE_NAME'])
 avatars_table = dynamodb.Table(os.environ['AVATARS_TABLE_NAME'])
@@ -42,7 +50,18 @@ def lambda_handler(event, context):
         print(f"Locked item details: {avatar_pos_url}")
     else:
         print("Could not find or lock any item.")
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'message': 'Could not find or lock any item'})
+    }
     write_avatar(avatarID, avatar_pos_url, connection_id)
+    print('Avatar created successfully')
+    message = { "action" : "createAvatar", "avatarDetails" : avatar_pos_url, "signData": body }
+    response = send2client(connection_id, message)
+    return {
+        'statusCode': 200,
+        'body': json.dumps({'message': 'Avatar created successfully'})
+    }
 
 def save_sign_data(body, avatarID):
     sign_data = {
@@ -97,11 +116,10 @@ def write_avatar(avatarID, avatar_pos_url, connection_id):
             'targetZ': avatar_pos_url["targetZ"],
             'isTalking': False,
             'driveAgreed': False,
-            'connectionID': connection_id
+            'connectionID': connection_id,
+            'avatarURL': avatar_pos_url["URL"]
         }
     }
-
-
     try:
         ### Save the item to the avatars table in DynamoDB
         avatars_table.put_item(Item=avatar_params['Item'])
@@ -115,76 +133,69 @@ def write_avatar(avatarID, avatar_pos_url, connection_id):
     ###get one of the free items in URLs & palaces table
 def get_unlocked_item():
     oneFreePosURL = urls_table.query(
-        IndexName='isUsed-index',  # Ensure you have a GSI on 'isUsed' attribute
+        IndexName='isUsed-num-index',  # Ensure you have a GSI on 'isUsed' attribute
         KeyConditionExpression='isUsed = :false',
-        ExpressionAttributeValues={':false': False},
+        ExpressionAttributeValues={':false': 'false'},  # Use 'false' as a string
         Limit=1  # Only fetch one unlocked item
     )
     items = oneFreePosURL.get('Items', [])
     return items[0] if items else None
  
-def lock_item(item_id):
-    if item_id is None:
+def lock_item(unlocked_item_id):
+    if unlocked_item_id is None:
         print("Item ID is None, cannot lock item.")
         return False
 
     try:
-        dynamodb.transact_write_items(
+        dynamodb_client.transact_write_items(
             TransactItems=[
                 {
                     'Update': {
                         'TableName': urls_table.name,
-                        'Key': {'id': item_id},
+                         'Key': {
+                            'num': {'S': unlocked_item_id}
+                        },
                         'UpdateExpression': 'SET isUsed = :true',
                         'ConditionExpression': 'attribute_not_exists(isUsed) OR isUsed = :false',
                         'ExpressionAttributeValues': {
-                            ':true': {'BOOL': True},
-                            ':false': {'BOOL': False}
+                            ':true': {'S': 'true'},
+                            ':false': {'S': 'false'}
                         }
                     }
                 }
             ]
         )
         return (True, None)
+    except dynamodb_client.exceptions.TransactionCanceledException as e:
+        print("TransactionCanceledException:")
+        print(e)
+        if 'CancellationReasons' in e.response:
+            for reason in e.response['CancellationReasons']:
+                print(json.dumps(reason, indent=2))
+        return (False, str(e))
     except Exception as e:
-        error_message = ""
-        # If conditional check fails, another session has locked the item
-        if e.response['Error']['Code'] == 'TransactionCanceledException':
-            error_message = f"Item {item_id} is already locked by another session. trying alternative"
-            print(error_message)
-        else:
-            error_message = f"Unexpected error: {e}"
-            return (False, error_message)
-        
+        print("Unexpected error:")
+        print(e)
+        return (False, str(e))
 
-    """
-    Attempts to find an unlocked item in the URLs table and lock it.
-
-    This function will retry up to MAX_RETRIES times to find an unlocked item
-    and lock it by setting its 'isUsed' attribute to True. If successful, it
-    returns the locked item. If it fails to lock an item after the maximum
-    number of retries, it returns None.
-
-    Returns:
-        dict: The locked item if successful, None otherwise.
-    """
-    
 def find_and_lock_item(): 
     retries = 0
     while retries < MAX_RETRIES:
-        # Fetch an unlocked item
+        # Attempt to fetch an unlocked item from the URLs table
         item = get_unlocked_item()
+        print("lock_item:")
+        print(item)
         if not item:
-            print("No unlocked items found.")
+            print("No available unlocked items found in the URLs table.")
             return None
 
-        item_id = item['id']['S']
-        print(f"Trying to lock item: {item_id}")
+        unlocked_item_id = item['num']#['S']
+        print(f"Trying to lock item: {unlocked_item_id}")
 
         # Attempt to lock the item
-        success, error_message = lock_item(item_id)
+        success, error_message = lock_item(unlocked_item_id)
         if success:
-            print(f"Item {item_id} locked successfully!")
+            print(f"Item {unlocked_item_id} locked successfully!")
             return item
         
         # If locking failed, wait and retry
@@ -195,3 +206,15 @@ def find_and_lock_item():
     print("Max retries reached. Unable to lock an item.")
     return None
 
+def send2client(connection_id, the_body):
+    apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('API_GATEWAY_ENDPOINT'))
+    if connection_id:
+        try:
+            response = apigatewaymanagementapi.post_to_connection(
+                ConnectionId=connection_id,
+                Data=json.dumps(the_body)
+            )
+            return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
+        except ClientError as error:
+            print('Error sending message: %s', error)
+            return {'statusCode': 500, 'body': json.dumps({'message': 'Failed to send message'})}
