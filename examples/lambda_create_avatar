@@ -28,6 +28,7 @@ avatars_table = dynamodb.Table(os.environ['AVATARS_TABLE_NAME'])
 signs_table = dynamodb.Table(os.environ['SIGNS_TABLE_NAME'])
 MAX_RETRIES = 50  # Maximum number of retries if an item is locked
 RETRY_DELAY = 2  # Delay in seconds between retries
+apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('API_GATEWAY_ENDPOINT'))
 
 
 def lambda_handler(event, context):
@@ -58,6 +59,7 @@ def lambda_handler(event, context):
     print('Avatar created successfully')
     message = { "action" : "createAvatar", "avatarDetails" : avatar_pos_url, "signData": body }
     response = send2client(connection_id, message)
+    send_to_other_clients(connection_id, message)
     return {
         'statusCode': 200,
         'body': json.dumps({'message': 'Avatar created successfully'})
@@ -76,7 +78,8 @@ def save_sign_data(body, avatarID):
         'day4to': body['day4to'],
         'day4back': body['day4back'],
         'day5to': body['day5to'],
-        'day5back': body['day5back']
+        'day5back': body['day5back'],
+        'userName': body['userName']
     }
     
     ### create line for the avatar in the signs table
@@ -159,7 +162,7 @@ def lock_item(unlocked_item_id):
                         'ConditionExpression': 'attribute_not_exists(isUsed) OR isUsed = :false',
                         'ExpressionAttributeValues': {
                             ':true': {'S': 'true'},
-                            ':false': {'S': 'false'}
+                            ':false': {'S': 'false'} 
                         }
                     }
                 }
@@ -207,7 +210,6 @@ def find_and_lock_item():
     return None
 
 def send2client(connection_id, the_body):
-    apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('API_GATEWAY_ENDPOINT'))
     if connection_id:
         try:
             response = apigatewaymanagementapi.post_to_connection(
@@ -218,3 +220,18 @@ def send2client(connection_id, the_body):
         except ClientError as error:
             print('Error sending message: %s', error)
             return {'statusCode': 500, 'body': json.dumps({'message': 'Failed to send message'})}
+        
+def send_to_other_clients(my_connection_id, the_body):    
+    response = dynamodb_client.scan(TableName=os.environ['AVATARS_TABLE_NAME'])
+    for item in response['Items']:
+        connection_id = item['connectionID']['S']
+        if connection_id != my_connection_id:
+            try:
+                response = apigatewaymanagementapi.post_to_connection(
+                    ConnectionId=connection_id,
+                    Data=json.dumps(the_body)
+                )
+            except ClientError as error:
+                print('Error sending message: %s', error)
+                continue
+    return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}

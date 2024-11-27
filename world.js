@@ -1,5 +1,5 @@
 //var scene = window.scene;
-
+///my Avatar is this._avatarsArr[0].avatar
 class World {
     constructor(scene) {
         this._avatarsArr = [];

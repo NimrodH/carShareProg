@@ -24,7 +24,7 @@ class AvatarMessage {
         this.nextButton.fontSize = 50;
         this.nextButton.background = "green";
         //this.nextButton.onPointerUpObservable.add(this.screenDone.bind(this));
-        this.nextButton.top = "90px";//90
+        this.nextButton.top = "250px";//90
         this.nextButton.left = "10px";
         this.nextButton.height = "70px";
         this.advancedTexture.addControl(this.nextButton);
@@ -34,13 +34,15 @@ class AvatarMessage {
             " נוסעת ביום שני\n\n" +
             "בשעה 17:30\n" +
             "לקרית ביאליק";
+
         let text1 = this.textField;
-        text1.text = initialText;//"Hello world";
+        //text1.text = updateText();//JSON.stringify(signData);//initialText;//"Hello world";
         text1.color = "white"//"red";
         text1.fontSize = 36;
-        text1.top = "-300px";
+        text1.top = "-150px";
         text1.height = "600px"
         this.advancedTexture.addControl(text1);
+        this.updateText(this.createMessage(signData));
         //this.plane.parent = avatar;
         //addEventListener("reportClick", this.handleReportClick.bind(this))
         //this.advancedTexture.focusedControl = inputTextArea;///create bug
@@ -50,6 +52,57 @@ class AvatarMessage {
     }
     updateText(theText) {
         this.textField.text = theText;
+    }
+    createMessage(signData) {
+        signData.name = " אהובה כהן";///temp for testing to be added to signData
+        const sheTravel = "נוסעת";
+        const heTravel = "נוסע";
+        const sheTravelBack = "חוזרת";
+        const heTravelBack = "חוזר";
+        let travel;
+        let travelBack;
+        let message = signData.userName + "\n\n" ;
+        if (signData.isMan) {
+            travelBack = heTravelBack; //חוזר
+            travel = heTravel; //נוסע
+        } else {
+            travelBack = sheTravelBack; //חוזרת
+            travel = sheTravel; //נוסעת
+        }
+
+        if (signData.day1to != "") {
+            message += travel + " ביום א' בשעה " + signData.day1to + "\n";
+        }
+        if (signData.day1back != "") {
+            message += travelBack + " ביום א' בשעה " + signData.day1back + "\n";
+        }
+        if (signData.day2to != "") {
+            message += travel + " ביום ב' בשעה " + signData.day2to + "\n";
+        }
+        if (signData.day2back != "") {
+            message += travelBack + " ביום ב' בשעה " + signData.day2back + "\n";
+        }
+        if (signData.day3to != "") {
+            message += travel + " ביום ג' בשעה " + signData.day3to + "\n";
+        }
+        if (signData.day3back != "") {
+            message += travelBack + " ביום ג' בשעה " + signData.day3back + "\n";
+        }
+        if (signData.day4to != "") {
+            message += travel + " ביום ד' בשעה " + signData.day4to + "\n";
+        }
+        if (signData.day4back != "") {
+            message += travelBack + " ביום ד' בשעה " + signData.day4back + "\n";
+        }
+        if (signData.day5to != "") {
+            message += travel + " ביום ה' בשעה " + signData.day5to + "\n";
+        }
+        if (signData.day5back != "") {
+            message += travelBack + " ביום ה' בשעה " + signData.day5back + "\n";
+        }
+        message += "מהכתובת: " + signData.address + "\n";
+        
+        return message;
     }
 }
 
@@ -62,7 +115,7 @@ class Wellcome {
     nextButton;///also sent as parameter in new session and called from there
     constructor(world) {
         this.world = world;
-        this.keyboard = this._addKeyboard();
+        //this.keyboard = this._addKeyboard();//needed for headset not pc. If used,  neeed more place & uncomment this.keyboard.connect, too
         this.plane.position.z = -20;
         this.plane.position.y = 4;/////2
         this.plane.position.x = 0;
@@ -92,7 +145,7 @@ class Wellcome {
         this._addTextField("ד", 400 - gap * 4, topLines)
         this._addTextField("ה", 400 - gap * 5, topLines)
         this._addTextField(":שעה הלוך", 400, topLines - gapLines, 140)
-        this._addTextField(":שעה חזור", 400, topLines - gapLines * 2,140)
+        this._addTextField(":שעה חזור", 400, topLines - gapLines * 2, 140)
 
         this.day1fromHome = this._addInputText(400 - gap * 1, topLines - gapLines);
         this.day2fromHome = this._addInputText(400 - gap * 2, topLines - gapLines);
@@ -106,8 +159,11 @@ class Wellcome {
         this.day4toHome = this._addInputText(400 - gap * 4, topLines - gapLines * 2);
         this.day5toHome = this._addInputText(400 - gap * 5, topLines - gapLines * 2);
 
-        this.address = this._addInputText(400 - gap * 2.5, topLines - gapLines * 4, 900, 70);
-        this._addTextField(":אזור מגורים", 400, topLines - gapLines * 3.3, 200);
+        this.address = this._addInputText(400 - gap * 2.5, topLines - gapLines * 5.5, 900, 70);
+        this._addTextField(":אזור מגורים", 400, topLines - gapLines * 4.7, 200);
+ 
+        this.userName = this._addInputText(400 - gap * 2.5, topLines - gapLines * 4, 900, 70);
+        this._addTextField(":שם ", 400, topLines - gapLines * 3.3, 200);
 
         this._addTextField("ID", 400 - gap * 1.25, topLines - gapLines * 3)
         this.ID = this._addInputText(400 - gap * 2, topLines - gapLines * 3);
@@ -156,7 +212,7 @@ class Wellcome {
         inputTextArea.left = leftStr;
         inputTextArea.onTextChangedObservable.add(() => this.nextButton.isEnabled = true);
         this.advancedTexture.addControl(inputTextArea);
-        this.keyboard.connect(inputTextArea);
+        //this.keyboard.connect(inputTextArea);//needed for headset not pc. If used, neeed more place & uncomment this._addKeyboard();, too
 
         return inputTextArea;
     }
@@ -164,8 +220,9 @@ class Wellcome {
     _addKeyboard() {
         const keyboard = new BABYLON.GUI.VirtualKeyboard("vkb");
         keyboard.addKeysRow(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "\u2190"]);
+        keyboard.addKeysRow(["א","ב","ג","ד"]);
 
-        keyboard.top = "50px";
+        keyboard.top = "170px";
         keyboard.scaleY = 2;
         keyboard.scaleX = 2;
         //keyboard.left = "10px";
@@ -201,7 +258,7 @@ class Wellcome {
         console.log("next clicked: " + this.buttonMan.isChecked)
         ////create object with data from welcome fields to send to World. when no data entered we get: ''
         let wellcomeData = {
-            ID : this.ID.text,
+            ID: this.ID.text,
             isMan: this.buttonMan.isChecked,
             address: this.address.text,
             day1to: this.day1fromHome.text,
@@ -213,7 +270,8 @@ class Wellcome {
             day4to: this.day4fromHome.text,
             day4back: this.day4toHome.text,
             day5to: this.day5fromHome.text,
-            day5back: this.day5toHome.text
+            day5back: this.day5toHome.text,
+            userName: this.userName.text
         }
         console.log(wellcomeData)
         this.world.wellcomeDone(wellcomeData)
