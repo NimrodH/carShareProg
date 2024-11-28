@@ -3,7 +3,7 @@
 class Avatar {
  
     constructor(avatarID, avatarURL) {
-        this.URL = avatarURL;
+        this.avatarURL = avatarURL;
         this.ID = avatarID;
      }
 
@@ -12,7 +12,7 @@ class Avatar {
         const signX = 0;
         const signY = 0.55;
         const signZ = 0.18;
-        this.avatarMesh = await this.createAvatarMesh(this.URL, scene);
+        this.avatarMesh = await this.createAvatarMesh(this.avatarURL, scene);
         this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this.avatarMesh)
         this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);
         ///TODO:set position by avatarDetails.targetX, targetY, targetZ

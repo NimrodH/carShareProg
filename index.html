@@ -25,7 +25,7 @@
     <script src="avatar.js"></script>
     <script src="message.js"></script>
     <script src="world.js"></script>
-    
+
 
 
     <style>
@@ -52,7 +52,7 @@
         ///CAMERA//////LIGHT//////SKYBOX//////GROUND///ELEMENTS MENU///MODEL//////NEAR MENU///messages
         //////////////////// Ort MODE FUNCTIONS/////////////////////////////////
 
-        ////ONLY FOR TEST WILL BE DONE FROM SERVER//////////////////
+        /*///ONLY FOR TEST WILL BE DONE FROM SERVER//////////////////
         let nextURL = 0
         let _avatarsURLs = [
             { URL: "https://models.readyplayer.me/66dab77486c24725e12fed2e.glb", x:1, y:0, z:0 },
@@ -71,7 +71,7 @@
             nextURL++;
         }
 
-         ////end of ONLY FOR TEST WILL BE DONE FROM SERVER//////////////////
+         *////end of ONLY FOR TEST WILL BE DONE FROM SERVER//////////////////
 
         const menuX = 1;//1;
         const menuY = 0.5;//abselut position before seting it as child of elementsMenu
@@ -89,8 +89,8 @@
         const socketUrl = 'wss://j5i50qrird.execute-api.us-east-1.amazonaws.com/production/';
         var socket = new WebSocket(socketUrl);
 
-// #region///////////////////SOCKET //////////////////////////
-        socket.onopen = function(event) {
+        // #region///////////////////SOCKET //////////////////////////
+        socket.onopen = function (event) {
             console.log('Connected to WebSocket Server');
             /// to remain the connection live more thaen 10 munutes
             ///TODO: clear this interval when the connection is closed
@@ -103,32 +103,36 @@
             */
         };
 
-        socket.onmessage = function(event) {
-            console.log('Message returns from server1:', event.data);
-            let data = JSON.parse(event.data);
+        socket.onmessage = function (event) {
+             let data = JSON.parse(event.data);
             console.log('Message returns from server2:', data);
             if (data.action === 'createAvatar') {
-                myWorld.addAvatar2World(data.avatarDetails, data.signData ,scene);
+                myWorld.addAvatar2World(data.avatarDetails, data.signData, scene);
+            }
+            if (data.action === 'createMissingAvatars') {
+                myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
             }
         };
 
-        socket.onclose = function(event) {
+
+
+        socket.onclose = function (event) {
             console.log('Disconnected from WebSocket Server');
         };
 
-        socket.onerror = function(error) {
+        socket.onerror = function (error) {
             console.error('WebSocket Error:', error);
         };
-        
+
         // Function to disconnect from the WebSocket server
         function disconnectSocket() {
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.close();
-        }
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
         }
 
-// #endregion
-//#region/////////////////// get/post to html api gateway - not in use /////////////////////
+        // #endregion
+        //#region/////////////////// get/post to html api gateway - not in use /////////////////////
         function getData(url = '', data = {}) {
             fullURL = url + '?' + new URLSearchParams(data)
             return fetch(fullURL)
@@ -150,8 +154,8 @@
                 .then(data2 => console.log("postData done"))
                 .catch(error => console.error("postData error: " + error));
         }
-//#endregion
-//#region///////////////////// VR stansdart issues ///////////////
+        //#endregion
+        //#region///////////////////// VR stansdart issues ///////////////
 
         var canvas = document.getElementById("renderCanvas");
 
@@ -219,38 +223,38 @@
             console.log(scene.meshes);
 
             myWorld = await new World(scene);
-            
-            
-             /*
-            elementsMenu = BABYLON.MeshBuilder.CreateSphere("elementsMenu", { diameter: 0.01 });
 
-            elementsMenu.position.x = menuX;
-            elementsMenu.position.y = elementsMenuY;///position of center of B1X3 TODO:we need to replace it with virtual mesh
 
+            /*
+           elementsMenu = BABYLON.MeshBuilder.CreateSphere("elementsMenu", { diameter: 0.01 });
+
+           elementsMenu.position.x = menuX;
+           elementsMenu.position.y = elementsMenuY;///position of center of B1X3 TODO:we need to replace it with virtual mesh
+
+          
+           elementsMenu.metadata = {
+               labelObj: new FbMessages("תפריט אבני בניין", 1, 1, 0)
+           }
            
-            elementsMenu.metadata = {
-                labelObj: new FbMessages("תפריט אבני בניין", 1, 1, 0)
-            }
-            
 
-            const b1X5 = meshBlock(scene, 5);
-            b1X5.setParent(elementsMenu);
-            b1X5.position.x = -7;//
-            const b1X3 = meshBlock(scene, 3);
-            b1X3.setParent(elementsMenu);
-            b1X3.position.x = -1;
+           const b1X5 = meshBlock(scene, 5);
+           b1X5.setParent(elementsMenu);
+           b1X5.position.x = -7;//
+           const b1X3 = meshBlock(scene, 3);
+           b1X3.setParent(elementsMenu);
+           b1X3.position.x = -1;
 
-            const b1X2 = meshBlock(scene, 2);
-            b1X2.setParent(elementsMenu);
-            b1X2.position.x = 3;
+           const b1X2 = meshBlock(scene, 2);
+           b1X2.setParent(elementsMenu);
+           b1X2.position.x = 3;
 
-            const c1 = meshWheel(scene, 1);
-            c1.setParent(elementsMenu);
-            c1.position.x = 6;
+           const c1 = meshWheel(scene, 1);
+           c1.setParent(elementsMenu);
+           c1.position.x = 6;
 
 
-            elementsMenu.scaling = scailingMenuModel;
-*/            
+           elementsMenu.scaling = scailingMenuModel;
+*/
             //const avatar1 = scene.getMeshByName(theName);
 
             ///end ELEMENTS MENU///
@@ -334,8 +338,8 @@
 
         };
 
-// #endregion
-        initFunction().then(async () =>  {
+        // #endregion
+        initFunction().then(async () => {
             sceneToRender = scene
             //await onServerConnect(scene);///////////////////test
             //await onServerConnect(scene);///////////////////test

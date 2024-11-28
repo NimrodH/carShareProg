@@ -32,15 +32,35 @@ apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=o
 
 
 def lambda_handler(event, context):
+    """
+    AWS Lambda function to handle avatar creation requests.
+
+    This function processes an incoming event to create an avatar. It retrieves the connection ID from the event's
+    request context, extracts the avatar data from the event body, and performs the following steps:
+    1. Validates the presence of the 'ID' key in the body.
+    2. Saves the sign data associated with the avatar.
+    3. Finds and locks an item for the avatar. the item contaains the position of the avatar and the URL of the avatar
+    4. Writes the avatar data to the database.
+    5. Sends a response back to the client and notifies other clients.
+
+    Parameters:
+    event (dict): The event data passed to the Lambda function, containing request context and body.
+        body: contains all data that will be used for the signData
+        requestContext: contains the connectionId of the client
+    context (object): The runtime information of the Lambda function.
+
+    Returns:
+    dict: A response object containing the status code and a message indicating the result of the operation.
+    """
     print('Received event:', json.dumps(event, indent=2))
     # TODO implement
     connection_id = event['requestContext']['connectionId']
     ### retrieve from the event body the data that user entered to welcome message
     body = json.loads(event['body'])
     print(body)
-    avatarID = body.get('ID')
+    avatarID = body.get('avatarID')
     if avatarID is None:
-        print("Error: 'ID' key is missing in the body.")
+        print("Error: 'avatarID' key is missing in the body.")
         return {
             'statusCode': 400,
             'body': json.dumps({'message': "'ID' key is missing in the body"})
@@ -60,6 +80,7 @@ def lambda_handler(event, context):
     message = { "action" : "createAvatar", "avatarDetails" : avatar_pos_url, "signData": body }
     response = send2client(connection_id, message)
     send_to_other_clients(connection_id, message)
+    send_to_me_older_avatars(connection_id)
     return {
         'statusCode': 200,
         'body': json.dumps({'message': 'Avatar created successfully'})
@@ -120,7 +141,7 @@ def write_avatar(avatarID, avatar_pos_url, connection_id):
             'isTalking': False,
             'driveAgreed': False,
             'connectionID': connection_id,
-            'avatarURL': avatar_pos_url["URL"]
+            'avatarURL': avatar_pos_url["avatarURL"]
         }
     }
     try:
@@ -235,3 +256,36 @@ def send_to_other_clients(my_connection_id, the_body):
                 print('Error sending message: %s', error)
                 continue
     return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
+
+def send_to_me_older_avatars(my_connection_id):
+    avatrs_array = dynamodb_client.scan(TableName=os.environ['AVATARS_TABLE_NAME'])
+    print(avatrs_array)
+    extracted_avatrs_array = extract_all_values(avatrs_array['Items'])
+    print(extracted_avatrs_array)
+    signs_data_array = dynamodb_client.scan(TableName=os.environ['SIGNS_TABLE_NAME'])
+    print(signs_data_array)
+    extracted_signs_data_array = extract_all_values(signs_data_array['Items'])
+    message = { "action" : "createMissingAvatars", "avatarArray" : avatrs_array, "signDataArray": signs_data_array }
+    //response = send2client(my_connection_id, message)
+    return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
+
+def extract_values(item):
+    extracted = {}
+    for key, value in item.items():
+        if 'S' in value:
+            extracted[key] = value['S']
+        elif 'N' in value:
+            extracted[key] = value['N']
+        elif 'BOOL' in value:
+            extracted[key] = value['BOOL']
+        elif 'M' in value:
+            extracted[key] = extract_values(value['M'])  # Recursively extract values from nested map
+        elif 'L' in value:
+            extracted[key] = [extract_values(v) if isinstance(v, dict) else v for v in value['L']]  # Recursively extract values from list
+        # Add more types as needed
+        else:
+            extracted[key] = value  # Handle unknown types appropriately
+    return extracted
+
+def extract_all_values(items):
+    return [extract_values(item) for item in items]

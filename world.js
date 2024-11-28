@@ -3,66 +3,64 @@
 class World {
     constructor(scene) {
         this._avatarsArr = [];
-        /// next line is for test. it will run well if we run onServerConnect from index.html
-        ///and set _avatarsURLs in index.html as test replacment to the server data
-        //this.initAvatars(scene) ///for test the function is now commented
         this._wellcome = new Wellcome(this);
     }
 
     ///will be called by Message
     wellcomeDone(signData) {
         signData.action = 'createAvatar';
-        console.log( "wellcomeDone: " );
+        console.log("wellcomeDone: ");
         //console.log(  signData);
         socket.send(JSON.stringify(signData));
     }
+
     /**
      * Asynchronously adds an avatar to the world.
+     * create the acvatar as object and add it to the _avatarsArr
+     * in the costructor set the avatarURL and the avatarID
+     * and then call the avatar.initAvatar to create the mesh and the sign
      *
-     * @param {string} ID - The unique identifier for the avatar.
-     * URL & position given by the server that take it from boys or girls tabl
-     * @param {string} URL - The URL to the avatar's resources.
-     * @param {number} x - The x-coordinate for the avatar's initial position.
-     * @param {number} y - The y-coordinate for the avatar's initial position.
-     * @param {number} z - The z-coordinate for the avatar's initial position.
-     * signData we got from the welcome message & send to server and the server now return it to us 
-     * @param {Object} signData - Additional data required for the avatar's initialization.
+     * @param {Object} avatarDetails - An object containing the avatar details (already created before the current).
+     * @param {Object} signData - An object containing the sign data for the avatar.
      * @param {Object} scene - The scene object where the avatar will be added.
-     * @returns {Promise<void>} A promise that resolves when the avatar has been added and initialized.
+     * @returns {Promise<void>} A promise that resolves when the avatar has been added and initialized
      */
-    async addAvatar2World(avatarDetails, signData, scene ) {
+    async addAvatar2World(avatarDetails, signData, scene) {
         //ID, URL, x, y, z, signData,
-        
+
         let avatarObj = {
-            avatar: new Avatar(avatarDetails.num, avatarDetails.URL),
-            avatarID : avatarDetails.num
+            avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL),
+            avatarID: signData.avatarID
         };
         this._avatarsArr.push(avatarObj);
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
     }
 
-    async addExistingAvatars( existingAvatarsAry) {
-        ///ID, URL, x, y, z, signData, scene
-        existingAvatarsAry.forEach(avatar => {
-             addAvatar2World(avatarDetails, signData, scene )   
-        });
+    /**
+     * Asynchronously adds multiple avatars to the world.
+     *
+     * @param {Array<Object>} avatarsArray - An array of objects containing the avatar details (already created before the current).
+     * @param {Array<Object>} signDataArray - An array of objects containing the sign data for each avatar.
+     * @param {Object} scene - The scene object where the avatars will be added.
+     * @returns {Promise<void>} A promise that resolves when all avatars have been added and initialized.
+     */
+    async addMissingAvatars2World(avatarsArray, signDataArray, scene) {
+        for (const avatar of avatarsArray) {
+            let currentAvatarId = avatar.avatarID;
+            console.log(`avatarId: `);
+            console.log(currentAvatarId);
+            ///verify the avatar is not already in the world   
+            if (this._avatarsArr.find(avatarObj => avatarObj.avatarID == currentAvatarId)) {
+                console.log("avatar already in the world");
+                continue;
+            }
+            ///find the signData of the avatar;
+            let avatarSignData = signDataArray.find(signData => signData.avatarID == currentAvatarId);
+            console.log(`avatarSignData for avatarID ${currentAvatarId}:`, avatarSignData);
+            if (avatarSignData) { ///if the avatar is not in the signDataArray we will not add it to the world
+                await this.addAvatar2World(avatar, avatarSignData, scene);
+            }
+        }
     }
 
-///for test
-/*
-    async initAvatars(scene){
-
-        this._avatarsArr[0] = {
-            //avatar: new Avatar(this._avatarsURLs[0]),
-            avatar: new Avatar(_avatarsURLs[0]),
-            avatarID : "A1"
-        };
-
-        await this._avatarsArr[0].avatar.initAvatar(1, 0, 0, scene);
-        this._avatarsArr[1] = new Avatar(this._avatarsURLs[1]);
-        await this._avatarsArr[1].initAvatar(2, 0, 0, scene);
-        this._avatarsArr[2] = new Avatar(this._avatarsURLs[2]);
-        await this._avatarsArr[2].initAvatar(0, 0, -3, scene);
-    }
-*/
 }

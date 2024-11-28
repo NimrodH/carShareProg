@@ -258,7 +258,7 @@ class Wellcome {
         console.log("next clicked: " + this.buttonMan.isChecked)
         ////create object with data from welcome fields to send to World. when no data entered we get: ''
         let wellcomeData = {
-            ID: this.ID.text,
+            avatarID: this.ID.text,
             isMan: this.buttonMan.isChecked,
             address: this.address.text,
             day1to: this.day1fromHome.text,
