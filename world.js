@@ -29,7 +29,7 @@ class World {
         //ID, URL, x, y, z, signData,
 
         let avatarObj = {
-            avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL),
+            avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL, this),
             avatarID: signData.avatarID
         };
         this._avatarsArr.push(avatarObj);
@@ -62,5 +62,44 @@ class World {
             }
         }
     }
+    
+    /**
+     * Sends a chat request to another avatar.
+     * ask server to send a chat request to the avatar with the toID
+     * the fromAvatarID is the ID of the avatar that is asking for the chat
+     * ask the server to notify all workds that the avatar with the toID has a chat request
+     *
+     * @param {string} toID - The ID of the avatar to send the chat request to.
+     */
+    chatrequest(toID) {
+        new Chat (this._avatarsArr[0].avatar.ID, toID, this);
+        /*
+        socket.send(JSON.stringify({
+            action: 'chatRequest',
+            toAvatarID: toID,
+            fromAvatarID: this._avatarsArr[0].avatar.ID ///my Avatar is this._avatarsArr[0].avatar
+        }));
+        */
+    }
+
+    /**
+     * Asynchronously removes an avatar from the world.
+     * remove the avatar from the _avatarsArr
+     * ask the server to notify all worlds that the avatar has been removed
+     *
+     * @param {number} avatarID - The ID of the avatar to be removed.
+     * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
+     */
+    async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsArr
+        let index = this._avatarsArr.findIndex(avatarObj => avatarObj.avatarID == avatarID);
+        if (index > -1) {
+            this._avatarsArr.splice(index, 1);
+        }
+        socket.send(JSON.stringify({
+            action: 'removeAvatar',
+            avatarID: avatarID
+        }));
+    }  
+
 
 }

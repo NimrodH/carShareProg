@@ -2,13 +2,15 @@
 
 class AvatarMessage {
     //nextButton;///also sent as parameter in new session and called from there
-    constructor(planeSize, x, y, z, signData, avatarMesh) {
+    constructor(planeSize, x, y, z, signData, avatar) {
+        this.myAvatar = avatar;
         this.plane = BABYLON.MeshBuilder.CreatePlane("plane", { height: planeSize, width: -planeSize });
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
         this.plane.position = new BABYLON.Vector3(x, y, z);
-        this.plane.setParent(avatarMesh);
+        this.plane.setParent(this.myAvatar.avatarMesh);
         this.advancedTexture.background = 'green'
+
 
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
 
@@ -23,36 +25,25 @@ class AvatarMessage {
         this.nextButton.color = "white";
         this.nextButton.fontSize = 50;
         this.nextButton.background = "green";
-        //this.nextButton.onPointerUpObservable.add(this.screenDone.bind(this));
+        this.nextButton.onPointerUpObservable.add(this.chatRequest.bind(this));
         this.nextButton.top = "250px";//90
         this.nextButton.left = "10px";
         this.nextButton.height = "70px";
         this.advancedTexture.addControl(this.nextButton);
 
-
-        const initialText = "אהובה כהן\n\n" +
-            " נוסעת ביום שני\n\n" +
-            "בשעה 17:30\n" +
-            "לקרית ביאליק";
-
         let text1 = this.textField;
-        //text1.text = updateText();//JSON.stringify(signData);//initialText;//"Hello world";
         text1.color = "white"//"red";
         text1.fontSize = 36;
         text1.top = "-150px";
         text1.height = "600px"
         this.advancedTexture.addControl(text1);
         this.updateText(this.createMessage(signData));
-        //this.plane.parent = avatar;
-        //addEventListener("reportClick", this.handleReportClick.bind(this))
-        //this.advancedTexture.focusedControl = inputTextArea;///create bug
-        //plane.isVisible = true;
-        //plane.dispose();
-
     }
+
     updateText(theText) {
         this.textField.text = theText;
     }
+
     createMessage(signData) {
         signData.name = " אהובה כהן";///temp for testing to be added to signData
         const sheTravel = "נוסעת";
@@ -61,7 +52,7 @@ class AvatarMessage {
         const heTravelBack = "חוזר";
         let travel;
         let travelBack;
-        let message = signData.userName + "\n\n" ;
+        let message = signData.userName + "\n\n";
         if (signData.isMan) {
             travelBack = heTravelBack; //חוזר
             travel = heTravel; //נוסע
@@ -101,9 +92,186 @@ class AvatarMessage {
             message += travelBack + " ביום ה' בשעה " + signData.day5back + "\n";
         }
         message += "מהכתובת: " + signData.address + "\n";
-        
+
         return message;
     }
+
+    chatRequest() {
+        this.myAvatar.chatRequest();
+    }
+}
+class Chat {
+    constructor(avatarToID, avatarFromID, world) {
+
+        const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+        const rect1 = new BABYLON.GUI.Rectangle();
+        rect1.width = "500px";
+        rect1.height = "400px";
+        rect1.cornerRadius = 20;
+        rect1.color = "Orange";
+        rect1.thickness = 4;
+        rect1.background = "black";
+        advancedTexture.addControl(rect1);
+
+
+        const grid = new BABYLON.GUI.Grid();
+        grid.background = "black";
+        grid.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+        grid.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+        rect1.addControl(grid);
+
+        grid.width = 0.98;
+        grid.height = 0.98;
+
+
+        grid.addRowDefinition(0.8);
+        grid.addRowDefinition(0.1);
+        grid.addRowDefinition(0.1);        
+        
+        const sv = new BABYLON.GUI.ScrollViewer(null, true);
+        sv.width = 1;
+        sv.height = 1;
+        sv.background = "#CCCCCC";
+        sv.color = "black";
+    
+        grid.addControl(sv, 0, 0);
+
+        var button = BABYLON.GUI.Button.CreateSimpleButton("but", "Click Me");
+        button.width = 0.9;
+        button.height = 0.9;
+        button.color = "white";
+        button.background = "green";
+        button.onPointerUpObservable.add(this.sendLine.bind(this));
+        grid.addControl(button, 1, 0); 
+        
+        this.tb = new BABYLON.GUI.TextBlock();
+        this.tb.textWrapping = BABYLON.GUI.TextWrapping.WordWrap;
+        this.tb.resizeToFit = true;
+        this.tb.paddingTop = "5%";
+        this.tb.paddingLeft = "30px";
+        this.tb.paddingRight = "20px"
+        this.tb.paddingBottom = "5%";
+        this.tb.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        this.tb.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+        this.tb.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        this.tb.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+        this.tb.color = "red";
+        this.tb.background = "yellow";
+    
+        this.tb.text = "TEXT START Lorem ipsum dolor sit amet, postea petentium et eum. " +
+        "An cum inani conclusionemque, et viris noluisse pri. Sint erat te pro, falli " +
+        "civibus ei qui. Unum labore platonem ne pro, wisi inani volumus mel at, sea ea " +
+        "nostrud molestie. Nullam alterum ex est, quas timeam habemus sed an. Has an eius " +
+        "timeam, choro adolescens vix in.\n\n" +
+        "Sea homero aliquando an, case philosophia interpretaris ex cum. Hinc eius " +
+        "zril ex duo. Erroribus urbanitas mel te. Vis praesent assueverit te, agam " +
+        "propriae vix ex. Diam alterum aliquando eu sed. Ea nam ubique antiopam, usu " +
+        "alia albucius in, vix quis congue accusata ut.  TEXT END";
+    
+        this.tb.fontSize = "32px";
+    
+        sv.addControl(this.tb);
+
+        this. inputTextArea = new BABYLON.GUI.InputText('id', "");
+
+        this.inputTextArea.height = 0.9;
+        this.inputTextArea.color = "white";
+        this.inputTextArea.fontSize = 34;
+        this.inputTextArea.top = "10px";
+        this.inputTextArea.width = 0.9;
+        this.inputTextArea.left = "10px";
+
+        //this.inputTextArea.onTextChangedObservable.add(() => button.isEnabled = true);
+
+        grid.addControl(this.inputTextArea, 2, 0);
+
+
+
+
+
+
+        /*
+        constructor(avatarToID, avatarFromID, world) {
+            let planeSize = 1;
+            let x = 0;
+            let y = 0;
+            let z = 0;
+            let myAvatarTo = world._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarToID);
+            let myAvatarFrom = world._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarFromID);
+            this.myWorld = world;
+    
+            this.plane = BABYLON.MeshBuilder.CreatePlane("plane", { height: 2*planeSize, width: -planeSize });
+            this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
+            //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
+            this.plane.position = new BABYLON.Vector3(x, y, z);
+            this.advancedTexture.background = 'blue'
+            this.plane.height = "1500px";
+    
+            //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
+    
+            this.textField = new BABYLON.GUI.TextBlock("upperText");
+    
+            //this.advancedTexture.background = 'green'
+    
+    
+            this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "שלח");
+            this.nextButton.width = 1;
+            //this.nextButton.height = 0.4;
+            this.nextButton.color = "white";
+            this.nextButton.fontSize = 50;
+            this.nextButton.background = "green";
+            this.nextButton.onPointerUpObservable.add(this.sendLine.bind(this));
+            this.nextButton.top = "440";//90
+            this.nextButton.left = "10px";
+            this.nextButton.height = "70px";
+            this.advancedTexture.addControl(this.nextButton);
+    
+            let text1 = this.textField;
+            text1.color = "white"//"red";
+            text1.fontSize = 36;
+            text1.top = "-150px";
+            text1.height = "600px"
+            this.advancedTexture.addControl(text1);
+            this.updateText("הודעה חדשה מ" + myAvatarFrom.userName + "\n\n" + "שלח הודעה");
+    
+            this.chatLine = this._addInputText(10, 340);
+         */
+    }
+
+    _addInputText(left, top, areaWidth = 120, areaHight = 70) {
+        const leftStr = left.toString() + "px";
+        const topStr = top.toString() + "px";
+        const hightStr = areaHight.toString() + "px";
+        const widthStr = areaWidth.toString() + "px";
+        let inputTextArea = new BABYLON.GUI.InputText('id', "");
+        inputTextArea.height = "40px";
+        inputTextArea.color = "white";
+        inputTextArea.fontSize = 34;
+        inputTextArea.top = topStr;
+        inputTextArea.height = hightStr;
+        inputTextArea.width = widthStr;
+        inputTextArea.left = leftStr;
+        inputTextArea.onTextChangedObservable.add(() => this.nextButton.isEnabled = true);
+        this.advancedTexture.addControl(inputTextArea);
+        //this.keyboard.connect(inputTextArea);//needed for headset not pc. If used, neeed more place & uncomment this._addKeyboard();, too
+
+        return inputTextArea;
+    }
+
+    updateText(theText) {
+        this.tb.text = theText;
+    }
+
+   
+
+    sendLine() {
+        //this.myWorld.sendLine(this.chatLine.text);
+        console.log("sendLine clicked: " + this.inputTextArea.text);
+        this.updateText(this.tb.text + "\n" + this.inputTextArea.text);
+        this.inputTextArea.text = "";
+    }
+
 }
 
 class Wellcome {
@@ -161,7 +329,7 @@ class Wellcome {
 
         this.address = this._addInputText(400 - gap * 2.5, topLines - gapLines * 5.5, 900, 70);
         this._addTextField(":אזור מגורים", 400, topLines - gapLines * 4.7, 200);
- 
+
         this.userName = this._addInputText(400 - gap * 2.5, topLines - gapLines * 4, 900, 70);
         this._addTextField(":שם ", 400, topLines - gapLines * 3.3, 200);
 
@@ -220,7 +388,7 @@ class Wellcome {
     _addKeyboard() {
         const keyboard = new BABYLON.GUI.VirtualKeyboard("vkb");
         keyboard.addKeysRow(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "\u2190"]);
-        keyboard.addKeysRow(["א","ב","ג","ד"]);
+        keyboard.addKeysRow(["א", "ב", "ג", "ד"]);
 
         keyboard.top = "170px";
         keyboard.scaleY = 2;
