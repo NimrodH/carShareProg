@@ -58,6 +58,8 @@ def lambda_handler(event, context):
     ### retrieve from the event body the data that user entered to welcome message
     body = json.loads(event['body'])
     print(body)
+    if body['address'] == "freeAllItems":
+        return set_all_items_free()
     avatarID = body.get('avatarID')
     if avatarID is None:
         print("Error: 'avatarID' key is missing in the body.")
@@ -265,8 +267,8 @@ def send_to_me_older_avatars(my_connection_id):
     signs_data_array = dynamodb_client.scan(TableName=os.environ['SIGNS_TABLE_NAME'])
     print(signs_data_array)
     extracted_signs_data_array = extract_all_values(signs_data_array['Items'])
-    message = { "action" : "createMissingAvatars", "avatarArray" : avatrs_array, "signDataArray": signs_data_array }
-    //response = send2client(my_connection_id, message)
+    message = { "action" : "createMissingAvatars", "avatarArray" : extracted_avatrs_array, "signDataArray": extracted_signs_data_array }
+    response = send2client(my_connection_id, message)
     return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
 
 def extract_values(item):
@@ -289,3 +291,20 @@ def extract_values(item):
 
 def extract_all_values(items):
     return [extract_values(item) for item in items]
+
+#set all the items in the urls table to be free
+def set_all_items_free():
+    response = dynamodb_client.scan(TableName=os.environ['URLS_TABLE_NAME'])
+    for item in response['Items']:
+        item_id = item['num']['S']
+        try:
+            dynamodb_client.update_item(
+                TableName=os.environ['URLS_TABLE_NAME'],
+                Key={'num': {'S': item_id}},
+                UpdateExpression='SET isUsed = :false',
+                ExpressionAttributeValues={':false': {'S': 'false'}}
+            )
+        except ClientError as e:
+            print(f"Error updating item {item_id}: {e}")
+            continue
+    return {'statusCode': 200, 'body': json.dumps({'message': 'All items set to free'})}
