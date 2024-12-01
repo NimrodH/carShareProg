@@ -72,7 +72,7 @@ class World {
      * @param {string} toID - The ID of the avatar to send the chat request to.
      */
     chatrequest(toID) {
-        new Chat (this._avatarsArr[0].avatar.ID, toID, this);
+        this.chat = new Chat (this._avatarsArr[0].avatar.ID, toID, this);
         /*
         socket.send(JSON.stringify({
             action: 'chatRequest',
@@ -99,7 +99,27 @@ class World {
             action: 'removeAvatar',
             avatarID: avatarID
         }));
-    }  
+    } 
+    
+    dealDone() {
+        //signData.action = 'dealDone';
+        console.log("dealDone: ");
+        this.chat.dispose();
+        this.chat = null;
+        //console.log(  signData);
+        //socket.send(JSON.stringify(signData));
+
+    }
+
+    dealNotDone() {
+        //signData.action = 'dealNotDone';
+        console.log("dealNotDone: ");
+        this.chat.dispose();
+        this.chat = null;
+        //console.log(  signData);
+        //socket.send(JSON.stringify(signData));
+
+    }
 
 
 }

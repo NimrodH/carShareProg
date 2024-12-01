@@ -102,48 +102,72 @@ class AvatarMessage {
 }
 class Chat {
     constructor(avatarToID, avatarFromID, world) {
+        this.myWorld = world;
+        this.avatarToID = avatarToID;
+        this.avatarFromID = avatarFromID;
 
-        const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-        const rect1 = new BABYLON.GUI.Rectangle();
-        rect1.width = "500px";
-        rect1.height = "600px";
-        rect1.cornerRadius = 20;
-        rect1.color = "Orange";
-        rect1.thickness = 4;
-        rect1.background = "black";
-        advancedTexture.addControl(rect1);
-
-
-        const grid = new BABYLON.GUI.Grid();
-        grid.background = "black";
-        grid.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-        grid.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-        rect1.addControl(grid);
-
-        grid.width = 0.98;
-        grid.height = 0.98;
+        this.rect1 = new BABYLON.GUI.Rectangle();
+        this.rect1.width = "500px";
+        this.rect1.height = "600px";
+        this.rect1.cornerRadius = 20;
+        this.rect1.color = "Orange";
+        this.rect1.thickness = 4;
+        this.rect1.background = "black";
+        this.advancedTexture.addControl(this.rect1);
 
 
-        grid.addRowDefinition(0.76);
-        grid.addRowDefinition(0.12);
-        grid.addRowDefinition(0.12);        
+        this.grid = new BABYLON.GUI.Grid();
+        this.grid.background = "black";
+        this.grid.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+        this.grid.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+        this.rect1.addControl(this.grid);
+
+        this.grid.width = 0.95;
+        this.grid.height = 0.98;
+
+
+        this.grid.addRowDefinition(0.76);
+        this.grid.addRowDefinition(0.12);
+        this.grid.addRowDefinition(0.12);        
         
-        const scrollViewer = new BABYLON.GUI.ScrollViewer(null, true);
-        scrollViewer.width = 1;
-        scrollViewer.height = 1;
-        scrollViewer.background = "#CCCCCC";
-        scrollViewer.color = "black";
+        this.scrollViewer = new BABYLON.GUI.ScrollViewer(null, true);
+        this.scrollViewer.width = 1;
+        this.scrollViewer.height = 1;
+        this.scrollViewer.background = "#CCCCCC";
+        this.scrollViewer.color = "black";
     
-        grid.addControl(scrollViewer, 0, 0);
+        this.grid.addControl(this.scrollViewer, 0, 0);
 
-        var button = BABYLON.GUI.Button.CreateSimpleButton("but", "שלח");
-        button.width = 0.4;
-        button.height = 0.8;
-        button.color = "white";
-        button.background = "green";
-        button.onPointerUpObservable.add(this.sendLine.bind(this));
-        grid.addControl(button, 2, 0); 
+        this.sendButton = BABYLON.GUI.Button.CreateSimpleButton("sendButton", "שלח ההודעה");
+        this.sendButton.width = 0.3;
+        this.sendButton.height = 0.8;
+        this.sendButton.color = "white";
+        this.sendButton.background = "black";
+        this.sendButton.onPointerUpObservable.add(this.sendLine.bind(this));
+        this.grid.addControl(this.sendButton, 2, 0);
+        //this.sendButton.right = "10px";
+        this.sendButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+
+        this.buttonDeal = BABYLON.GUI.Button.CreateSimpleButton("dealButton", "סגור-סוכמה נסיעה");
+        this.buttonDeal.width = 0.3;
+        this.buttonDeal.height = 0.8;
+        this.buttonDeal.color = "white";
+        this.buttonDeal.background = "green";
+        this.buttonDeal.onPointerUpObservable.add(this.dealDone.bind(this));
+        this.grid.addControl(this.buttonDeal, 2, 0);
+        
+
+        this.buttonNoDeal = BABYLON.GUI.Button.CreateSimpleButton("closeNoDealButton", "סגור-לא סוכם");
+        this.buttonNoDeal.width = 0.3;
+        this.buttonNoDeal.height = 0.8;
+        this.buttonNoDeal.color = "white";
+        this.buttonNoDeal.background = "red";
+        this.buttonNoDeal.onPointerUpObservable.add(this.dealNotDone.bind(this));
+        this.grid.addControl(this.buttonNoDeal, 2, 0);
+        //this.buttonNoDeal.left = "10px";
+        this.buttonNoDeal.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
         
         this.textBlock = new BABYLON.GUI.TextBlock();
         this.textBlock.textWrapping = BABYLON.GUI.TextWrapping.WordWrap;
@@ -163,56 +187,57 @@ class Chat {
     
         this.textBlock.fontSize = "24px";
     
-        scrollViewer.addControl(this.textBlock);
+        this.scrollViewer.addControl(this.textBlock);
 
-        this. inputTextArea = new BABYLON.GUI.InputText('id', "");
+        this.messageInput = new BABYLON.GUI.InputText('id', "");
 
-        this.inputTextArea.height = 0.8;
-        this.inputTextArea.color = "white";
-        this.inputTextArea.fontSize = 24;
-        //this.inputTextArea.top = "10px";
-        this.inputTextArea.width = 0.95;
-        this.inputTextArea.placeholderText = "בתוב כאן את ההודעה שלך ולחץ על כפתור שלח";
-        this.inputTextArea.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        this.messageInput.height = 0.8;
+        this.messageInput.color = "white";
+        this.messageInput.fontSize = 24;
+        //this.messageInput.paddingRight = "10px";
+        this.messageInput.width = 0.95;
+        this.messageInput.placeholderText = "בתוב כאן את ההודעה שלך ולחץ על כפתור שלח";
+        this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
 
-        //this.inputTextArea.onTextChangedObservable.add(() => button.isEnabled = true);
+        //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);
 
-        grid.addControl(this.inputTextArea, 1, 0);
+        this.grid.addControl(this.messageInput, 1, 0); 
 
-    }
-
-    _addInputText(left, top, areaWidth = 120, areaHight = 70) {
-        const leftStr = left.toString() + "px";
-        const topStr = top.toString() + "px";
-        const hightStr = areaHight.toString() + "px";
-        const widthStr = areaWidth.toString() + "px";
-        let inputTextArea = new BABYLON.GUI.InputText('id', "");
-        inputTextArea.height = "40px";
-        inputTextArea.color = "white";
-        inputTextArea.fontSize = 34;
-        inputTextArea.top = topStr;
-        inputTextArea.height = hightStr;
-        inputTextArea.width = widthStr;
-        inputTextArea.left = leftStr;
-        inputTextArea.onTextChangedObservable.add(() => this.nextButton.isEnabled = true);
-        this.advancedTexture.addControl(inputTextArea);
-        //this.keyboard.connect(inputTextArea);//needed for headset not pc. If used, neeed more place & uncomment this._addKeyboard();, too
-
-        return inputTextArea;
     }
 
     updateText(theText) {
         this.textBlock.text = theText;
     }
 
-   
-
     sendLine() {
         //this.myWorld.sendLine(this.chatLine.text);
-        console.log("sendLine clicked: " + this.inputTextArea.text);
-        this.updateText(this.textBlock.text + "\n" + this.inputTextArea.text);
-        this.inputTextArea.text = "";
+        console.log("sendLine clicked: " + this.messageInput.text);
+        this.updateText(this.textBlock.text + "\n" + this.messageInput.text);
+        this.messageInput.text = "";
     }
+
+    dealDone() {
+        console.log("dealDone clicked: ");
+        this.myWorld.dealDone();
+    }
+
+    dealNotDone() {
+        console.log("dealNotDone clicked: ");
+        this.myWorld.dealNotDone();
+    }
+
+    dispose() {       
+        this.advancedTexture.dispose();
+        this.rect1.dispose();
+        this.grid.dispose();
+        this.scrollViewer.dispose();
+        this.sendButton.dispose();
+        this.buttonDeal.dispose();
+        this.buttonNoDeal.dispose();
+        this.textBlock.dispose();
+        this.messageInput.dispose();
+    }
+
 
 }
 
