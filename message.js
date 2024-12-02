@@ -19,7 +19,7 @@ class AvatarMessage {
         //this.advancedTexture.background = 'green'
 
 
-        this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
+        this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "התחל שיחה");
         this.nextButton.width = 1;
         this.nextButton.height = 0.4;
         this.nextButton.color = "white";

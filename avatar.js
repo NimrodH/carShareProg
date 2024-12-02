@@ -17,6 +17,23 @@ class Avatar {
         //this.avatarMesh.alpha = 0.5;
         this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
         this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);
+
+        //const deltaRotation = { x: 0, y: 45, z: 45 }; // Rotate 180 degrees around the Y axis
+        //this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
+        //this.avatarMesh.lookAt(camera.position)
+        //this.rotateMeshByDegrees(deltaRotation);
+        //this.avatarMesh.rotation.y = 0;
+        //this.avatarMesh.rotation.x = 0;
+        //this.avatarMesh.rotation.z = 0;
+        this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
+        console.log("avatar rotation: ");
+
+        console.log (this.avatarMesh.rotation)
+
+        //this.avatarMesh.lookAt(newTargetPos);
+        //console.log("avatar rotation: ");
+
+        console.log (this.avatarMesh.rotation)
         ///TODO:set position by avatarDetails.targetX, targetY, targetZ
     }
 
@@ -31,4 +48,44 @@ class Avatar {
         this.myWorld.chatrequest(this.ID);
         console.log("chatRequest on avatar: ");
     }
+
+    ///usage: const deltaRotation = { x: 0, y: 45, z: 0 }; // Rotate 45 degrees around the Y axis 
+    rotateMeshByDegrees(deltaRotation) {
+        // Convert degrees to radians
+        const deltaRotationRadians = {
+            x: BABYLON.Tools.ToRadians(deltaRotation.x),
+            y: BABYLON.Tools.ToRadians(deltaRotation.y),
+            z: BABYLON.Tools.ToRadians(deltaRotation.z)
+        };
+    
+        // Apply the rotation relative to the current rotation
+        this.avatarMesh.rotation.x += deltaRotationRadians.x;
+        this.avatarMesh.rotation.y += deltaRotationRadians.y;
+        this.avatarMesh.rotation.z += deltaRotationRadians.z;
+    }
+
+    calculateTargetPosition(mesh, deltaRotationDegrees) {
+        // Convert degrees to radians
+        const deltaRotationRadians = {
+            x: BABYLON.Tools.ToRadians(deltaRotationDegrees.x),
+            y: BABYLON.Tools.ToRadians(deltaRotationDegrees.y),
+            z: BABYLON.Tools.ToRadians(deltaRotationDegrees.z)
+        };
+    
+        // Get the current position of the mesh
+        const currentPosition = mesh.position;
+    
+        // Calculate the direction vector based on the current rotation and the desired delta rotation
+        const direction = new BABYLON.Vector3(
+            Math.sin(deltaRotationRadians.y),
+            0,
+            Math.cos(deltaRotationRadians.y)
+        );
+    
+        // Calculate the target position by adding the direction vector to the current position
+        const targetPosition = currentPosition.add(direction);
+    
+        return targetPosition;
+    }
+    
 }

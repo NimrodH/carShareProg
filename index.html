@@ -104,7 +104,7 @@
         };
 
         socket.onmessage = function (event) {
-             let data = JSON.parse(event.data);
+            let data = JSON.parse(event.data);
             console.log('Message returns from server2:', data);
             if (data.action === 'createAvatar') {
                 myWorld.addAvatar2World(data.avatarDetails, data.signData, scene);
@@ -185,6 +185,21 @@
             camera.setTarget(new BABYLON.Vector3(0, 1, 0));///used for VR (0, 4, -15)
             camera.attachControl(canvas, true);///used always
             ///end camera///
+            // Event listener for pointer clicks
+            scene.onPointerDown = function (evt, pickResult) {
+                if (evt.button === 2) {
+                    if (pickResult.hit && pickResult.pickedMesh === ground) {
+                        const pickedPoint = pickResult.pickedPoint;
+                        moveCameraToPosition(camera, pickedPoint);
+                    } 
+                   
+                } else {
+                    if (evt.button === 0) {
+                    console.log("evt.button: " + evt.button);
+                    camera.position.z = camera.position.z + 1;  
+                    }
+                }
+            };
 
             ///LIGHT///
             const light1 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -1, 1));
@@ -350,6 +365,14 @@
         window.addEventListener("resize", function () {
             engine.resize();
         });
+
+        // Function to move the camera to the clicked position while keeping its height constant
+        function moveCameraToPosition(camera, position) {
+            camera.setTarget(position);
+            camera.position.x = position.x;
+            camera.position.z = position.z;
+        }
+
 
 
     </script>

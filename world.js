@@ -27,7 +27,8 @@ class World {
      */
     async addAvatar2World(avatarDetails, signData, scene) {
         //ID, URL, x, y, z, signData,
-
+        console.log("avatarDetails: ");
+        console.log(avatarDetails);
         let avatarObj = {
             avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL, this),
             avatarID: signData.avatarID
@@ -47,8 +48,8 @@ class World {
     async addMissingAvatars2World(avatarsArray, signDataArray, scene) {
         for (const avatar of avatarsArray) {
             let currentAvatarId = avatar.avatarID;
-            console.log(`avatarId: `);
-            console.log(currentAvatarId);
+            //console.log(`avatarId: `);
+            //console.log(currentAvatarId);
             ///verify the avatar is not already in the world   
             if (this._avatarsArr.find(avatarObj => avatarObj.avatarID == currentAvatarId)) {
                 console.log("avatar already in the world");
@@ -56,7 +57,7 @@ class World {
             }
             ///find the signData of the avatar;
             let avatarSignData = signDataArray.find(signData => signData.avatarID == currentAvatarId);
-            console.log(`avatarSignData for avatarID ${currentAvatarId}:`, avatarSignData);
+            //console.log(`avatarSignData for avatarID ${currentAvatarId}:`, avatarSignData);
             if (avatarSignData) { ///if the avatar is not in the signDataArray we will not add it to the world
                 await this.addAvatar2World(avatar, avatarSignData, scene);
             }

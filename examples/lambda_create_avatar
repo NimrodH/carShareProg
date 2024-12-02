@@ -58,7 +58,7 @@ def lambda_handler(event, context):
     ### retrieve from the event body the data that user entered to welcome message
     body = json.loads(event['body'])
     print(body)
-    if body['address'] == "freeAllItems":
+    if body['address'] == "AA":
         return set_all_items_free()
     avatarID = body.get('avatarID')
     if avatarID is None:
@@ -292,7 +292,7 @@ def extract_values(item):
 def extract_all_values(items):
     return [extract_values(item) for item in items]
 
-#set all the items in the urls table to be free
+#set all the items in the urls table to be free and call to delete avatars and signs
 def set_all_items_free():
     response = dynamodb_client.scan(TableName=os.environ['URLS_TABLE_NAME'])
     for item in response['Items']:
@@ -307,4 +307,38 @@ def set_all_items_free():
         except ClientError as e:
             print(f"Error updating item {item_id}: {e}")
             continue
+    delete_all_signs()
+    delete_all_avatars()
     return {'statusCode': 200, 'body': json.dumps({'message': 'All items set to free'})}
+
+#delete all the items in the avatars table
+def delete_all_avatars():
+    response = dynamodb_client.scan(TableName=os.environ['AVATARS_TABLE_NAME'])
+    for item in response['Items']:
+        item_id = item['avatarID']['S']
+        try:
+            dynamodb_client.delete_item(
+                TableName=os.environ['AVATARS_TABLE_NAME'],
+                Key={'avatarID': {'S': item_id}}
+            )
+        except ClientError as e:
+            print(f"Error deleting item {item_id}: {e}")
+            continue
+    #return {'statusCode': 200, 'body': json.dumps({'message': 'All avatars deleted'})}
+
+#delete all the items in the signs table
+def delete_all_signs():
+    response = dynamodb_client.scan(TableName=os.environ['SIGNS_TABLE_NAME'])
+    for item in response['Items']:
+        item_id = item['avatarID']['S']
+        try:
+            dynamodb_client.delete_item(
+                TableName=os.environ['SIGNS_TABLE_NAME'],
+                Key={'avatarID': {'S': item_id}}
+            )
+        except ClientError as e:
+            print(f"Error deleting item {item_id}: {e}")
+            continue
+    #return {'statusCode': 200, 'body': json.dumps({'message': 'All signs deleted'})}
+  
+
