@@ -52,26 +52,6 @@
         ///CAMERA//////LIGHT//////SKYBOX//////GROUND///ELEMENTS MENU///MODEL//////NEAR MENU///messages
         //////////////////// Ort MODE FUNCTIONS/////////////////////////////////
 
-        /*///ONLY FOR TEST WILL BE DONE FROM SERVER//////////////////
-        let nextURL = 0
-        let _avatarsURLs = [
-            { URL: "https://models.readyplayer.me/66dab77486c24725e12fed2e.glb", x:1, y:0, z:0 },
-            { URL: "https://models.readyplayer.me/66d95426b7460aedd5563433.glb", x:2, y:0, z:0 },
-            { URL: "https://models.readyplayer.me/66dab77486c24725e12fed2e.glb", x:0, y:0, z:-2 }
-        ]
-
-        async function onServerConnect(scene) {
-            let ID = nextURL;
-            let URL = _avatarsURLs[nextURL].URL;
-            let x = _avatarsURLs[nextURL].x;
-            let y = _avatarsURLs[nextURL].y;
-            let z = _avatarsURLs[nextURL].z;
-            let signData = "foo";
-            await myWorld.addAvatar2World(ID, URL, x, y, z, signData, scene );
-            nextURL++;
-        }
-
-         *////end of ONLY FOR TEST WILL BE DONE FROM SERVER//////////////////
 
         const menuX = 1;//1;
         const menuY = 0.5;//abselut position before seting it as child of elementsMenu
@@ -181,26 +161,77 @@
 
             ///CAMERA///
             ///////const camera = new BABYLON.ArcRotateCamera("Camera", - Math.PI / 2, Math.PI / 2, 1, BABYLON.Vector3.Zero());///used only for taking pics
-            camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, 3), scene);///used for VR(0, 5, -7)
-            camera.setTarget(new BABYLON.Vector3(0, 1, 0));///used for VR (0, 4, -15)
+            camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, 0), scene);///used for VR(0, 5, -7) was 3
+            camera.setTarget(new BABYLON.Vector3(0, 1, 1));///used for VR (0, 4, -15)
             camera.attachControl(canvas, true);///used always
             ///end camera///
+            /// Event listener for pointer clicks
+
+            const maxR = 5; // Maximum radius of the circle , same as the ground size
+            let R = 0; // Initial radius of the circle
+            let angle = 0; // Initial angle in radians
+            let rotationSpeed = BABYLON.Tools.ToRadians(20); // Rotation speed (20 degrees per click)
+            let moveSpeed = 1; // Rotation speed (20 degrees per click)
+
+            // Function to update the camera position based on the current angle and radius
+            function updateCameraPosition() {
+                camera.position.x = R * Math.cos(angle);
+                camera.position.z = R * Math.sin(angle);
+
+                // Extend the target point outward from the center
+                const targetDistance = R + 2; // 2 units further out to define the facing direction
+                const targetX = targetDistance * Math.cos(angle);
+                const targetZ = targetDistance * Math.sin(angle);
+
+                // Make the camera face outward (away from the center)
+                camera.setTarget(new BABYLON.Vector3(targetX, camera.position.y-0.2, targetZ));
+            }
+
             // Event listener for pointer clicks
             scene.onPointerDown = function (evt, pickResult) {
-                if (evt.button === 2) {
-                    if (pickResult.hit && pickResult.pickedMesh === ground) {
-                        const pickedPoint = pickResult.pickedPoint;
-                        moveCameraToPosition(camera, pickedPoint);
-                    } 
-                   
-                } else {
-                    if (evt.button === 0) {
-                    console.log("evt.button: " + evt.button);
-                    camera.position.z = camera.position.z + 1;  
+                
+                if (pickResult.hit && pickResult.pickedMesh === ground) {
+                    if (evt.button === 2) {
+                        // Move camera clockwise
+                        angle -= rotationSpeed;
+                        updateCameraPosition();
+                    } else if (evt.button === 0) {
+                        // Move camera counter-clockwise
+                        angle += rotationSpeed;
+                        updateCameraPosition();
                     }
                 }
             };
 
+            // Event listener for mouse wheel to zoom in and out
+            scene.onPointerObservable.add((pointerInfo) => {
+                switch (pointerInfo.type) {
+                    case BABYLON.PointerEventTypes.POINTERWHEEL:
+                        const event = pointerInfo.event;
+                        console.log("event.deltaY: " + event.deltaY);
+                        if (event.deltaY < 0) {
+                            // Zoom in
+                            R -= moveSpeed;
+                        } else {
+                            // Zoom out
+                            R += moveSpeed;
+                        }
+                        if(R > maxR) {
+                            R = maxR;
+                        } else if(R < 0) {
+                            R = 0;
+                        }
+                        updateCameraPosition();
+                        event.preventDefault();
+                        break;
+                }
+            });
+
+            // Initial camera position update
+            updateCameraPosition();
+
+
+            ////////////////
             ///LIGHT///
             const light1 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -1, 1));
             const light2 = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0));
@@ -233,7 +264,7 @@
             var environment = scene.createDefaultEnvironment({ createGround: false, skyboxSize: 1000 });////V
             environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
 
-            ///ELEMENTS MENU///
+            ///INIT///
             console.log("scene.meshes 0");
             console.log(scene.meshes);
 
@@ -310,6 +341,7 @@
             return scene;
         };
         /////// END CREATE SCENE ////////////
+
         window.initFunction = async function () {
             var asyncEngineCreation = async function () {
                 try {
@@ -365,7 +397,37 @@
         window.addEventListener("resize", function () {
             engine.resize();
         });
+        /*///////MOVING THE CAMERA////
+        // Movement and rotation speeds
+        const rotationSpeed = 0.5; // Rotation speed (radians per key press)
+        const moveSpeed = 0.02;      // Movement speed (units per key press)
 
+        // Handle keyboard input
+        window.addEventListener("keydown", (event) => {
+ 
+            console.log("event.key: " + event.key);
+            switch (event.key) {
+                case "ArrowLeft": // Rotate left (counter-clockwise)
+                    console.log("ArrowLeft case: ");
+                    camera.rotation.y -= rotationSpeed;
+                    break;
+
+                case "ArrowRight": // Rotate right (clockwise)
+                    camera.rotation.y += rotationSpeed;
+                    break;
+
+                case "ArrowUp": // Move forward in the direction the camera is facing
+                    camera.position.x += Math.sin(camera.rotation.y) * moveSpeed;
+                    camera.position.z += Math.cos(camera.rotation.y) * moveSpeed;
+                    break;
+
+                case "ArrowDown": // Move backward
+                    camera.position.x -= Math.sin(camera.rotation.y) * moveSpeed;
+                    break;
+            }
+        });
+
+*/
         // Function to move the camera to the clicked position while keeping its height constant
         function moveCameraToPosition(camera, position) {
             camera.setTarget(position);

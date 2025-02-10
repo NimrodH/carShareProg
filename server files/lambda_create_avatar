@@ -58,7 +58,7 @@ def lambda_handler(event, context):
     ### retrieve from the event body the data that user entered to welcome message
     body = json.loads(event['body'])
     print(body)
-    if body['address'] == "AA":
+    if body['address'] == "deleteAll":
         return set_all_items_free()
     avatarID = body.get('avatarID')
     if avatarID is None:
@@ -307,8 +307,8 @@ def set_all_items_free():
         except ClientError as e:
             print(f"Error updating item {item_id}: {e}")
             continue
-    delete_all_signs()
-    delete_all_avatars()
+    //delete_all_signs()
+    //delete_all_avatars()
     return {'statusCode': 200, 'body': json.dumps({'message': 'All items set to free'})}
 
 #delete all the items in the avatars table

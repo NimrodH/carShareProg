@@ -19,7 +19,7 @@ class AvatarMessage {
         //this.advancedTexture.background = 'green'
 
 
-        this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "התחל שיחה");
+        this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "התחל");
         this.nextButton.width = 1;
         this.nextButton.height = 0.4;
         this.nextButton.color = "white";
@@ -45,7 +45,6 @@ class AvatarMessage {
     }
 
     createMessage(signData) {
-        signData.name = " אהובה כהן";///temp for testing to be added to signData
         const sheTravel = "נוסעת";
         const heTravel = "נוסע";
         const sheTravelBack = "חוזרת";
@@ -115,6 +114,7 @@ class Chat {
         this.rect1.color = "Orange";
         this.rect1.thickness = 4;
         this.rect1.background = "black";
+        this.rect1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
         this.advancedTexture.addControl(this.rect1);
 
 
@@ -196,7 +196,7 @@ class Chat {
         this.messageInput.fontSize = 24;
         //this.messageInput.paddingRight = "10px";
         this.messageInput.width = 0.95;
-        this.messageInput.placeholderText = "בתוב כאן את ההודעה שלך ולחץ על כפתור שלח";
+        this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
 
         //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);

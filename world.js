@@ -31,7 +31,8 @@ class World {
         console.log(avatarDetails);
         let avatarObj = {
             avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL, this),
-            avatarID: signData.avatarID
+            avatarID: signData.avatarID,
+            avatarName: signData.userName
         };
         this._avatarsArr.push(avatarObj);
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
