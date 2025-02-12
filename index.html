@@ -169,7 +169,7 @@
 
             const maxR = 5; // Maximum radius of the circle , same as the ground size
             let R = 0; // Initial radius of the circle
-            let angle = 0; // Initial angle in radians
+            let angle = BABYLON.Tools.ToRadians(90); // Initial angle in radians
             let rotationSpeed = BABYLON.Tools.ToRadians(20); // Rotation speed (20 degrees per click)
             let moveSpeed = 1; // Rotation speed (20 degrees per click)
 
@@ -211,13 +211,13 @@
                         console.log("event.deltaY: " + event.deltaY);
                         if (event.deltaY < 0) {
                             // Zoom in
-                            R -= moveSpeed;
+                            R += moveSpeed;
                         } else {
                             // Zoom out
-                            R += moveSpeed;
+                            R -= moveSpeed;
                         }
                         if(R > maxR) {
-                            R = maxR;
+                            R = maxR-0.5;
                         } else if(R < 0) {
                             R = 0;
                         }
@@ -228,7 +228,7 @@
             });
 
             // Initial camera position update
-            updateCameraPosition();
+            //updateCameraPosition();
 
 
             ////////////////
@@ -397,44 +397,6 @@
         window.addEventListener("resize", function () {
             engine.resize();
         });
-        /*///////MOVING THE CAMERA////
-        // Movement and rotation speeds
-        const rotationSpeed = 0.5; // Rotation speed (radians per key press)
-        const moveSpeed = 0.02;      // Movement speed (units per key press)
-
-        // Handle keyboard input
-        window.addEventListener("keydown", (event) => {
- 
-            console.log("event.key: " + event.key);
-            switch (event.key) {
-                case "ArrowLeft": // Rotate left (counter-clockwise)
-                    console.log("ArrowLeft case: ");
-                    camera.rotation.y -= rotationSpeed;
-                    break;
-
-                case "ArrowRight": // Rotate right (clockwise)
-                    camera.rotation.y += rotationSpeed;
-                    break;
-
-                case "ArrowUp": // Move forward in the direction the camera is facing
-                    camera.position.x += Math.sin(camera.rotation.y) * moveSpeed;
-                    camera.position.z += Math.cos(camera.rotation.y) * moveSpeed;
-                    break;
-
-                case "ArrowDown": // Move backward
-                    camera.position.x -= Math.sin(camera.rotation.y) * moveSpeed;
-                    break;
-            }
-        });
-
-*/
-        // Function to move the camera to the clicked position while keeping its height constant
-        function moveCameraToPosition(camera, position) {
-            camera.setTarget(position);
-            camera.position.x = position.x;
-            camera.position.z = position.z;
-        }
-
 
 
     </script>

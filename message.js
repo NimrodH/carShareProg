@@ -251,8 +251,8 @@ class Wellcome {
     constructor(world) {
         this.world = world;
         //this.keyboard = this._addKeyboard();//needed for headset not pc. If used,  neeed more place & uncomment this.keyboard.connect, too
-        this.plane.position.z = -20;
-        this.plane.position.y = 4;/////2
+        this.plane.position.z = 20;///-20
+        this.plane.position.y = 4;///
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
