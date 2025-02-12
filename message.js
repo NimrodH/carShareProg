@@ -9,7 +9,7 @@ class AvatarMessage {
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
         this.plane.position = new BABYLON.Vector3(x, y, z);
         this.plane.setParent(this.myAvatar.avatarMesh);
-        this.advancedTexture.background = 'green'
+        this.advancedTexture.background =  'green'
 
 
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
@@ -256,7 +256,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = 'green'
+        this.advancedTexture.background = 'red'//'green'
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
