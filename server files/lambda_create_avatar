@@ -3,7 +3,7 @@
 #  and will get the position of the avatar from the urls table
 #  and will lock the position in the urls table
 #  create the avatar in the avatars table
-#  and will return the position and URL of the avatar to the user
+#  and will return the position and URL of the avatar to the user c
 
 
 import json
@@ -58,7 +58,7 @@ def lambda_handler(event, context):
     ### retrieve from the event body the data that user entered to welcome message
     body = json.loads(event['body'])
     print(body)
-    if body['address'] == "deleteAll":
+    if body['address'] == "AA":
         return set_all_items_free()
     avatarID = body.get('avatarID')
     if avatarID is None:
@@ -158,6 +158,7 @@ def write_avatar(avatarID, avatar_pos_url, connection_id):
  
     ###get one of the free items in URLs & palaces table
 def get_unlocked_item():
+    print("get_unlocked_item")
     oneFreePosURL = urls_table.query(
         IndexName='isUsed-num-index',  # Ensure you have a GSI on 'isUsed' attribute
         KeyConditionExpression='isUsed = :false',
@@ -307,8 +308,8 @@ def set_all_items_free():
         except ClientError as e:
             print(f"Error updating item {item_id}: {e}")
             continue
-    //delete_all_signs()
-    //delete_all_avatars()
+    delete_all_signs()
+    delete_all_avatars()
     return {'statusCode': 200, 'body': json.dumps({'message': 'All items set to free'})}
 
 #delete all the items in the avatars table
