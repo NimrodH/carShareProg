@@ -190,7 +190,7 @@
             // Event listener for pointer clicks
             scene.onPointerDown = function (evt, pickResult) {
                 
-                if (pickResult.hit && pickResult.pickedMesh === ground) {
+                if (pickResult.hit && (pickResult.pickedMesh === ground|| pickResult.pickedMesh === skybox)) {
                     if (evt.button === 2) {
                         // Move camera clockwise
                         angle -= rotationSpeed;

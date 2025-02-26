@@ -4,6 +4,7 @@ class World {
     constructor(scene) {
         this._avatarsArr = [];
         this._wellcome = new Wellcome(this);
+        this.myAvatar;
     }
 
     ///will be called by Message
@@ -36,6 +37,13 @@ class World {
         };
         this._avatarsArr.push(avatarObj);
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
+        ///hide avatar if its the first one
+        ///when we will run on all avatars we will start from 1 (not 0)
+        if (this._avatarsArr.length == 1) {
+            console.log(avatarObj.avatar.avatarMesh)
+            avatarObj.avatar.avatarMesh.setEnabled(false);
+            
+        }
     }
 
     /**
@@ -75,6 +83,8 @@ class World {
      */
     chatrequest(toID) {
         this.chat = new Chat (this._avatarsArr[0].avatar.ID, toID, this);
+        console.log("avatarArr: " )
+        console.log(this._avatarsArr)
         /*
         socket.send(JSON.stringify({
             action: 'chatRequest',
