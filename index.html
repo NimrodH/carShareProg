@@ -93,18 +93,19 @@
                 myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
             }
             if (data.action === 'startChat') {
+                ///we need toAvatarID and fromAvatarID to know how to handle each avatar in the world that get the message
                 switch (data.type) {
                     case 'chatRequest':
-                        myWorld.startChat(data.fromAvatarID, data.toAvatarID);
+                        myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
                         break;
                     case 'endNoDeal': ///for all avatars
-                        myWorld.endChatNoDeal(data.fromAvatarID, data.toAvatarID);
+                        myWorld.chatDealNotDone(data.fromAvatarID, data.toAvatarID);
                         break;
                     case 'endDeal': ///for all avatars
-                            myWorld.endChatDeal(data.fromAvatarID, data.toAvatarID);
+                            myWorld.chatDealDone(data.fromAvatarID, data.toAvatarID);
                             break;
                     case 'chatUpdate': ///only for the two avatars
-                        myWorld.chatUpdate(data.fromAvatarID, data.toAvatarID, data.message);
+                        myWorld.chatUpdated(data.fromAvatarID, data.toAvatarID, data.message);
                         break;
                 }
             };

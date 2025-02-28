@@ -237,7 +237,7 @@ class Chat {
         this.updateText(text);
         this.messageInput.text = "";
         //TODO: send the message to my avatar 
-        this.myWorld.updateChat(this.chatID, text) 
+        this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text) 
     }
 
     dealDone() {

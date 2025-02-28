@@ -80,6 +80,7 @@ class World {
         * ask server to send a  chatStarted  to all avatars
         * the fromAvatarID is the ID of the avatar that is asking for the chat (this.myAvatar.ID)
         * the toAvatarID is the ID of the avatar that the chat is requested to
+        * serve will use the fromAvatarID and toAvatarID to send the chatStarted to the right avatars and to set the chatID
      *
      * @param {string} toID - The ID of the avatar to send the chat request to (toID).
      */
@@ -96,18 +97,20 @@ class World {
     }
 ///got from server when chat requested
 ///if requested from me I open a chat object. call it currChat
-    startChat(fromAvatarID, toAvatarID) {
+///toAvatarID is alwayes the ID of the avatar that clicked
+///fromAvatarID is the ID of the avatar that request the chat
+    chatStarted(fromAvatarID, toAvatarID) {
         console.log("startChat on world");
-        if (this.myAvatar.ID == fromAvatarID) {///do it to the pair
-            this.idToAvatar(toAvatarID).setState("myChat");
+        if (this.myAvatar.ID == fromAvatarID) {///I sent the request
+            this.idToAvatar(toAvatarID).setState("myChat");//on myworld sign my pair
         }
-        if (this.myAvatar.ID == toAvatarID) {
-            this.idToAvatar(fromAvatarID).setState("myChat");///do it to the pair
+        if (this.myAvatar.ID == toAvatarID) {///I got the request
+            this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
+            ///create the chat object in my world do not update the server (the server already know about the chat)
             this.currChat = new Chat (fromAvatarID, toAvatarID, this);
-            ///TODO: to replace to and from??? so allways the sende of message wil be the fromAvatarID??
-            ///if we will do it we need to fix the server to send the message to the right avatar?
         }
-        if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///do it to others
+        if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
+            ///sign the pair in my world
             this.idToAvatar(fromAvatarID).setState("inChat");
             this.idToAvatar(toAvatarID).setState("inChat");
         }
@@ -156,17 +159,20 @@ class World {
         //socket.send(JSON.stringify(signData));
         ///TODO: send to server that the chat is Not done
     }
-
-    updateChat(fromAvatarID, toAvatarID, text) {
-        ///TODO: handle following
-        console.log("updateChat");
+    ///send all the text with the new line to the server (that will send it to the other avatar)
+    updateChat(charID, fromAvatarID, toAvatarID, text) {
+        let avatar_id///send to the other avatar
+        if (this.myAvatar.ID == fromAvatarID) {
+            avatar_id = toAvatarID;
+        } else {
+            avatar_id = fromAvatarID;
+        }
         socket.send(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'updateChat',
-            chatID: this.currChat.chatID,
-            fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
-            toAvatarID: toAvatarID,
-            chatText: text
+            chatID: charID,
+            chatText: text,
+            destID: avatar_id
         }));  
     }
 }
