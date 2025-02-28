@@ -95,7 +95,7 @@ class World {
         }));      
     }
 ///got from server when chat requested
-///if requested from me I open a chat object. call it currChat? 
+///if requested from me I open a chat object. call it currChat
     startChat(fromAvatarID, toAvatarID) {
         console.log("startChat on world");
         if (this.myAvatar.ID == fromAvatarID) {///do it to the pair
