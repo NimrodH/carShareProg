@@ -27,39 +27,39 @@ class Avatar {
         //this.avatarMesh.rotation.z = 0;
         this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
         this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
-        console.log("avatar rotation: ");
-
-        //console.log (this.avatarMesh.rotation)
-        //this.rotateMeshByDegrees({x:0, y:90, z:0});
-        //this.avatarMesh.lookAt(newTargetPos);
         //console.log("avatar rotation: ");
 
-        //console.log (this.avatarMesh.rotation) 
+        ////console.log (this.avatarMesh.rotation)
+        //this.rotateMeshByDegrees({x:0, y:90, z:0});
+        //this.avatarMesh.lookAt(newTargetPos);
+        ////console.log("avatar rotation: ");
+
+        ////console.log (this.avatarMesh.rotation) 
         ///TODO:set position by avatarDetails.targetX, targetY, targetZ
     }
 
     async createAvatarMesh(avatarURL, scene) {
-        console.log("avatarURL: " + avatarURL)
+        //console.log("avatarURL: " + avatarURL)
        await BABYLON.SceneLoader.AppendAsync("", avatarURL, scene);
         let avatarMesh = (scene.meshes[scene.meshes.length - 1]).parent;
         return avatarMesh.parent;
     }
 
     chatRequest() {
-        this.myWorld.chatrequest(this.ID);
-        console.log("chatRequest on avatar: " + this.ID);
+        this.myWorld.chatRequest(this.ID);
+        //console.log("chatRequest on avatar: " + this.ID);
     }
 
     ///usage: const deltaRotation = { x: 0, y: 45, z: 0 }; // Rotate 45 degrees around the Y axis 
     rotateMeshByDegrees(deltaRotation) {
         // Convert degrees to radians
-        console.log("deltaRotation: " + deltaRotation);
+        //console.log("deltaRotation: " + deltaRotation);
         const deltaRotationRadians = {
             x: BABYLON.Tools.ToRadians(deltaRotation.x),
             y: BABYLON.Tools.ToRadians(deltaRotation.y),
             z: BABYLON.Tools.ToRadians(deltaRotation.z)
         };
-        console.log("deltaRotationRadians: " + deltaRotationRadians);
+        //console.log("deltaRotationRadians: " + deltaRotationRadians);
         // Apply the rotation relative to the current rotation
         this.avatarMesh.rotation.x += deltaRotationRadians.x;
         this.avatarMesh.rotation.y += deltaRotationRadians.y;
@@ -88,6 +88,10 @@ class Avatar {
         const targetPosition = currentPosition.add(direction);
     
         return targetPosition;
+    }
+    ///noChat, myChat, inChat
+    setState(state) {
+        this.frontSign.setState(state);
     }
     
 }

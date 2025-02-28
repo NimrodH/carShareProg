@@ -3,7 +3,7 @@
 #  and will get the position of the avatar from the urls table
 #  and will lock the position in the urls table
 #  create the avatar in the avatars table
-#  and will return the position and URL of the avatar to the user c
+#  and will return the position and URL of the avatar to the user
 
 
 import json
@@ -39,7 +39,7 @@ def lambda_handler(event, context):
     request context, extracts the avatar data from the event body, and performs the following steps:
     1. Validates the presence of the 'ID' key in the body.
     2. Saves the sign data associated with the avatar.
-    3. Finds and locks an item for the avatar. the item contains the position of the avatar and the URL of the avatar
+    3. Finds and locks an item for the avatar. the item contaains the position of the avatar and the URL of the avatar
     4. Writes the avatar data to the database.
     5. Sends a response back to the client and notifies other clients.
 

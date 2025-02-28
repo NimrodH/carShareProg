@@ -19,7 +19,7 @@ class AvatarMessage {
         //this.advancedTexture.background = 'green'
 
 
-        this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "התחל");
+        this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "לחץ להתחת שיחה");
         this.nextButton.width = 1;
         this.nextButton.height = 0.4;
         this.nextButton.color = "white";
@@ -30,7 +30,7 @@ class AvatarMessage {
         this.nextButton.left = "10px";
         this.nextButton.height = "70px";
         this.advancedTexture.addControl(this.nextButton);
-
+        this.setState("noChat");
         let text1 = this.textField;
         text1.color = "white"//"red";
         text1.fontSize = 36;
@@ -98,9 +98,28 @@ class AvatarMessage {
     chatRequest() {
         this.myAvatar.chatRequest();
     }
+     ///noChat, myChat, inChat
+    setState(state) {
+        if (state == "noChat") {
+            this.nextButton.isEnabled = true;
+            this.nextButton.textBlock.text = "לחץ להתחלת שיחה";
+            this.nextButton.color = "white";
+        }
+        if (state == "myChat") {
+            this.nextButton.isEnabled = false;
+            this.nextButton.textBlock.text = "עסוק בשיחה";
+            this.nextButton.color = "blue";
+        }
+        if (state == "inChat") {   
+            this.nextButton.isEnabled = false;
+            this.nextButton.textBlock.color = "red";
+            this.nextButton.text = "בשיחה איתך";    
+        }
+    }
 }
 class Chat {
-    constructor(avatarToID, avatarFromID, world) {
+    constructor( avatarFromID, avatarToID, world) {
+        this.chatID = avatarFromID + "_" + avatarToID;
         this.myWorld = world;
         this.avatarToID = avatarToID;
         this.avatarFromID = avatarFromID;
@@ -202,28 +221,33 @@ class Chat {
         //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);
 
         this.grid.addControl(this.messageInput, 1, 0); 
-
     }
 
+    ///sent from sendLine to handle localy.
     updateText(theText) {
         this.textBlock.text = theText;
+        //this.myWorld.chatStarted(this.avatarToID, this.avatarFromID);
     }
-
+    
+    ///sent from button "שלח ההודעה"
     sendLine() {
         //this.myWorld.sendLine(this.chatLine.text);
-        console.log("sendLine clicked: " + this.messageInput.text);
-        this.updateText(this.textBlock.text + "\n" + this.messageInput.text);
+        //console.log("sendLine clicked: " + this.messageInput.text);
+        let text = this.textBlock.text + "\n" + this.messageInput.text; 
+        this.updateText(text);
         this.messageInput.text = "";
+        //TODO: send the message to my avatar 
+        this.myWorld.updateChat(this.chatID, text) 
     }
 
     dealDone() {
-        console.log("dealDone clicked: ");
-        this.myWorld.dealDone();
+        //console.log("dealDone clicked: ");
+        this.myWorld.dealDone(this.chatID);
     }
 
     dealNotDone() {
-        console.log("dealNotDone clicked: ");
-        this.myWorld.dealNotDone();
+        //console.log("dealNotDone clicked: ");
+        this.myWorld.dealNotDone(this.chatID);
     }
 
     dispose() {       
@@ -384,13 +408,13 @@ class Wellcome {
     }
 
     _checkRadioButton() {
-        console.log(this.buttonWoman.isChecked)
+        //console.log(this.buttonWoman.isChecked)
     }
 
 
     screenDone() {
         //let a = 22;
-        console.log("next clicked: " + this.buttonMan.isChecked)
+        //console.log("next clicked: " + this.buttonMan.isChecked)
         ////create object with data from welcome fields to send to World. when no data entered we get: ''
         let wellcomeData = {
             avatarID: this.ID.text,
@@ -408,7 +432,7 @@ class Wellcome {
             day5back: this.day5toHome.text,
             userName: this.userName.text
         }
-        console.log(wellcomeData)
+        //console.log(wellcomeData)
         this.world.wellcomeDone(wellcomeData)
         this.clearInstance();
     }

@@ -71,7 +71,7 @@
 
         // #region///////////////////SOCKET //////////////////////////
         socket.onopen = function (event) {
-            console.log('Connected to WebSocket Server');
+            //console.log('Connected to WebSocket Server');
             /// to remain the connection live more thaen 10 munutes
             ///TODO: clear this interval when the connection is closed
             /*
@@ -85,19 +85,34 @@
 
         socket.onmessage = function (event) {
             let data = JSON.parse(event.data);
-            console.log('Message returns from server2:', data);
+            //console.log('Message returns from server2:', data);
             if (data.action === 'createAvatar') {
                 myWorld.addAvatar2World(data.avatarDetails, data.signData, scene);
             }
             if (data.action === 'createMissingAvatars') {
                 myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
             }
-        };
-
+            if (data.action === 'startChat') {
+                switch (data.type) {
+                    case 'chatRequest':
+                        myWorld.startChat(data.fromAvatarID, data.toAvatarID);
+                        break;
+                    case 'endNoDeal': ///for all avatars
+                        myWorld.endChatNoDeal(data.fromAvatarID, data.toAvatarID);
+                        break;
+                    case 'endDeal': ///for all avatars
+                            myWorld.endChatDeal(data.fromAvatarID, data.toAvatarID);
+                            break;
+                    case 'chatUpdate': ///only for the two avatars
+                        myWorld.chatUpdate(data.fromAvatarID, data.toAvatarID, data.message);
+                        break;
+                }
+            };
+        }
 
 
         socket.onclose = function (event) {
-            console.log('Disconnected from WebSocket Server');
+            //console.log('Disconnected from WebSocket Server');
         };
 
         socket.onerror = function (error) {
@@ -121,7 +136,7 @@
 
 
         async function postData(url = '', data = {}) {
-            //console.log(JSON.stringify(data))
+            ////console.log(JSON.stringify(data))
             fullURL = url + '?' + new URLSearchParams(data)
             fetch(fullURL, {
                 method: 'POST',
@@ -208,7 +223,7 @@
                 switch (pointerInfo.type) {
                     case BABYLON.PointerEventTypes.POINTERWHEEL:
                         const event = pointerInfo.event;
-                        console.log("event.deltaY: " + event.deltaY);
+                        //console.log("event.deltaY: " + event.deltaY);
                         if (event.deltaY < 0) {
                             // Zoom in
                             R += moveSpeed;
@@ -265,8 +280,8 @@
             environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
 
             ///INIT///
-            console.log("scene.meshes 0");
-            console.log(scene.meshes);
+            //console.log("scene.meshes 0");
+            //console.log(scene.meshes);
 
             myWorld = await new World(scene);
 
@@ -328,8 +343,8 @@
             const xr = await scene.createDefaultXRExperienceAsync({
                 floorMeshes: [ground]
             });
-            //console.log("xr"); 
-            //console.log(xr); 
+            ////console.log("xr"); 
+            ////console.log(xr); 
             xr.pointerSelection.laserPointerDefaultColor = new BABYLON.Color3(1, 1, 0); //....
 
             /*
@@ -347,7 +362,7 @@
                 try {
                     return createDefaultEngine();
                 } catch (e) {
-                    console.log("the available createEngine function failed. Creating the default engine instead");
+                    //console.log("the available createEngine function failed. Creating the default engine instead");
                     return createDefaultEngine();
                 }
             }
@@ -371,7 +386,7 @@
                             // Check if button A is pressed
                             if (buttons[0].pressed) {
                                 // React to button A being pressed
-                                console.log("Button A pressed");
+                                //console.log("Button A pressed");
                                 camera.position = new BABYLON.Vector3(0, 5, -7);
                                 // Add your action here
                             }
