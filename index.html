@@ -98,12 +98,9 @@
                     case 'chatRequest':
                         myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
                         break;
-                    case 'endNoDeal': ///for all avatars
-                        myWorld.chatDealNotDone(data.fromAvatarID, data.toAvatarID);
+                    case 'dealResult': ///for all avatars
+                        myWorld.dealResult(data.fromAvatarID, data.toAvatarID, data.fromResult, data.toResult);
                         break;
-                    case 'endDeal': ///for all avatars
-                            myWorld.chatDealDone(data.fromAvatarID, data.toAvatarID);
-                            break;
                     case 'chatUpdate': ///only for the two avatars
                         myWorld.chatUpdated(data.fromAvatarID, data.toAvatarID, data.message);
                         break;

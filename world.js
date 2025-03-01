@@ -140,25 +140,65 @@ class World {
         }));
     } 
     
-    dealDone(chatID) {
+    /**from button on the chat window to send the message to the server*/
+    dealDoneSelected(chatID) {
         //signData.action = 'dealDone';
-        console.log("dealDoneon world");
+        console.log("dealDoneSelected on world");
         this.currChat.dispose();
         this.currChat = null;
         ////console.log(  signData);
         //socket.send(JSON.stringify(signData));
         ///TODO: send to server that the chat is done
+        socket.send(JSON.stringify({
+            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
+            type: 'chatRequest',
+            chatID: this.currChat.chatID,
+            fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
+            toAvatarID: toID
+        }));   
     }
 
-    dealNotDone(chatID) {
+    /**from button on the chat window to send the message to the server*/
+    dealNotDoneSelected(chatID) {
         //signData.action = 'dealNotDone';
-        console.log("dealNotDoneon world");
+        console.log("dealNotDoneSelected on world");
         this.currChat.dispose();
         this.currChat = null;
         ////console.log(  signData);
         //socket.send(JSON.stringify(signData));
         ///TODO: send to server that the chat is Not done
     }
+
+    /**from the server:
+     *  to close chat on toAvatar
+     *  sign button on all worlds
+     * notify if one aprove and other not */
+    dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
+        console.log("dealResult on world");
+        //signData.action = 'dealNotDone';
+        if (toResult == fromResult) {
+            if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {           
+                this.currChat.dispose();
+                this.currChat = null;
+            }
+            this.myAvatar.setState("noChat");
+        } else {
+            ///one aprove and the other not or one dont answer yet
+            ///one not answer yet
+            if (this.myAvatar.ID == fromAvatarID && toResult == none || this.myAvatar.ID == toAvatarID && fromResult == none) {
+                ///write in the chat object in my world to wait and then click again
+                this.currChat.setState("wait");
+            }
+            if (this.myAvatar.ID == fromAvatarID && toResult == "noDeal") {
+                ///write in the chat object in my world that the other didnt accept so click close, you may try to talk with him again
+                this.currChat.setState("refused");
+            }
+            
+        }
+        ////console.log(  signData);
+        //socket.send(JSON.stringify(signData));
+    }
+
     ///send all the text with the new line to the server (that will send it to the other avatar)
     updateChat(charID, fromAvatarID, toAvatarID, text) {
         let avatar_id///send to the other avatar
@@ -174,5 +214,10 @@ class World {
             chatText: text,
             destID: avatar_id
         }));  
+    }
+
+    closeChat() {
+        this.currChat.dispose();
+        this.currChat = null;
     }
 }

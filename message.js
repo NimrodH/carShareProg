@@ -98,25 +98,29 @@ class AvatarMessage {
     chatRequest() {
         this.myAvatar.chatRequest();
     }
+    
      ///noChat, myChat, inChat
     setState(state) {
-        if (state == "noChat") {
-            this.nextButton.isEnabled = true;
-            this.nextButton.textBlock.text = "לחץ להתחלת שיחה";
-            this.nextButton.color = "white";
-        }
-        if (state == "myChat") {
-            this.nextButton.isEnabled = false;
-            this.nextButton.textBlock.text = "עסוק בשיחה";
-            this.nextButton.color = "blue";
-        }
-        if (state == "inChat") {   
-            this.nextButton.isEnabled = false;
-            this.nextButton.textBlock.color = "red";
-            this.nextButton.text = "בשיחה איתך";    
+        switch (state) {
+            case "noChat":
+                this.nextButton.isEnabled = true;
+                this.nextButton.textBlock.text = "לחץ להתחלת שיחה";
+                this.nextButton.color = "white";
+                break;
+            case "myChat":
+                this.nextButton.isEnabled = false;
+                this.nextButton.textBlock.text = "בשיחה איתך"; 
+                this.nextButton.color = "blue";
+                break;
+            case "inChat":
+                this.nextButton.isEnabled = false;
+                this.nextButton.color = "red";
+                this.nextButton.textBlock.text = "עסוק בשיחה"; 
+                break;
         }
     }
 }
+
 class Chat {
     constructor( avatarFromID, avatarToID, world) {
         this.chatID = avatarFromID + "_" + avatarToID;
@@ -149,18 +153,24 @@ class Chat {
 
         this.grid.addRowDefinition(0.76);
         this.grid.addRowDefinition(0.12);
-        this.grid.addRowDefinition(0.12);        
+        this.grid.addRowDefinition(0.12); 
+       // this.grid.addColumnDefinition(0.25); // Column 0       
+       // this.grid.addColumnDefinition(0.25); // Column 0       
+        //this.grid.addColumnDefinition(0.25); // Column 0       
+        //this.grid.addColumnDefinition(0.25); // Column 0       
         
         this.scrollViewer = new BABYLON.GUI.ScrollViewer(null, true);
-        this.scrollViewer.width = 1;
+        this.scrollViewer.width = "100%";
         this.scrollViewer.height = 1;
         this.scrollViewer.background = "#CCCCCC";
         this.scrollViewer.color = "black";
     
         this.grid.addControl(this.scrollViewer, 0, 0);
+        //this.grid.setColumnSpan(this.scrollViewer, 4);
+    
 
         this.sendButton = BABYLON.GUI.Button.CreateSimpleButton("sendButton", "שלח ההודעה");
-        this.sendButton.width = 0.3;
+        this.sendButton.width = 0.2;
         this.sendButton.height = 0.8;
         this.sendButton.color = "white";
         this.sendButton.background = "black";
@@ -169,24 +179,34 @@ class Chat {
         //this.sendButton.right = "10px";
         this.sendButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
 
-        this.buttonDeal = BABYLON.GUI.Button.CreateSimpleButton("dealButton", "סגור-סוכמה נסיעה");
+        this.buttonDeal = BABYLON.GUI.Button.CreateSimpleButton("dealButton", "סוכמה נסיעה");
         this.buttonDeal.width = 0.3;
         this.buttonDeal.height = 0.8;
         this.buttonDeal.color = "white";
         this.buttonDeal.background = "green";
-        this.buttonDeal.onPointerUpObservable.add(this.dealDone.bind(this));
+        this.buttonDeal.onPointerUpObservable.add(this.dealDoneSelected.bind(this));
+        this.buttonDeal.paddingRight = "75px";
         this.grid.addControl(this.buttonDeal, 2, 0);
-        
 
-        this.buttonNoDeal = BABYLON.GUI.Button.CreateSimpleButton("closeNoDealButton", "סגור-לא סוכם");
+        this.buttonClose = BABYLON.GUI.Button.CreateSimpleButton("closeButton", "סגור");
+        this.buttonClose.width = 0.2;
+        this.buttonClose.height = 0.8;
+        this.buttonClose.color = "white";
+        this.buttonClose.background = "green";
+        this.buttonClose.onPointerUpObservable.add(this.closeChat.bind(this));
+        this.grid.addControl(this.buttonClose, 2, 0);
+        this.buttonClose.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+        this.buttonNoDeal = BABYLON.GUI.Button.CreateSimpleButton("closeNoDealButton", "לא סוכם");
         this.buttonNoDeal.width = 0.3;
         this.buttonNoDeal.height = 0.8;
         this.buttonNoDeal.color = "white";
         this.buttonNoDeal.background = "red";
-        this.buttonNoDeal.onPointerUpObservable.add(this.dealNotDone.bind(this));
+        this.buttonNoDeal.onPointerUpObservable.add(this.dealNotDoneSelected.bind(this));
+        this.buttonNoDeal.paddingLeft = "75px";
         this.grid.addControl(this.buttonNoDeal, 2, 0);
         //this.buttonNoDeal.left = "10px";
-        this.buttonNoDeal.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        //this.buttonNoDeal.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
         
         this.textBlock = new BABYLON.GUI.TextBlock();
         this.textBlock.textWrapping = BABYLON.GUI.TextWrapping.WordWrap;
@@ -220,7 +240,8 @@ class Chat {
 
         //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);
 
-        this.grid.addControl(this.messageInput, 1, 0); 
+        this.grid.addControl(this.messageInput, 1, 0);
+       // this.grid.setColumnSpan(this.messageInput, 4);
     }
 
     ///sent from sendLine to handle localy.
@@ -240,14 +261,18 @@ class Chat {
         this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text) 
     }
 
-    dealDone() {
+    dealDoneSelected() {
         //console.log("dealDone clicked: ");
-        this.myWorld.dealDone(this.chatID);
+        this.myWorld.dealDoneSelected(this.chatID);
     }
 
-    dealNotDone() {
+    dealNotDoneSelected() {
         //console.log("dealNotDone clicked: ");
-        this.myWorld.dealNotDone(this.chatID);
+        this.myWorld.dealNotDoneSelected(this.chatID);
+    }
+
+    closeChat() {
+        this.myWorld.closeChat(this.chatID);
     }
 
     dispose() {       
@@ -262,6 +287,19 @@ class Chat {
         this.messageInput.dispose();
     }
 
+    setChatState(state) {
+        switch (state) {
+            case "wait":
+                this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן לתשובתו והקלק שוב על תשובתך"
+                this.sendButton.isEnabled = false;
+                break;
+            case "refused":
+                this.textBlock.text = "המשתתף השני בחר [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו בשיחה נוספת.";
+                this.sendButton.isEnabled = false;
+                this.buttonDeal.isEnabled = false;
+                break;
+        }
+    }
 
 }
 
