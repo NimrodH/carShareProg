@@ -263,16 +263,16 @@ class Chat {
 
     dealDoneSelected() {
         //console.log("dealDone clicked: ");
-        this.myWorld.dealDoneSelected(this.chatID);
+        this.myWorld.dealDoneSelected(this.chatID,this.avatarFromID, this.avatarToID);
     }
 
     dealNotDoneSelected() {
         //console.log("dealNotDone clicked: ");
-        this.myWorld.dealNotDoneSelected(this.chatID);
+        this.myWorld.dealNotDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
     closeChat() {
-        this.myWorld.closeChat(this.chatID);
+        this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
     }
 
     dispose() {       
@@ -289,14 +289,40 @@ class Chat {
 
     setChatState(state) {
         switch (state) {
+            case "start":
+                this.textBlock.text = "שלום"
+                this.sendButton.isEnabled = true;
+                this.buttonClose.isEnabled = false;
+                this.buttonDeal.isEnabled = true;
+                this.buttonNoDeal.isEnabled = true;
+                break;
+            case "refused":
+                this.textBlock.text = "המשתתף השני בחר [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בשיחה נוספת.";
+                this.sendButton.isEnabled = false;
+                this.buttonDeal.isEnabled = false;
+                this.buttonNoDeal.isEnabled = false;
+                this.sendButton.isEnabled = true;
+                break;
             case "wait":
                 this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן לתשובתו והקלק שוב על תשובתך"
                 this.sendButton.isEnabled = false;
+                this.buttonClose.isEnabled = false;
+                this.buttonDeal.isEnabled = true;
+                this.buttonNoDeal.isEnabled = true;
                 break;
-            case "refused":
-                this.textBlock.text = "המשתתף השני בחר [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו בשיחה נוספת.";
+            case "done":
+                this.textBlock.text = "סוכם על ביצוע נסיעה משותפת. לחץ [סגור] כדי לסיים את השיחה";
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = false;
+                this.buttonNoDeal.isEnabled = false;
+                this.buttonClose.isEnabled = true;
+                break;
+            case "notDone":
+                this.textBlock.text = "לא סוכם על נסיעה. בחר [סגור], ונסה לתאם עם מישהו אחר"
+                this.sendButton.isEnabled = false;
+                this.buttonDeal.isEnabled = false;
+                this.buttonNoDeal.isEnabled = false;
+                this.sendButton.isEnabled = true;
                 break;
         }
     }

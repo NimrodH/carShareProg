@@ -74,7 +74,8 @@ class World {
             }
         }
     }
-    
+    //////////////////FROM CHAT TO THE SERVER//////////////////////////////////
+
     /**
      * create chat on my self following user action and Sends a chat request to server
         * ask server to send a  chatStarted  to all avatars
@@ -85,50 +86,25 @@ class World {
      * @param {string} toID - The ID of the avatar to send the chat request to (toID).
      */
     chatRequest(toID) {
-        this.currChat = new Chat (this._avatarsArr[0].avatar.ID, toID, this);
-       
+        this.currChat = new Chat(this._avatarsArr[0].avatar.ID, toID, this);
+
         socket.send(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'chatRequest',
             chatID: this.currChat.chatID,
             fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
             toAvatarID: toID
-        }));      
-    }
-///got from server when chat requested
-///if requested from me I open a chat object. call it currChat
-///toAvatarID is alwayes the ID of the avatar that clicked
-///fromAvatarID is the ID of the avatar that request the chat
-    chatStarted(fromAvatarID, toAvatarID) {
-        console.log("startChat on world");
-        if (this.myAvatar.ID == fromAvatarID) {///I sent the request
-            this.idToAvatar(toAvatarID).setState("myChat");//on myworld sign my pair
-        }
-        if (this.myAvatar.ID == toAvatarID) {///I got the request
-            this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
-            ///create the chat object in my world do not update the server (the server already know about the chat)
-            this.currChat = new Chat (fromAvatarID, toAvatarID, this);
-        }
-        if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
-            ///sign the pair in my world
-            this.idToAvatar(fromAvatarID).setState("inChat");
-            this.idToAvatar(toAvatarID).setState("inChat");
-        }
+        }));
     }
 
-    idToAvatar(id) {
-        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == id);
-        return avatarObj.avatar;
-    }
-    
     /**
-     * Asynchronously removes an avatar from the world.
-     * remove the avatar from the _avatarsArr
-     * ask the server to notify all worlds that the avatar has been removed
-     *
-     * @param {number} avatarID - The ID of the avatar to be removed.
-     * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
-     */
+      * Asynchronously removes an avatar from the world.
+      * remove the avatar from the _avatarsArr
+      * ask the server to notify all worlds that the avatar has been removed
+      *
+      * @param {number} avatarID - The ID of the avatar to be removed.
+      * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
+      */
     async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsArr
         let index = this._avatarsArr.findIndex(avatarObj => avatarObj.avatarID == avatarID);
         if (index > -1) {
@@ -138,65 +114,37 @@ class World {
             action: 'removeAvatar',
             avatarID: avatarID
         }));
-    } 
-    
+    }
+
     /**from button on the chat window to send the message to the server*/
-    dealDoneSelected(chatID) {
-        //signData.action = 'dealDone';
-        console.log("dealDoneSelected on world");
-        this.currChat.dispose();
-        this.currChat = null;
-        ////console.log(  signData);
-        //socket.send(JSON.stringify(signData));
-        ///TODO: send to server that the chat is done
+    dealDoneSelected(chatID, fromAvatarID, toAvatarID) {
+        doDealSelected(chatID, fromAvatarID, toAvatarID, "dealDone");
+    }
+
+    /**from button on the chat window to send the message to the server*/
+    dealNotDoneSelected(chatID, fromAvatarID, toAvatarID) {
+        doDealSelected(chatID, fromAvatarID, toAvatarID, "noDeal");
+    }
+
+    doDealSelected(chatID, fromAvatarID, toAvatarID, answer) {
+        let dest_id///send to the other avatar
+        if (this.myAvatar.ID == fromAvatarID) {
+            dest_id = toAvatarID;
+        } else {
+            dest_id = fromAvatarID;
+        }
+        console.log("doDealSelected");
         socket.send(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-            type: 'chatRequest',
-            chatID: this.currChat.chatID,
-            fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
-            toAvatarID: toID
-        }));   
-    }
+            type: 'dealResult',
+            chatID: chatID,
+            fromAvatarID: fromAvatarID,///this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
+            toAvatarID: toAvatarID,
+            senderAnswer: answer,
+            senderID: this.myAvatar.ID,
+            destID: dest_id
+        }));
 
-    /**from button on the chat window to send the message to the server*/
-    dealNotDoneSelected(chatID) {
-        //signData.action = 'dealNotDone';
-        console.log("dealNotDoneSelected on world");
-        this.currChat.dispose();
-        this.currChat = null;
-        ////console.log(  signData);
-        //socket.send(JSON.stringify(signData));
-        ///TODO: send to server that the chat is Not done
-    }
-
-    /**from the server:
-     *  to close chat on toAvatar
-     *  sign button on all worlds
-     * notify if one aprove and other not */
-    dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
-        console.log("dealResult on world");
-        //signData.action = 'dealNotDone';
-        if (toResult == fromResult) {
-            if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {           
-                this.currChat.dispose();
-                this.currChat = null;
-            }
-            this.myAvatar.setState("noChat");
-        } else {
-            ///one aprove and the other not or one dont answer yet
-            ///one not answer yet
-            if (this.myAvatar.ID == fromAvatarID && toResult == none || this.myAvatar.ID == toAvatarID && fromResult == none) {
-                ///write in the chat object in my world to wait and then click again
-                this.currChat.setState("wait");
-            }
-            if (this.myAvatar.ID == fromAvatarID && toResult == "noDeal") {
-                ///write in the chat object in my world that the other didnt accept so click close, you may try to talk with him again
-                this.currChat.setState("refused");
-            }
-            
-        }
-        ////console.log(  signData);
-        //socket.send(JSON.stringify(signData));
     }
 
     ///send all the text with the new line to the server (that will send it to the other avatar)
@@ -213,11 +161,86 @@ class World {
             chatID: charID,
             chatText: text,
             destID: avatar_id
-        }));  
+        }));
     }
 
-    closeChat() {
-        this.currChat.dispose();
-        this.currChat = null;
+    closeChat(avatarFromID, avatarToID) {
+        socket.send(JSON.stringify({
+            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
+            type: 'endChat',
+            fromAvatarID: avatarFromID,
+            toAvatarID: avatarToID
+        }));
+    }
+
+    ///////////////////FROM SERVER TO WORLD/////////////////////////////////////
+
+
+    ///got from server when chat requested
+    ///if requested from me I open a chat object. call it currChat
+    ///toAvatarID is alwayes the ID of the avatar that clicked
+    ///fromAvatarID is the ID of the avatar that request the chat
+    chatStarted(fromAvatarID, toAvatarID) {
+        console.log("startChat on world");
+        if (this.myAvatar.ID == fromAvatarID) {///I sent the request
+            this.idToAvatar(toAvatarID).setState("myChat");//on myworld sign my pair
+        }
+        if (this.myAvatar.ID == toAvatarID) {///I got the request
+            this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
+            ///create the chat object in my world do not update the server (the server already know about the chat)
+            this.currChat = new Chat(fromAvatarID, toAvatarID, this);
+        }
+        if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
+            ///sign the pair in my world
+            this.idToAvatar(fromAvatarID).setState("inChat");
+            this.idToAvatar(toAvatarID).setState("inChat");
+        }
+    }
+
+    idToAvatar(id) {
+        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == id);
+        return avatarObj.avatar;
+    }
+    //////only  the pair avatar  will not get it from server
+    chatUpdated(chatText) {
+        this.currChat.updateText(chatText)
+    }
+
+
+    ///from the server:
+    //dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
+    dealResult(fromAvatarID, toAvatarID, senderAnswer, destAnswer, senderID, destID) {
+        console.log("dealResult on world");
+        //signData.action = 'dealNotDone';
+        if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {
+            ///if the chat is not in my world I will not handle the message
+            if (destAnswer == senderAnswer) {
+                if (destAnswer == "dealDone") {
+                    this.currChat.setState("done");
+                } else {
+                    this.currChat.setState("notDone")
+                }
+            } else {
+                if (this.myAvatar.ID == senderID && destAnswer == "noDeal") { ///I sent, he refused
+                    ///write in the chat object in my world that the other didnt accept so click close, you may try to talk with him again
+                    this.currChat.setState("refused");
+                }
+                if (this.myAvatar.ID == senderID && destAnswer == none ) {///I sent and he didnt answer yet
+                    ///write in the chat object in my world to wait and then click again
+                    this.currChat.setState("wait");
+                }
+            }
+        }
+    }
+
+
+    ChatEnded(fromAvatarID, toAvatarID) {
+        if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {
+            this.currChat.dispose();
+            this.currChat = null;
+        }
+        ///sign the pair in my world
+        this.idToAvatar(fromAvatarID).setState("noChat");
+        this.idToAvatar(toAvatarID).setState("noChat");
     }
 }
