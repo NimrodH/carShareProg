@@ -297,14 +297,14 @@ class Chat {
                 this.buttonNoDeal.isEnabled = true;
                 break;
             case "refused":
-                this.textBlock.text = "המשתתף השני בחר [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בשיחה נוספת.";
+                this.textBlock.text = "המשתתף השני בחר באשרות [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת.";
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = false;
                 this.buttonNoDeal.isEnabled = false;
                 this.sendButton.isEnabled = true;
                 break;
             case "wait":
-                this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן לתשובתו והקלק שוב על תשובתך"
+                this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן, והקלק שוב על תשובתך"
                 this.sendButton.isEnabled = false;
                 this.buttonClose.isEnabled = false;
                 this.buttonDeal.isEnabled = true;
