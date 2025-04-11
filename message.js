@@ -122,11 +122,13 @@ class AvatarMessage {
 }
 
 class Chat {
-    constructor( avatarFromID, avatarToID, world) {
-        this.chatID = avatarFromID + "_" + avatarToID;
+    constructor( avatarFrom, avatarTo, world) {
+        this.avatarFromID = avatarFrom.ID;
+        this.avatarToID = avatarTo.ID;
+        this.userNameTo = avatarTo.userName;
+        this.userNameFrom = avatarFrom.userName;
+        this.chatID = this.avatarFromID + "_" + this.avatarToID;
         this.myWorld = world;
-        this.avatarToID = avatarToID;
-        this.avatarFromID = avatarFromID;
 
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
@@ -254,7 +256,7 @@ class Chat {
     sendLine() {
         //this.myWorld.sendLine(this.chatLine.text);
         //console.log("sendLine clicked: " + this.messageInput.text);
-        let text = this.textBlock.text + "\n" + this.messageInput.text; 
+        let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text; 
         this.updateText(text);
         this.messageInput.text = "";
         //TODO: send the message to my avatar 
@@ -297,7 +299,7 @@ class Chat {
                 this.buttonNoDeal.isEnabled = true;
                 break;
             case "refused":
-                this.textBlock.text = "המשתתף השני בחר באשרות [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת.";
+                this.textBlock.text = "המשתתף השני בחר באפשרות [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת.";
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = false;
                 this.buttonNoDeal.isEnabled = false;

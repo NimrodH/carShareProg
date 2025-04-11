@@ -85,7 +85,7 @@
 
         socket.onmessage = function (event) {
             let data = JSON.parse(event.data);
-            //console.log('Message returns from server2:', data);
+            console.log('Message returns from server2:', data);
             if (data.action === 'createAvatar') {
                 myWorld.addAvatar2World(data.avatarDetails, data.signData, scene);
             }
@@ -102,7 +102,7 @@
                         myWorld.dealResult(data.fromAvatarID, data.toAvatarID, data.senderAnswer, data.destAnswer, data.senderID, data.destID);
                         break;
                     case 'chatUpdate': ///only for the pair avatar (others will not get it)
-                        myWorld.chatUpdated(data.message, date.destID);
+                        myWorld.chatUpdated(data.message, data.destID);
                         break;
                     case 'chatEnd': ///for all avatars
                         myWorld.chatEnded(data.fromAvatarID, data.toAvatarID);
@@ -180,6 +180,9 @@
             camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, 0), scene);///used for VR(0, 5, -7) was 3
             camera.setTarget(new BABYLON.Vector3(0, 1, 1));///used for VR (0, 4, -15)
             camera.attachControl(canvas, true);///used always
+            // Disable mouse look (pointer movement)
+            camera.inputs.removeByType("FreeCameraMouseInput");
+
             ///end camera///
             /// Event listener for pointer clicks
 
@@ -239,6 +242,10 @@
                         }
                         updateCameraPosition();
                         event.preventDefault();
+                        break;
+                    case BABYLON.PointerEventTypes.POINTERMOVE:
+                        // Ignore movement
+                        pointerInfo.event.preventDefault();
                         break;
                 }
             });

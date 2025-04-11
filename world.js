@@ -43,8 +43,8 @@ class World {
             ///hide the my avatar
             this.myAvatar = avatarObj.avatar;
             this.myAvatar.avatarMesh.setEnabled(false);
-            console.log("this.myAvatar");
-            console.log(this.myAvatar);
+            //console.log("this.myAvatar");
+            //console.log(this.myAvatar);
         }
     }
 
@@ -70,6 +70,8 @@ class World {
             let avatarSignData = signDataArray.find(signData => signData.avatarID == currentAvatarId);
             ////console.log(`avatarSignData for avatarID ${currentAvatarId}:`, avatarSignData);
             if (avatarSignData) { ///if the avatar is not in the signDataArray we will not add it to the world
+                //console.log("avatar:");
+                //console.log(avatar);
                 await this.addAvatar2World(avatar, avatarSignData, scene);
             }
         }
@@ -86,7 +88,9 @@ class World {
      * @param {string} toID - The ID of the avatar to send the chat request to (toID).
      */
     chatRequest(toID) {
-        this.currChat = new Chat(this._avatarsArr[0].avatar.ID, toID, this);
+        console.log("chatRequest sent");
+        let toAvatar= this.idToAvatar(toID)
+        this.currChat = new Chat(this._avatarsArr[0].avatar, toAvatar, this);
 
         socket.send(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
@@ -128,10 +132,13 @@ class World {
 
     doDealSelected(chatID, fromAvatarID, toAvatarID, answer) {
         let dest_id///send to the other avatar
+        let sender_id//
         if (this.myAvatar.ID == fromAvatarID) {
             dest_id = toAvatarID;
+            sender_id = fromAvatarID;
         } else {
             dest_id = fromAvatarID;
+            sender_id = toAvatarID
         }
         console.log("doDealSelected");
         socket.send(JSON.stringify({
@@ -142,13 +149,14 @@ class World {
             toAvatarID: toAvatarID,
             senderAnswer: answer,
             senderID: this.myAvatar.ID,
-            destID: dest_id
+            destID: dest_id,
+            senderID: sender_id
         }));
 
     }
 
     ///send all the text with the new line to the server (that will send it to the other avatar)
-    updateChat(charID, fromAvatarID, toAvatarID, text) {
+    updateChat(chatID, fromAvatarID, toAvatarID, text) {
         let avatar_id///send to the other avatar
         if (this.myAvatar.ID == fromAvatarID) {
             avatar_id = toAvatarID;
@@ -158,7 +166,7 @@ class World {
         socket.send(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'updateChat',
-            chatID: charID,
+            chatID: chatID,
             chatText: text,
             destID: avatar_id
         }));
@@ -181,19 +189,21 @@ class World {
     ///toAvatarID is alwayes the ID of the avatar that clicked
     ///fromAvatarID is the ID of the avatar that request the chat
     chatStarted(fromAvatarID, toAvatarID) {
-        console.log("startChat on world");
+        console.log("chatStarted on world");
+        let toAvatar = this.idToAvatar(toAvatarID);
+        let fromAvatar = this.idToAvatar(fromAvatarID);
         if (this.myAvatar.ID == fromAvatarID) {///I sent the request
             this.idToAvatar(toAvatarID).setState("myChat");//on myworld sign my pair
         }
         if (this.myAvatar.ID == toAvatarID) {///I got the request
             this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
             ///create the chat object in my world do not update the server (the server already know about the chat)
-            this.currChat = new Chat(fromAvatarID, toAvatarID, this);
+            this.currChat = new Chat(fromAvatar, toAvatar, this);
         }
         if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
             ///sign the pair in my world
-            this.idToAvatar(fromAvatarID).setState("inChat");
-            this.idToAvatar(toAvatarID).setState("inChat");
+            fromAvatar.setState("inChat");
+            toAvatar.setState("inChat");
         }
     }
 
