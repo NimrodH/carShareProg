@@ -131,12 +131,14 @@ class Chat {
         this.myWorld = world;
 
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        this.advancedTexture.rootContainer.scaleX = 1 / window.devicePixelRatio;
+        this.advancedTexture.rootContainer.scaleY = 1 / window.devicePixelRatio;   
 
         this.rect1 = new BABYLON.GUI.Rectangle();
         this.rect1.width = "500px";
         this.rect1.height = "600px";
         this.rect1.cornerRadius = 20;
-        this.rect1.color = "Orange";
+        this.rect1.color = "Red"//"Orange";
         this.rect1.thickness = 4;
         this.rect1.background = "black";
         this.rect1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -147,7 +149,7 @@ class Chat {
         this.grid.background = "black";
         this.grid.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
         this.grid.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-        //this.rect1.addControl(this.grid); ///for debug only
+        this.rect1.addControl(this.grid);
 
         this.grid.width = 0.95;
         this.grid.height = 0.98;
