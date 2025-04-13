@@ -147,7 +147,7 @@ class Chat {
         this.grid.background = "black";
         this.grid.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
         this.grid.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-        this.rect1.addControl(this.grid);
+        //this.rect1.addControl(this.grid); ///for debug only
 
         this.grid.width = 0.95;
         this.grid.height = 0.98;
