@@ -138,7 +138,7 @@ class Chat {
         this.rect1.width = "30%" //"500px";
         this.rect1.height = "70%"//"600px";
         this.rect1.cornerRadius = 20;
-        this.rect1.color =  "Orange";
+        this.rect1.color =  "Red"//"Orange";
         this.rect1.thickness = 4;
         this.rect1.background = "black";
         this.rect1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -236,7 +236,7 @@ class Chat {
 
         this.messageInput.height = 0.8;
         this.messageInput.color = "white";
-        this.messageInput.fontSize = 24;
+        this.messageInput.fontSize = "40%";//24
         //this.messageInput.paddingRight = "10px";
         this.messageInput.width = 0.95;
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";

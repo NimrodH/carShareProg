@@ -5,6 +5,7 @@ class World {
         this._avatarsArr = [];///contains objects whith the avata, id and name
         this._wellcome = new Wellcome(this);
         this.myAvatar;///the avatar of the user that saved inside the _avatarsArr[0].avatar
+        new Chat( {}, {}, this)///for debugging
     }
 
     ///will be called by Message
