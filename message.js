@@ -45,8 +45,8 @@ class AvatarMessage {
     }
 
     createMessage(signData) {
-        const sheTravel = "נוסעת";
-        const heTravel = "נוסע";
+        const sheTravel = "__נוסעת";
+        const heTravel = "__נוסע";
         const sheTravelBack = "חוזרת";
         const heTravelBack = "חוזר";
         let travel;
@@ -135,8 +135,8 @@ class Chat {
         //this.advancedTexture.rootContainer.scaleY = 1 / window.devicePixelRatio;   
 
         this.rect1 = new BABYLON.GUI.Rectangle();
-        this.rect1.width = "25%" //"500px";
-        this.rect1.height = "50%"//"600px";
+        this.rect1.width = "30%" //"500px";
+        this.rect1.height = "70%"//"600px";
         this.rect1.cornerRadius = 20;
         this.rect1.color =  "Orange";
         this.rect1.thickness = 4;
