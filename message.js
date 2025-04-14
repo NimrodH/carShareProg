@@ -135,10 +135,10 @@ class Chat {
         //this.advancedTexture.rootContainer.scaleY = 1 / window.devicePixelRatio;   
 
         this.rect1 = new BABYLON.GUI.Rectangle();
-        this.rect1.width = "30%" //"500px";
-        this.rect1.height = "70%"//"600px";
+        this.rect1.width = "35%" //"500px";
+        this.rect1.height = "85%"//"600px";
         this.rect1.cornerRadius = 20;
-        this.rect1.color =  "Red"//"Orange";
+        this.rect1.color =  "Orange";
         this.rect1.thickness = 4;
         this.rect1.background = "black";
         this.rect1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -157,19 +157,20 @@ class Chat {
 
         this.grid.addRowDefinition(0.76);
         this.grid.addRowDefinition(0.12);
-        this.grid.addRowDefinition(0.12); 
-       // this.grid.addColumnDefinition(0.25); // Column 0       
-       // this.grid.addColumnDefinition(0.25); // Column 0       
-        //this.grid.addColumnDefinition(0.25); // Column 0       
-        //this.grid.addColumnDefinition(0.25); // Column 0       
-        
+        this.grid.addRowDefinition(0.12);
+        /* not working
+        this.grid.addColumnDefinition(0.25); // Column 0       
+        this.grid.addColumnDefinition(0.25); // Column 0       
+        this.grid.addColumnDefinition(0.25); // Column 0       
+        this.grid.addColumnDefinition(0.25); // Column 0       
+        */
         this.scrollViewer = new BABYLON.GUI.ScrollViewer(null, true);
         this.scrollViewer.width = "100%";
         this.scrollViewer.height = 1;
         this.scrollViewer.background = "#CCCCCC";
         this.scrollViewer.color = "black";
-    
-        this.grid.addControl(this.scrollViewer, 0, 0);
+        this.scrollViewer.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_STRETCH;
+        this.grid.addControl(this.scrollViewer, 0, 0);//0,0
         //this.grid.setColumnSpan(this.scrollViewer, 4);
     
 
@@ -179,18 +180,19 @@ class Chat {
         this.sendButton.color = "white";
         this.sendButton.background = "black";
         this.sendButton.onPointerUpObservable.add(this.sendLine.bind(this));
-        this.grid.addControl(this.sendButton, 2, 0);
+        this.grid.addControl(this.sendButton, 2, 0);//2,0
         //this.sendButton.right = "10px";
         this.sendButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
 
         this.buttonDeal = BABYLON.GUI.Button.CreateSimpleButton("dealButton", "סוכמה נסיעה");
-        this.buttonDeal.width = 0.3;
+        this.buttonDeal.width = 0.2;
         this.buttonDeal.height = 0.8;
         this.buttonDeal.color = "white";
         this.buttonDeal.background = "green";
         this.buttonDeal.onPointerUpObservable.add(this.dealDoneSelected.bind(this));
-        this.buttonDeal.paddingRight = "75px";
-        this.grid.addControl(this.buttonDeal, 2, 0);
+        this.buttonDeal.left = "-13%";
+        //this.buttonDeal.paddingRight = 0.35;//"75px"
+        this.grid.addControl(this.buttonDeal, 2, 1);//2,0
 
         this.buttonClose = BABYLON.GUI.Button.CreateSimpleButton("closeButton", "סגור");
         this.buttonClose.width = 0.2;
@@ -198,20 +200,21 @@ class Chat {
         this.buttonClose.color = "white";
         this.buttonClose.background = "green";
         this.buttonClose.onPointerUpObservable.add(this.closeChat.bind(this));
-        this.grid.addControl(this.buttonClose, 2, 0);
+        this.grid.addControl(this.buttonClose, 2, 0);//2,0
         this.buttonClose.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
 
         this.buttonNoDeal = BABYLON.GUI.Button.CreateSimpleButton("closeNoDealButton", "לא סוכם");
-        this.buttonNoDeal.width = 0.3;
+        this.buttonNoDeal.width = 0.2;
         this.buttonNoDeal.height = 0.8;
         this.buttonNoDeal.color = "white";
         this.buttonNoDeal.background = "red";
         this.buttonNoDeal.onPointerUpObservable.add(this.dealNotDoneSelected.bind(this));
-        this.buttonNoDeal.paddingLeft = "75px";
-        this.grid.addControl(this.buttonNoDeal, 2, 0);
-        //this.buttonNoDeal.left = "10px";
-        //this.buttonNoDeal.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
         
+        this.grid.addControl(this.buttonNoDeal, 2, 2);//2,0
+        this.buttonNoDeal.left = "13%";
+        //this.buttonNoDeal.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        //this.buttonNoDeal.paddingLeft = "15%"//"75px";
+
         this.textBlock = new BABYLON.GUI.TextBlock();
         this.textBlock.textWrapping = BABYLON.GUI.TextWrapping.WordWrap;
         this.textBlock.resizeToFit = true;
@@ -238,13 +241,14 @@ class Chat {
         this.messageInput.color = "white";
         this.messageInput.fontSize = "40%";//24
         //this.messageInput.paddingRight = "10px";
-        this.messageInput.width = 0.95;
+        //this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_STRETCH;
+        this.messageInput.width = 1;//0.95;
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-
+        
         //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);
-
-        this.grid.addControl(this.messageInput, 1, 0);
+        this.grid.addControl(this.messageInput, 1, 0, 1, 3);//1,0
+       
        // this.grid.setColumnSpan(this.messageInput, 4);
     }
 
