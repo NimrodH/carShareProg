@@ -142,6 +142,7 @@ class Chat {
         this.rect1.thickness = 4;
         this.rect1.background = "black";
         this.rect1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        this.rect1.left = "-1%";
         this.advancedTexture.addControl(this.rect1);
 
 
@@ -183,7 +184,8 @@ class Chat {
         this.grid.addControl(this.sendButton, 2, 0);//2,0
         //this.sendButton.right = "10px";
         this.sendButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
-
+        this.sendButton.fontSize = "25%";
+        
         this.buttonDeal = BABYLON.GUI.Button.CreateSimpleButton("dealButton", "סוכמה נסיעה");
         this.buttonDeal.width = 0.2;
         this.buttonDeal.height = 0.8;
@@ -193,6 +195,7 @@ class Chat {
         this.buttonDeal.left = "-13%";
         //this.buttonDeal.paddingRight = 0.35;//"75px"
         this.grid.addControl(this.buttonDeal, 2, 1);//2,0
+        this.buttonDeal.fontSize = "25%";
 
         this.buttonClose = BABYLON.GUI.Button.CreateSimpleButton("closeButton", "סגור");
         this.buttonClose.width = 0.2;
@@ -202,6 +205,7 @@ class Chat {
         this.buttonClose.onPointerUpObservable.add(this.closeChat.bind(this));
         this.grid.addControl(this.buttonClose, 2, 0);//2,0
         this.buttonClose.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        this.buttonClose.fontSize = "25%";
 
         this.buttonNoDeal = BABYLON.GUI.Button.CreateSimpleButton("closeNoDealButton", "לא סוכם");
         this.buttonNoDeal.width = 0.2;
@@ -209,7 +213,8 @@ class Chat {
         this.buttonNoDeal.color = "white";
         this.buttonNoDeal.background = "red";
         this.buttonNoDeal.onPointerUpObservable.add(this.dealNotDoneSelected.bind(this));
-        
+        this.buttonNoDeal.fontSize = "25%";
+
         this.grid.addControl(this.buttonNoDeal, 2, 2);//2,0
         this.buttonNoDeal.left = "13%";
         //this.buttonNoDeal.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -228,26 +233,21 @@ class Chat {
         this.textBlock.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
         this.textBlock.color = "red";
         this.textBlock.background = "yellow";
-    
         this.textBlock.text = "שלום";   
-    
-        this.textBlock.fontSize = "24px";
-    
+        this.textBlock.fontSize = "5%";
         this.scrollViewer.addControl(this.textBlock);
 
         this.messageInput = new BABYLON.GUI.InputText('id', "");
-
         this.messageInput.height = 0.8;
         this.messageInput.color = "white";
-        this.messageInput.fontSize = "40%";//24
+        this.messageInput.fontSize = "35%";//24
         //this.messageInput.paddingRight = "10px";
-        //this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_STRETCH;
         this.messageInput.width = 1;//0.95;
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
         
         //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);
-        this.grid.addControl(this.messageInput, 1, 0, 1, 3);//1,0
+        this.grid.addControl(this.messageInput, 1, 0);//1,0
        
        // this.grid.setColumnSpan(this.messageInput, 4);
     }
