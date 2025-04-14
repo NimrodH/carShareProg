@@ -207,17 +207,19 @@
             }
 
             // Event listener for pointer clicks
-            scene.onPointerDown = function (evt, pickResult) {
-                
-                if (pickResult.hit && (pickResult.pickedMesh === ground|| pickResult.pickedMesh === skybox)) {
-                    if (evt.button === 2) {
-                        // Move camera clockwise
-                        angle -= rotationSpeed;
-                        updateCameraPosition();
-                    } else if (evt.button === 0) {
-                        // Move camera counter-clockwise
-                        angle += rotationSpeed;
-                        updateCameraPosition();
+            scene.onPointerDown = function (evt, pickResult) { 
+                // Check if the clicked mesh is the ground or skybox  
+                if (myWorld.allowPointer) {
+                    if (pickResult.hit && (pickResult.pickedMesh === ground|| pickResult.pickedMesh === skybox)) {
+                        if (evt.button === 2) {
+                            // Move camera clockwise
+                            angle -= rotationSpeed;
+                            updateCameraPosition();
+                        } else if (evt.button === 0) {
+                            // Move camera counter-clockwise
+                            angle += rotationSpeed;
+                            updateCameraPosition();
+                        }
                     }
                 }
             };
@@ -243,10 +245,12 @@
                         updateCameraPosition();
                         event.preventDefault();
                         break;
-                    case BABYLON.PointerEventTypes.POINTERMOVE:
+                        
+                    //case BABYLON.PointerEventTypes.POINTERMOVE:
+                    ///this not work. we use: camera.inputs.removeByType("FreeCameraMouseInput");
                         // Ignore movement
-                        pointerInfo.event.preventDefault();
-                        break;
+                        //pointerInfo.event.preventDefault();
+                        //break;
                 }
             });
 

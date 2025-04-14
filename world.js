@@ -5,7 +5,7 @@ class World {
         this._avatarsArr = [];///contains objects whith the avata, id and name
         this._wellcome = new Wellcome(this);
         this.myAvatar;///the avatar of the user that saved inside the _avatarsArr[0].avatar
-        new Chat( {}, {}, this)///for debugging
+        this.allowPointer = false;
     }
 
     ///will be called by Message
@@ -14,6 +14,10 @@ class World {
         //console.log("wellcomeDone: ");
         ////console.log(  signData);
         socket.send(JSON.stringify(signData));
+        this.allowPointer = true;///enable the pointer to allow clicks again
+        //co pilot sugesst:
+            //this._wellcome.dispose();///remove the wellcome message
+            //this._wellcome = null;///remove the wellcome message
     }
 
     /**
@@ -89,6 +93,7 @@ class World {
      * @param {string} toID - The ID of the avatar to send the chat request to (toID).
      */
     chatRequest(toID) {
+        this.allowPointer = false;///disable the pointer to avoid clicks
         console.log("chatRequest sent");
         let toAvatar= this.idToAvatar(toID)
         this.currChat = new Chat(this._avatarsArr[0].avatar, toAvatar, this);
@@ -180,6 +185,7 @@ class World {
             fromAvatarID: avatarFromID,
             toAvatarID: avatarToID
         }));
+        this.allowPointer = true;///enable the pointer to allow clicks again
     }
 
     ///////////////////FROM SERVER TO WORLD/////////////////////////////////////
@@ -255,5 +261,6 @@ class World {
         ///sign the pair in my world
         this.idToAvatar(fromAvatarID).setState("noChat");
         this.idToAvatar(toAvatarID).setState("noChat");
+
     }
 }

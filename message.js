@@ -132,7 +132,8 @@ class Chat {
 
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
         //this.advancedTexture.rootContainer.scaleX = 1 / window.devicePixelRatio;
-        //this.advancedTexture.rootContainer.scaleY = 1 / window.devicePixelRatio;   
+        //this.advancedTexture.rootContainer.scaleY = 1 / window.devicePixelRatio; 
+        //this didn't work. I set all sizes in %  
 
         this.rect1 = new BABYLON.GUI.Rectangle();
         this.rect1.width = "35%" //"500px";
@@ -185,7 +186,7 @@ class Chat {
         //this.sendButton.right = "10px";
         this.sendButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
         this.sendButton.fontSize = "25%";
-        
+
         this.buttonDeal = BABYLON.GUI.Button.CreateSimpleButton("dealButton", "סוכמה נסיעה");
         this.buttonDeal.width = 0.2;
         this.buttonDeal.height = 0.8;
