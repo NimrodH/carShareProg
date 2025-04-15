@@ -85,7 +85,7 @@
 
         socket.onmessage = function (event) {
             let data = JSON.parse(event.data);
-            console.log('Message returns from server2:', data);
+            console.log('Message returns from server_2:', data);
             if (data.action === 'createAvatar') {
                 myWorld.addAvatar2World(data.avatarDetails, data.signData, scene);
             }
@@ -101,7 +101,7 @@
                     case 'dealResult': ///for all avatars
                         myWorld.dealResult(data.fromAvatarID, data.toAvatarID, data.senderAnswer, data.destAnswer, data.senderID, data.destID);
                         break;
-                    case 'chatUpdate': ///only for the pair avatar (others will not get it)
+                    case 'updateChat': ///only for the pair avatar (others will not get it)
                         myWorld.chatUpdated(data.message, data.destID);
                         break;
                     case 'chatEnd': ///for all avatars
