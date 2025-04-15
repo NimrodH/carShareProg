@@ -250,6 +250,7 @@ class World {
                     ///write in the chat object in my world that the other didnt accept so click close, you may try to talk with him again
                     this.currChat.setChatState("refused");
                     console.log("dealRefused on world");
+                }
                 if (destAnswer == "dealDone") { ///I sent no, he accepted
                     ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                     this.currChat.setChatState("otherAccepted");
