@@ -16,8 +16,8 @@ class World {
         socket.send(JSON.stringify(signData));
         this.allowPointer = true;///enable the pointer to allow clicks again
         //co pilot sugesst:
-            //this._wellcome.dispose();///remove the wellcome message
-            //this._wellcome = null;///remove the wellcome message
+        //this._wellcome.dispose();///remove the wellcome message
+        //this._wellcome = null;///remove the wellcome message
     }
 
     /**
@@ -95,7 +95,7 @@ class World {
     chatRequest(toID) {
         this.allowPointer = false;///disable the pointer to avoid clicks
         console.log("chatRequest sent");
-        let toAvatar= this.idToAvatar(toID)
+        let toAvatar = this.idToAvatar(toID)
         this.currChat = new Chat(this._avatarsArr[0].avatar, toAvatar, this);
 
         socket.send(JSON.stringify({
@@ -245,20 +245,22 @@ class World {
                 }
             } else { ///the other avatar answered differently
                 //if (this.myAvatar.ID == senderID && destAnswer == "noDeal") { ///I sent, he refused
-                if (this.myAvatar.ID == senderID && destAnswer == null ) {///I sent and he didnt answer yet
+                if (this.myAvatar.ID == senderID && destAnswer == null) {///I sent and he didnt answer yet
                     ///write in the chat object in my world to wait and then click again
                     this.currChat.setChatState("wait");
                     console.log("dealWait on world");
-                } else {
-                    if (this.myAvatar.ID == senderID && destAnswer == "noDeal" || this.myAvatar.ID == destID && destAnswer == "dealDone" ) { ///I sent yes, he refused
-                        ///write in the chat object in my world that the other didnt accept so click close, you may try to talk with him again
+                }
+                if (destAnswer == "dealDone") {
+                    if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
+                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("refused");
                         console.log("dealRefused on world");
-                    } else {  
+                    }
+                    if (this.myAvatar.ID == destID) { ///I sent no, he accepted
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("otherAccepted");
                         console.log("otherAccepted on world");
-                    }    
+                    } 
                 }
 
             }
