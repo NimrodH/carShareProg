@@ -234,7 +234,7 @@ class Chat {
         this.textBlock.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
         this.textBlock.color = "red";
         this.textBlock.background = "yellow";
-        this.textBlock.text = "שלום";   
+        //this.textBlock.text = "שלום";   
         this.textBlock.fontSize = "5%";
         this.scrollViewer.addControl(this.textBlock);
 
@@ -251,6 +251,7 @@ class Chat {
         this.grid.addControl(this.messageInput, 1, 0);//1,0
        
        // this.grid.setColumnSpan(this.messageInput, 4);
+       this.setChatState("start")
     }
 
     ///sent from sendLine to handle localy.
@@ -299,7 +300,7 @@ class Chat {
     setChatState(state) {
         switch (state) {
             case "start":
-                this.textBlock.text = "שלום"
+                //this.textBlock.text = "שלום"
                 this.sendButton.isEnabled = true;
                 this.buttonClose.isEnabled = false;
                 this.buttonDeal.isEnabled = true;
