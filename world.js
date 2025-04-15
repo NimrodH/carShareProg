@@ -230,24 +230,28 @@ class World {
     ///from the server:
     //dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
     dealResult(fromAvatarID, toAvatarID, senderAnswer, destAnswer, senderID, destID) {
-        console.log("dealResult on world: " + destAnswer);
+        console.log("dealResult on world dest: " + destAnswer + " sender " + senderAnswer);
         //signData.action = 'dealNotDone';
         if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {
             ///if the chat is not in my world I will not handle the message
             if (destAnswer == senderAnswer) {
                 if (destAnswer == "dealDone") {
                     this.currChat.setChatState("done");
+                    console.log("dealDone on world");
                 } else {
                     this.currChat.setChatState("notDone")
+                    console.log("dealNotDone on world");
                 }
             } else {
                 if (this.myAvatar.ID == senderID && destAnswer == "noDeal") { ///I sent, he refused
                     ///write in the chat object in my world that the other didnt accept so click close, you may try to talk with him again
                     this.currChat.setChatState("refused");
+                    console.log("dealRefused on world");
                 }
                 if (this.myAvatar.ID == senderID && destAnswer == null ) {///I sent and he didnt answer yet
                     ///write in the chat object in my world to wait and then click again
                     this.currChat.setChatState("wait");
+                    console.log("dealWait on world");
                 }
             }
         }
