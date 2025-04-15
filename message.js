@@ -46,7 +46,7 @@ class AvatarMessage {
 
     createMessage(signData) {
         const sheTravel = "נוסעת";
-        const heTravel = "נוסע";
+        const heTravel = "__נוסע";
         const sheTravelBack = "חוזרת";
         const heTravelBack = "חוזר";
         let travel;
