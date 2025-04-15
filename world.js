@@ -183,7 +183,8 @@ class World {
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'chatEnd',
             fromAvatarID: avatarFromID,
-            toAvatarID: avatarToID
+            toAvatarID: avatarToID,
+            chatID: this.currChat.chatID
         }));
         this.allowPointer = true;///enable the pointer to allow clicks again
     }
