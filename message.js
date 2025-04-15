@@ -311,7 +311,7 @@ class Chat {
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = false;
                 this.buttonNoDeal.isEnabled = false;
-                this.sendButton.isEnabled = true;
+                this.buttonClose.isEnabled = true;
                 break;
             case "wait":
                 this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן, והקלק שוב על תשובתך"
@@ -332,7 +332,7 @@ class Chat {
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = false;
                 this.buttonNoDeal.isEnabled = false;
-                this.sendButton.isEnabled = true;
+                this.buttonClose.isEnabled = true;
                 break;
         }
     }
