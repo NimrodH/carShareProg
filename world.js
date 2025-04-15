@@ -244,19 +244,18 @@ class World {
                     console.log("dealNotDone on world");
                 }
             } else { ///the other avatar answered differently
-                //if (this.myAvatar.ID == senderID && destAnswer == "noDeal") { ///I sent, he refused
                 if (this.myAvatar.ID == senderID && destAnswer == null) {///I sent and he didnt answer yet
                     ///write in the chat object in my world to wait and then click again
                     this.currChat.setChatState("wait");
                     console.log("dealWait on world");
                 }
                 if (destAnswer == "noDeal") {
-                    if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
+                    if (this.myAvatar.ID == senderID) { ///I sent yes, he refused
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("refused");
                         console.log("dealRefused on world");
                     }
-                    if (this.myAvatar.ID == destID) { ///I sent no, he accepted
+                    if (this.myAvatar.ID == destID) { ///He sent no, I accepted
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("otherAccepted");
                         console.log("otherAccepted on world");
