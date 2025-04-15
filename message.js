@@ -125,10 +125,15 @@ class Chat {
     constructor( avatarFrom, avatarTo, world) {
         this.avatarFromID = avatarFrom.ID;
         this.avatarToID = avatarTo.ID;
-        this.userNameTo = avatarTo.userName;
-        this.userNameFrom = avatarFrom.userName;
-        this.chatID = this.avatarFromID + "_" + this.avatarToID;
+         this.chatID = this.avatarFromID + "_" + this.avatarToID;
         this.myWorld = world;
+
+        //we dont need userNameTo
+        if (this.myWorld.myAvatar.ID == this.avatarFromID){
+            this.userNameFrom = avatarFrom.userName;
+        } else {
+            this.userNameFrom = avatarTo.userName; 
+        }
 
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
         //this.advancedTexture.rootContainer.scaleX = 1 / window.devicePixelRatio;

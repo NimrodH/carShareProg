@@ -186,7 +186,7 @@ class World {
             toAvatarID: avatarToID,
             chatID: this.currChat.chatID
         }));
-        this.allowPointer = true;///enable the pointer to allow clicks again
+        //this.allowPointer = true;///enable the pointer to allow clicks again ///moved to chatEnded
     }
 
     ///////////////////FROM SERVER TO WORLD/////////////////////////////////////
@@ -207,6 +207,7 @@ class World {
             this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
             ///create the chat object in my world do not update the server (the server already know about the chat)
             this.currChat = new Chat(fromAvatar, toAvatar, this);
+            this.allowPointer = false;///disable the pointer to avoid clicks
         }
         if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
             ///sign the pair in my world
@@ -266,6 +267,6 @@ class World {
         ///sign the pair in my world
         this.idToAvatar(fromAvatarID).setState("noChat");
         this.idToAvatar(toAvatarID).setState("noChat");
-
+        this.allowPointer = true;///disable the pointer to avoid clicks
     }
 }
