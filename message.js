@@ -9,7 +9,7 @@ class AvatarMessage {
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
         this.plane.position = new BABYLON.Vector3(x, y, z);
         this.plane.setParent(this.myAvatar.avatarMesh);
-        this.advancedTexture.background =  'green'
+        this.advancedTexture.background = 'green'
 
 
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
@@ -98,8 +98,8 @@ class AvatarMessage {
     chatRequest() {
         this.myAvatar.chatRequest();
     }
-    
-     ///noChat, myChat, inChat
+
+    ///noChat, myChat, inChat
     setState(state) {
         switch (state) {
             case "noChat":
@@ -109,30 +109,30 @@ class AvatarMessage {
                 break;
             case "myChat":
                 this.nextButton.isEnabled = false;
-                this.nextButton.textBlock.text = "בשיחה איתך"; 
+                this.nextButton.textBlock.text = "בשיחה איתך";
                 this.nextButton.color = "blue";
                 break;
             case "inChat":
                 this.nextButton.isEnabled = false;
                 this.nextButton.color = "red";
-                this.nextButton.textBlock.text = "עסוק בשיחה"; 
+                this.nextButton.textBlock.text = "עסוק בשיחה";
                 break;
         }
     }
 }
 
 class Chat {
-    constructor( avatarFrom, avatarTo, world) {
+    constructor(avatarFrom, avatarTo, world) {
         this.avatarFromID = avatarFrom.ID;
         this.avatarToID = avatarTo.ID;
-         this.chatID = this.avatarFromID + "_" + this.avatarToID;
+        this.chatID = this.avatarFromID + "_" + this.avatarToID;
         this.myWorld = world;
 
         //we dont need userNameTo
-        if (this.myWorld.myAvatar.ID == this.avatarFromID){
+        if (this.myWorld.myAvatar.ID == this.avatarFromID) {
             this.userNameFrom = avatarFrom.userName;
         } else {
-            this.userNameFrom = avatarTo.userName; 
+            this.userNameFrom = avatarTo.userName;
         }
 
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
@@ -144,7 +144,7 @@ class Chat {
         this.rect1.width = "35%" //"500px";
         this.rect1.height = "85%"//"600px";
         this.rect1.cornerRadius = 20;
-        this.rect1.color =  "Red";//"Orange";
+        this.rect1.color = "Orange";
         this.rect1.thickness = 4;
         this.rect1.background = "black";
         this.rect1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -179,7 +179,7 @@ class Chat {
         this.scrollViewer.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_STRETCH;
         this.grid.addControl(this.scrollViewer, 0, 0);//0,0
         //this.grid.setColumnSpan(this.scrollViewer, 4);
-    
+
 
         this.sendButton = BABYLON.GUI.Button.CreateSimpleButton("sendButton", "שלח ההודעה");
         this.sendButton.width = 0.2;
@@ -251,12 +251,12 @@ class Chat {
         this.messageInput.width = 1;//0.95;
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-        
+
         //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);
         this.grid.addControl(this.messageInput, 1, 0);//1,0
-       
-       // this.grid.setColumnSpan(this.messageInput, 4);
-       this.setChatState("start")
+
+        // this.grid.setColumnSpan(this.messageInput, 4);
+        this.setChatState("start")
     }
 
     ///sent from sendLine to handle localy.
@@ -264,21 +264,21 @@ class Chat {
         this.textBlock.text = theText;
         //this.myWorld.chatStarted(this.avatarToID, this.avatarFromID);
     }
-    
+
     ///sent from button "שלח ההודעה"
     sendLine() {
         //this.myWorld.sendLine(this.chatLine.text);
         //console.log("sendLine clicked: " + this.messageInput.text);
-        let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text; 
+        let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
         this.updateText(text);
         this.messageInput.text = "";
         //TODO: send the message to my avatar 
-        this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text) 
+        this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text)
     }
 
     dealDoneSelected() {
         //console.log("dealDone clicked: ");
-        this.myWorld.dealDoneSelected(this.chatID,this.avatarFromID, this.avatarToID);
+        this.myWorld.dealDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
     dealNotDoneSelected() {
@@ -290,7 +290,7 @@ class Chat {
         this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
     }
 
-    dispose() {       
+    dispose() {
         this.advancedTexture.dispose();
         this.rect1.dispose();
         this.grid.dispose();
@@ -334,6 +334,13 @@ class Chat {
                 break;
             case "notDone":
                 this.textBlock.text = "לא סוכם על נסיעה. בחר [סגור], ונסה לתאם עם מישהו אחר"
+                this.sendButton.isEnabled = false;
+                this.buttonDeal.isEnabled = false;
+                this.buttonNoDeal.isEnabled = false;
+                this.buttonClose.isEnabled = true;
+                break;
+            case "otherAccepted":
+                this.textBlock.text = "רק המשתתף השני בחר באפשרות [סוכם]. הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת."
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = false;
                 this.buttonNoDeal.isEnabled = false;
