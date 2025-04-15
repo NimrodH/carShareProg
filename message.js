@@ -9,7 +9,7 @@ class AvatarMessage {
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
         this.plane.position = new BABYLON.Vector3(x, y, z);
         this.plane.setParent(this.myAvatar.avatarMesh);
-        this.advancedTexture.background = 'green'
+        this.advancedTexture.background = "red";//'green';
 
 
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
@@ -373,7 +373,7 @@ class Wellcome {
         this.nextButton.height = 0.4;
         this.nextButton.color = "white";
         this.nextButton.fontSize = 50;
-        this.nextButton.background = "green";
+        this.nextButton.background = "Red";
         this.nextButton.onPointerUpObservable.add(this.screenDone.bind(this));
         this.nextButton.top = "300";//90
         this.nextButton.left = "10px";

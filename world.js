@@ -250,7 +250,7 @@ class World {
                     this.currChat.setChatState("wait");
                     console.log("dealWait on world");
                 }
-                if (destAnswer == "dealDone") {
+                if (destAnswer == "noDeal") {
                     if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("refused");
@@ -259,6 +259,18 @@ class World {
                     if (this.myAvatar.ID == destID) { ///I sent no, he accepted
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("otherAccepted");
+                        console.log("otherAccepted on world");
+                    } 
+                }
+                if (destAnswer == "dealDone") {
+                    if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
+                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
+                        this.currChat.setChatState("otherAccepted");
+                        console.log("dealRefused on world");
+                    }
+                    if (this.myAvatar.ID == destID) { ///I sent no, he accepted
+                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
+                        this.currChat.setChatState("refused");
                         console.log("otherAccepted on world");
                     } 
                 }
