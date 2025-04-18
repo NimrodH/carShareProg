@@ -141,7 +141,6 @@ def write_avatar(avatarID, avatar_pos_url, connection_id):
             'targetY': avatar_pos_url["targetY"],
             'targetZ': avatar_pos_url["targetZ"],
             'isTalking': False,
-            'driveAgreed': False,
             'connectionID': connection_id,
             'avatarURL': avatar_pos_url["avatarURL"]
         }
@@ -158,7 +157,6 @@ def write_avatar(avatarID, avatar_pos_url, connection_id):
  
     ###get one of the free items in URLs & palaces table
 def get_unlocked_item():
-    print("get_unlocked_item")
     oneFreePosURL = urls_table.query(
         IndexName='isUsed-num-index',  # Ensure you have a GSI on 'isUsed' attribute
         KeyConditionExpression='isUsed = :false',

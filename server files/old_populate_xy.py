@@ -1,3 +1,4 @@
+#delete all avatars and signs and create new 20 with demo connection id 1111
 import json
 import boto3
 
@@ -5,6 +6,7 @@ dynamodb = boto3.resource('dynamodb')
 tablePlace = dynamodb.Table('cs_avatarsURLplace')
 tableAvatars = dynamodb.Table('cs_avatars')
 tableSigns = dynamodb.Table('cs_signs')
+num2builed = 10
 
 def lambda_handler(event, context):
 
@@ -23,7 +25,7 @@ def lambda_handler(event, context):
 #avatarPlaces & URLs
     delete_all_items(tablePlace, 'num')
     for i, (x, y) in enumerate(coordinates):
-        if i < 20:
+        if i < num2builed:
             used = "true"
         else:
             used = "false"
@@ -48,7 +50,7 @@ def lambda_handler(event, context):
 #avatars
     delete_all_items(tableAvatars, 'avatarID')
     for i, (x, y) in enumerate(coordinates):
-        if i < 20:
+        if i < num2builed:
             try:
                 # Example data, update other attributes as needed
                 item = {
@@ -72,7 +74,7 @@ def lambda_handler(event, context):
 #signs 
     delete_all_items(tableSigns, 'avatarID')   
     for i, (x, y) in enumerate(coordinates):
-        if i < 20:
+        if i < num2builed:
             try:
                 # Example data, update other attributes as needed
                 item = {
