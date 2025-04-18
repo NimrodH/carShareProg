@@ -83,11 +83,11 @@
             */
         };
 
-        socket.onmessage = function (event) {
+        socket.onmessage = async function (event) {
             let data = JSON.parse(event.data);
             console.log('Message returns from server_2:', data);
             if (data.action === 'createAvatar') {
-                myWorld.addAvatar2World(data.avatarDetails, data.signData, scene);
+                await myWorld.addAvatar2World(data.avatarDetails, data.signData, scene);
             }
             if (data.action === 'createMissingAvatars') {
                 myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);

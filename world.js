@@ -33,13 +33,15 @@ class World {
      */
     async addAvatar2World(avatarDetails, signData, scene) {
         //ID, URL, x, y, z, signData,
-        //console.log("avatarDetails: ");
-        //console.log(avatarDetails);
+        console.log("avatarDetails: ");
+        console.log(avatarDetails);
         let avatarObj = {
             avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL, this),
             avatarID: signData.avatarID,
             avatarName: signData.userName
         };
+        console.log("avatarObj: ");
+        console.log(avatarObj);
         this._avatarsArr.push(avatarObj);
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
         ///hide avatar if its the first one
@@ -284,6 +286,10 @@ class World {
             this.currChat.dispose();
             this.currChat = null;
         }
+        /////TODO
+            //if ( this.myAvatar.ID == fromAvatarID ) {
+            //    this.idToAvatar(toAvatarID).setState("afterChat");///on myworld sign my pair to prevent chat again
+            //}
         ///sign the pair in my world
         this.idToAvatar(fromAvatarID).setState("noChat");
         this.idToAvatar(toAvatarID).setState("noChat");
