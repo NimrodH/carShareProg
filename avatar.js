@@ -6,6 +6,7 @@ class Avatar {
         this.myWorld = world;
         this.avatarURL = avatarURL;
         this.ID = avatarID;
+        console.log("Avatar ID: " + this.ID);
     }
 
     async initAvatar( avatarDetails, signData, scene) {
