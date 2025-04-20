@@ -91,7 +91,7 @@
                 await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
             }
             if (data.action === 'createMissingAvatars') {
-                myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
+                await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
             }
             if (data.action === 'startChat') {
                 ///we need toAvatarID and fromAvatarID to know how to handle each avatar in the world that get the message
