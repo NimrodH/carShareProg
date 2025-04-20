@@ -111,6 +111,15 @@
                         break;
                 }
             };
+            // ✅ Handle ACK request from server
+            if (data.action === 'waitForAck') {
+                socket.send(JSON.stringify({
+                    action: 'createAvatar',
+                    type: 'ack',
+                    ack: data.nextStep,
+                    previousMessage: data.previousMessage || {}
+                }));
+            }
         }
 
 
@@ -205,14 +214,14 @@
                 const targetZ = targetDistance * Math.sin(angle);
 
                 // Make the camera face outward (away from the center)
-                camera.setTarget(new BABYLON.Vector3(targetX, camera.position.y-0.2, targetZ));
+                camera.setTarget(new BABYLON.Vector3(targetX, camera.position.y - 0.2, targetZ));
             }
 
             // Event listener for pointer clicks
-            scene.onPointerDown = function (evt, pickResult) { 
+            scene.onPointerDown = function (evt, pickResult) {
                 // Check if the clicked mesh is the ground or skybox  
                 if (myWorld.allowPointer) {
-                    if (pickResult.hit && (pickResult.pickedMesh === ground|| pickResult.pickedMesh === skybox)) {
+                    if (pickResult.hit && (pickResult.pickedMesh === ground || pickResult.pickedMesh === skybox)) {
                         if (evt.button === 2) {
                             // Move camera clockwise
                             angle -= rotationSpeed;
@@ -239,20 +248,20 @@
                             // Zoom out
                             R -= moveSpeed;
                         }
-                        if(R > maxR) {
-                            R = maxR-0.5;
-                        } else if(R < 0) {
+                        if (R > maxR) {
+                            R = maxR - 0.5;
+                        } else if (R < 0) {
                             R = 0;
                         }
                         updateCameraPosition();
                         event.preventDefault();
                         break;
-                        
+
                     //case BABYLON.PointerEventTypes.POINTERMOVE:
                     ///this not work. we use: camera.inputs.removeByType("FreeCameraMouseInput");
-                        // Ignore movement
-                        //pointerInfo.event.preventDefault();
-                        //break;
+                    // Ignore movement
+                    //pointerInfo.event.preventDefault();
+                    //break;
                 }
             });
 
