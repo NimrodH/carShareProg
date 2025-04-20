@@ -44,8 +44,10 @@ class World {
         console.log(avatarObj);
         this._avatarsArr.push(avatarObj);
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
+        console.log("after avatarObj.avatar.initAvatar");
         ///hide avatar if its the first one
         ///when we will run on all avatars we will start from 1 (not 0)
+        /*
         if (isMe) {
             ///hide the my avatar
             this.myAvatar = avatarObj.avatar;
@@ -53,6 +55,7 @@ class World {
             //console.log("this.myAvatar");
             //console.log(this.myAvatar);
         }
+        */
     }
 
     /**

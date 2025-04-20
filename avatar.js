@@ -15,6 +15,7 @@ class Avatar {
         const signY = 0.55;
         const signZ = 0.18;
         this.userName = signData.userName;
+        console.log("initAvatar 1");
         this.avatarMesh = await this.createAvatarMesh(this.avatarURL, scene);
         //console.log(avatarDetails)
         if(signData.avatarID[0] == "A") {  
@@ -24,6 +25,7 @@ class Avatar {
                 child.visibility = 0; 
             });
         }
+        console.log("initAvatar 2");
         //this.avatarMesh.alpha = 0.5;
         this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
         this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);
