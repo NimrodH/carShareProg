@@ -31,7 +31,7 @@ class World {
      * @param {Object} scene - The scene object where the avatar will be added.
      * @returns {Promise<void>} A promise that resolves when the avatar has been added and initialized
      */
-    async addAvatar2World(avatarDetails, signData, isMe, scene ) {
+    async addAvatar2World(avatarDetails, signData, scene) {
         //ID, URL, x, y, z, signData,
         console.log("avatarDetails: ");
         console.log(avatarDetails);
@@ -46,7 +46,7 @@ class World {
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
         ///hide avatar if its the first one
         ///when we will run on all avatars we will start from 1 (not 0)
-        if (isMe) {
+        if (this._avatarsArr.length == 1) {
             ///hide the my avatar
             this.myAvatar = avatarObj.avatar;
             this.myAvatar.avatarMesh.setEnabled(false);
@@ -74,12 +74,11 @@ class World {
                 continue;
             }
             //TODO: verify that avatar ibs not myAvatar
-            /*
             if (this.myAvatar.ID == currentAvatarId) {
                 //console.log("avatar is my avatar");
                 continue;
             }
-            */
+
 
             ///find the signData of the avatar;
             let avatarSignData = signDataArray.find(signData => signData.avatarID == currentAvatarId);
@@ -87,7 +86,7 @@ class World {
             if (avatarSignData) { ///if the avatar is not in the signDataArray we will not add it to the world
                 //console.log("avatar:");
                 //console.log(avatar);
-                await this.addAvatar2World(avatar, avatarSignData, false, scene);
+                await this.addAvatar2World(avatar, avatarSignData, scene);
             }
         }
     }

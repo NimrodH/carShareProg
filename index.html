@@ -87,7 +87,8 @@
             let data = JSON.parse(event.data);
             console.log('Message returns from server_2:', data);
             if (data.action === 'createAvatar') {
-                await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
+                //await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
+                await myWorld.addAvatar2World(data.avatarDetails, data.signData, scene);
             }
             if (data.action === 'createMissingAvatars') {
                 myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
