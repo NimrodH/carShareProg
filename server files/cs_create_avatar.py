@@ -80,7 +80,7 @@ def lambda_handler(event, context):
     write_avatar(avatarID, avatar_pos_url, connection_id)
     print('Avatar created successfully')
     message = { "action" : "createAvatar", "avatarDetails" : avatar_pos_url, "signData": body }
-    send2client(connection_id, message)
+    response = send2client(connection_id, message)
     send_to_other_clients(connection_id, message)
     send_to_me_older_avatars(connection_id)
     return {
