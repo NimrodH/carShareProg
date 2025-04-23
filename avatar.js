@@ -25,7 +25,7 @@ class Avatar {
                 child.visibility = 0; 
             });
         }
-        console.log("initAvatar 2");
+        console.log("initAvatar 1");
         //this.avatarMesh.alpha = 0.5;
         this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
         this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);

@@ -67,10 +67,8 @@
         var myWorld = null;
         ///the  socket URL 
         const socketUrl = 'wss://j5i50qrird.execute-api.us-east-1.amazonaws.com/production/';
-        
-
-        // #region///////////////////SOCKET //////////////////////////
         var socket = new WebSocket(socketUrl);
+
         class WebSocketClient {
             constructor(socket) {
                 this.socket = socket;
@@ -140,8 +138,25 @@
                 }
             }
         }
+
         const wsClient = new WebSocketClient(socket);
 
+        async function safeSend(data, maxRetries = 3, retryDelay = 500) {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const result = await wsClient.sendWithAck(data);
+                    return result;
+                } catch (error) {
+                    console.warn(`Attempt ${attempt} failed:`, error);
+                    if (attempt === maxRetries) {
+                        throw new Error("Failed after max retries");
+                    }
+                    await new Promise(res => setTimeout(res, retryDelay * attempt));
+                }
+            }
+        }
+
+        // #region///////////////////SOCKET //////////////////////////
         socket.onopen = function (event) {
             //console.log('Connected to WebSocket Server');
             /// to remain the connection live more thaen 10 munutes
@@ -154,7 +169,7 @@
             }, 300000); // Send a ping every 5 minutes (300 seconds)
             */
         };
-/* moved int o the class WebSocketClient
+
         socket.onmessage = async function (event) {
             let data = JSON.parse(event.data);
             console.log('Message returns from server_2:', data);
@@ -193,7 +208,7 @@
                 }));
             }
         }
-*/
+
 
         socket.onclose = function (event) {
             //console.log('Disconnected from WebSocket Server');
