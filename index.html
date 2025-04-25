@@ -110,7 +110,14 @@
 
             handleServerMessage(data) {
                 if (data.action === 'createAvatar') {
-                    myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
+
+                    let isMe = false;
+                    if (data.isMe == "me") {
+                        isMe = true;
+                    } else {
+                        isMe = false;
+                    }
+                    myWorld.addAvatar2World(data.avatarDetails, data.signData, isMe , scene);
                     console.log("CC- new Avatar created by server request ID: "  + data.signData.avatarID);
                 } else if (data.action === 'createMissingAvatars') {
                     myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
