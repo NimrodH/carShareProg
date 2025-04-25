@@ -127,8 +127,8 @@ class Chat {
         this.avatarToID = avatarTo.ID;
         this.chatID = this.avatarFromID + "_" + this.avatarToID;
         this.myWorld = world;
-        console.log("this.myWorld.myAvatar:");
-        console.log(this.myWorld.myAvatar);
+        //console.log("this.myWorld.myAvatar:");
+        //console.log(this.myWorld.myAvatar);
         //we dont need userNameTo
         if (this.myWorld.myAvatar.ID == this.avatarFromID) {
             this.userNameFrom = avatarFrom.userName;

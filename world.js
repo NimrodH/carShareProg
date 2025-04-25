@@ -9,16 +9,22 @@ class World {
     }
 
     ///will be called by Message
-    wellcomeDone(signData) {
+    async wellcomeDone(signData) {
         signData.action = 'createAvatar';
-        //console.log("wellcomeDone: ");
-        ////console.log(  signData);
-        socket.send(JSON.stringify(signData));
-        this.allowPointer = true;///enable the pointer to allow clicks again
-        //co pilot sugesst:
+    
+        try {
+            const result = await wsClient.safeSend(signData);
+            console.log("wellcomeDone (null we failed to create Avatar):", result);
+            //if null we already console  message in safeSend and still want to allow the pointer
+            this.allowPointer = true;
+        } catch (err) {
+            console.error("Failed to create avatar after retries:", err);
+        }
+    }
+            //co pilot sugesst:
         //this._wellcome.dispose();///remove the wellcome message
         //this._wellcome = null;///remove the wellcome message
-    }
+    
 
     /**
      * Asynchronously adds an avatar to the world.
@@ -33,21 +39,21 @@ class World {
      */
     async addAvatar2World(avatarDetails, signData, isMe, scene) {
         //ID, URL, x, y, z, signData,
-        console.log("avatarDetails: ");
-        console.log(avatarDetails);
+        //console.log("avatarDetails: ");
+        //console.log(avatarDetails);
         let avatarObj = {
             avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL, this),
             avatarID: signData.avatarID,
             avatarName: signData.userName
         };
-        console.log("avatarObj: ");
-        console.log(avatarObj);
+        //console.log("avatarObj: ");
+        //console.log(avatarObj);
         this._avatarsArr.push(avatarObj);
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
-        console.log("after avatarObj.avatar.initAvatar");
+        //console.log("after avatarObj.avatar.initAvatar");
         ///hide avatar if its the first one
         ///when we will run on all avatars we will start from 1 (not 0)
-        /*
+        
         if (isMe) {
             ///hide the my avatar
             this.myAvatar = avatarObj.avatar;
@@ -55,7 +61,7 @@ class World {
             //console.log("this.myAvatar");
             //console.log(this.myAvatar);
         }
-        */
+        
     }
 
     /**
@@ -73,7 +79,7 @@ class World {
             ////console.log(currentAvatarId);
             ///verify the avatar is not already in the world   
             if (this._avatarsArr.find(avatarObj => avatarObj.avatarID == currentAvatarId)) {
-                //console.log("avatar already in the world");
+                console.log("CC- avatar not missing in the world: " + currentAvatarId);
                 continue;
             }
             //TODO: verify that avatar ibs not myAvatar
@@ -89,8 +95,9 @@ class World {
             ////console.log(`avatarSignData for avatarID ${currentAvatarId}:`, avatarSignData);
             if (avatarSignData) { ///if the avatar is not in the signDataArray we will not add it to the world
                 //console.log("avatar:");
-                //console.log(avatar);
+                
                 await this.addAvatar2World(avatar, avatarSignData, false, scene);
+                console.log("CC- missing avatar added.  ID: " + currentAvatarId);
             }
         }
     }
@@ -107,7 +114,7 @@ class World {
      */
     chatRequest(toID) {
         this.allowPointer = false;///disable the pointer to avoid clicks
-        console.log("chatRequest sent");
+        console.log("CHAT- chatRequest sent");
         let toAvatar = this.idToAvatar(toID)
         this.currChat = new Chat(this._avatarsArr[0].avatar, toAvatar, this);
 
@@ -159,7 +166,7 @@ class World {
             dest_id = fromAvatarID;
             sender_id = toAvatarID
         }
-        console.log("doDealSelected");
+        console.log("CHAT-doDealSelected");
         socket.send(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'dealResult',
@@ -210,7 +217,7 @@ class World {
     ///toAvatarID is alwayes the ID of the avatar that clicked
     ///fromAvatarID is the ID of the avatar that request the chat
     chatStarted(fromAvatarID, toAvatarID) {
-        console.log("chatStarted on world");
+        console.log("CHAT- chatStarted on world");
         let toAvatar = this.idToAvatar(toAvatarID);
         let fromAvatar = this.idToAvatar(fromAvatarID);
         if (this.myAvatar.ID == fromAvatarID) {///I sent the request
@@ -244,46 +251,46 @@ class World {
     ///from the server:
     //dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
     dealResult(fromAvatarID, toAvatarID, senderAnswer, destAnswer, senderID, destID) {
-        console.log("dealResult on world dest: " + destAnswer + " sender " + senderAnswer);
+        console.log("CHAT- dealResult on world dest: " + destAnswer + " sender " + senderAnswer);
         //signData.action = 'dealNotDone';
         if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {
             ///if the chat is not in my world I will not handle the message
             if (destAnswer == senderAnswer) {
                 if (destAnswer == "dealDone") {
                     this.currChat.setChatState("done");
-                    console.log("dealDone on world");
+                    console.log("CHAT- dealDone on world");
                 } else {
                     this.currChat.setChatState("notDone")
-                    console.log("dealNotDone on world");
+                    console.log("CHAT-dealNotDone on world");
                 }
             } else { ///the other avatar answered differently
                 if (this.myAvatar.ID == senderID && destAnswer == null) {///I sent and he didnt answer yet
                     ///write in the chat object in my world to wait and then click again
                     this.currChat.setChatState("wait");
-                    console.log("dealWait on world");
+                    console.log("CHAT-dealWait on world");
                 }
                 if (destAnswer == "noDeal") {
                     if (this.myAvatar.ID == senderID) { ///I sent yes, he refused
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("refused");
-                        console.log("dealRefused on world");
+                        console.log("CHAT-dealRefused on world");
                     }
                     if (this.myAvatar.ID == destID) { ///He sent no, I accepted
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("otherAccepted");
-                        console.log("otherAccepted on world");
+                        console.log("CHAT-otherAccepted on world");
                     } 
                 }
                 if (destAnswer == "dealDone") {
                     if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("otherAccepted");
-                        console.log("dealRefused on world");
+                        console.log("CHAT-dealRefused on world");
                     }
                     if (this.myAvatar.ID == destID) { ///I sent no, he accepted
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("refused");
-                        console.log("otherAccepted on world");
+                        console.log("CHAT-otherAccepted on world");
                     } 
                 }
 

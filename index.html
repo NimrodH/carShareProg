@@ -111,6 +111,7 @@
             handleServerMessage(data) {
                 if (data.action === 'createAvatar') {
                     myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
+                    console.log("CC- new Avatar created by server request ID: "  + data.signData.avatarID);
                 } else if (data.action === 'createMissingAvatars') {
                     myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
                 } else if (data.action === 'startChat') {
@@ -139,6 +140,25 @@
                     }));
                 }
             }
+            
+            async safeSend(data, maxRetries = 1, retryDelay = 500) {
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        const result = await wsClient.sendWithAck(data); //return promise
+                        return result;
+                    } catch (error) {
+                        console.warn(`Attempt ${attempt} failed:`, error);
+                        if (attempt === maxRetries) {
+                            //throw new Error("Failed after max retries");
+                            //we can handle the error here (just by console it), to allow allowPointer in the calling function
+                            console.error("Failed after max retries:", error);
+                            return null; // or handle the error as needed
+                        }
+                        await new Promise(res => setTimeout(res, retryDelay * attempt));
+                    }
+                }
+        }
+
         }
         const wsClient = new WebSocketClient(socket);
 
@@ -157,7 +177,6 @@
 /* moved int o the class WebSocketClient
         socket.onmessage = async function (event) {
             let data = JSON.parse(event.data);
-            console.log('Message returns from server_2:', data);
             if (data.action === 'createAvatar') {
                 //await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
                 await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
