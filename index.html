@@ -148,7 +148,7 @@
                 }
             }
             
-            async safeSend(data, maxRetries = 1, retryDelay = 500) {
+            async safeSend(data, maxRetries = 3, retryDelay = 500) {
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
                     try {
                         const result = await wsClient.sendWithAck(data); //return promise

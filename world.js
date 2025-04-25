@@ -84,12 +84,12 @@ class World {
                 continue;
             }
             //TODO: verify that avatar ibs not myAvatar
-           /* 
+           
             if (this.myAvatar.ID == currentAvatarId) {
                 //console.log("avatar is my avatar");
                 continue;
             }
-            */
+            
 
             ///find the signData of the avatar;
             let avatarSignData = signDataArray.find(signData => signData.avatarID == currentAvatarId);
