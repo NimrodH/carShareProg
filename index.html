@@ -122,7 +122,7 @@
                     } else {
                         isMe = false;
                     }
-                    myWorld.addAvatar2World(data.avatarDetails, data.signData, isMe , scene);
+                    await myWorld.addAvatar2World(data.avatarDetails, data.signData, isMe , scene);
                     console.log("CC- new Avatar created by server request ID: "  + data.signData.avatarID);
                 } else if (data.action === 'createMissingAvatars') {
                     await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);

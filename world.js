@@ -85,7 +85,7 @@ class World {
             }
             //TODO: verify that avatar ibs not myAvatar
             console.log("this.myAvatar" );
-            console.log(this );
+            //console.log(this );
             if (this.myAvatar.ID == currentAvatarId) {
             //if (this.myAvatar.avatarID == currentAvatarId) { //just tried
                 //console.log("avatar is my avatar");
