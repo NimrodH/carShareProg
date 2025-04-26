@@ -15,9 +15,9 @@ class World {
         try {
             const result = await wsClient.safeSend(signData);
             console.log("wellcomeDone (if null we failed to create Avatar):", result);
-            //if null we already console  message in safeSend and still want to allow the pointer
             this.allowPointer = true;
         } catch (err) {
+            //if err we already console  message in safeSend function and still want to allow the pointer
             console.error("Failed to create avatar after retries:", err);
         }
     }
@@ -79,13 +79,15 @@ class World {
             ////console.log(`avatarId: `);
             ////console.log(currentAvatarId);
             ///verify the avatar is not already in the world   
-            if (this._avatarsArr.find(avatarObj => avatarObj.avatarID == currentAvatarId)) {
+            if (this._avatarsArr.find(avatarObj => avatarObj.c == currentAvatarId)) {
                 console.log("CC- avatar not missing in the world: " + currentAvatarId);
                 continue;
             }
             //TODO: verify that avatar ibs not myAvatar
-           
+            console.log("this.myAvatar" );
+            console.log(this );
             if (this.myAvatar.ID == currentAvatarId) {
+            //if (this.myAvatar.avatarID == currentAvatarId) { //just tried
                 //console.log("avatar is my avatar");
                 continue;
             }
