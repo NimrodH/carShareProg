@@ -67,7 +67,7 @@
         var myWorld = null;
         ///the  socket URL 
         const socketUrl = 'wss://j5i50qrird.execute-api.us-east-1.amazonaws.com/production/';
-        
+
 
         // #region///////////////////SOCKET //////////////////////////
         var socket = new WebSocket(socketUrl);
@@ -79,17 +79,11 @@
 
                 this.socket.onmessage = (event) => {
                     const data = JSON.parse(event.data);
-                    const id = data.messageId;
                     console.log("wsClient.onmessage data:")
                     console.log(data);
-                    if (id && this.pending.has(id)) {
-                        this.pending.get(id).resolve(data);
-                        this.pending.delete(id);
-                    } else {
-                        this.handleServerMessage(data);
-                    }
-                };
 
+                    this.handleServerMessage(data);
+                }
                 this.socket.onerror = err => console.error('WebSocket error:', err);
             }
 
@@ -112,47 +106,79 @@
             }
 
             async handleServerMessage(data) {
-                if (data.action === 'createAvatar') {
-                    console.log("data.isMe - data:")
-                    console.log(data);
-
-                    let isMe = false;
-                    if (data.isMe == "me") {
-                        isMe = true;
-                    } else {
-                        isMe = false;
-                    }
-                    await myWorld.addAvatar2World(data.avatarDetails, data.signData, isMe , scene);
-                    console.log("CC- new Avatar created by server request ID: "  + data.signData.avatarID);
-                } else if (data.action === 'createMissingAvatars') {
-                    await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
-                } else if (data.action === 'startChat') {
-                    switch (data.type) {
-                        case 'chatRequest':
-                            myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
-                            break;
-                        case 'dealResult':
-                            myWorld.dealResult(data.fromAvatarID, data.toAvatarID, data.senderAnswer, data.destAnswer, data.senderID, data.destID);
-                            break;
-                        case 'updateChat':
-                            myWorld.chatUpdated(data.chatText, data.destID);
-                            break;
-                        case 'chatEnd':
-                            myWorld.chatEnded(data.fromAvatarID, data.toAvatarID);
-                            break;
-                    }
+                let doAnswer = false;
+                switch (data.action) {
+                    case "message_done":
+                        const id = data.messageId;
+                        if (id && this.pending.has(id)) {
+                            this.pending.get(id).resolve(data);
+                            this.pending.delete(id);
+                        }
+                        break;
+                    case 'createAvatar':
+                        doAnswer = true;
+                        let isMe = false;
+                        if (data.isMe == "me") {
+                            isMe = true;
+                        } else {
+                            isMe = false;
+                        }
+                        await myWorld.addAvatar2World(data.avatarDetails, data.signData, isMe, scene);
+                        console.log("CC- new Avatar created by server request ID: " + data.signData.avatarID);
+                        break;
+                    case 'createMissingAvatars':
+                        doAnswer = true;
+                        await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
+                        break;
+                    case 'waitForAck':
+                        doAnswer = true;
+                        this.socket.send(JSON.stringify({
+                            action: 'createAvatar',
+                            type: 'ack',
+                            ack: data.nextStep,
+                            previousMessage: data.previousMessage || {}
+                        }));
+                        break;
+                    case 'startChat':
+                        doAnswer = true;
+                        switch (data.type) {
+                            case 'chatRequest':
+                                myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
+                                break;
+                            case 'dealResult':
+                                myWorld.dealResult(data.fromAvatarID, data.toAvatarID, data.senderAnswer, data.destAnswer, data.senderID, data.destID);
+                                break;
+                            case 'updateChat':
+                                myWorld.chatUpdated(data.chatText, data.destID);
+                                break;
+                            case 'chatEnd':
+                                myWorld.chatEnded(data.fromAvatarID, data.toAvatarID);
+                                break;
+                        }
+                        break;
                 }
-
-                if (data.action === 'waitForAck') {
+                /*
+                if (doAnswer) {
+                    ///let server know that we got the message
                     this.socket.send(JSON.stringify({
-                        action: 'createAvatar',
-                        type: 'ack',
-                        ack: data.nextStep,
-                        previousMessage: data.previousMessage || {}
+                        action: data['responseTo'],
+                        serverMsgId: data.serverMsgId,
+                        ack: "serverMsgDone"
                     }));
+                    return;
                 }
+*/
+
             }
-            
+
+            confirm(data) {
+                this.socket.send(JSON.stringify({
+                        action: data['responseTo'],
+                        serverMsgId: data.serverMsgId,
+                        ack: "serverMsgDone"
+                    }));
+            }
+
             async safeSend(data, maxRetries = 3, retryDelay = 500) {
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
                     try {
@@ -169,7 +195,7 @@
                         await new Promise(res => setTimeout(res, retryDelay * attempt));
                     }
                 }
-        }
+            }
 
         }
         const wsClient = new WebSocketClient(socket);
@@ -186,45 +212,45 @@
             }, 300000); // Send a ping every 5 minutes (300 seconds)
             */
         };
-/* moved int o the class WebSocketClient
-        socket.onmessage = async function (event) {
-            let data = JSON.parse(event.data);
-            if (data.action === 'createAvatar') {
-                //await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
-                await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
-            }
-            if (data.action === 'createMissingAvatars') {
-                await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
-            }
-            if (data.action === 'startChat') {
-                ///we need toAvatarID and fromAvatarID to know how to handle each avatar in the world that get the message
-                switch (data.type) {
-                    case 'chatRequest':
-                        myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
-                        break;
-                    case 'dealResult': ///for all avatars
-                        myWorld.dealResult(data.fromAvatarID, data.toAvatarID, data.senderAnswer, data.destAnswer, data.senderID, data.destID);
-                        break;
-                    case 'updateChat': ///only for the pair avatar (others will not get it)
-
-                        myWorld.chatUpdated(data.chatText, data.destID);
-                        break;
-                    case 'chatEnd': ///for all avatars
-                        myWorld.chatEnded(data.fromAvatarID, data.toAvatarID);
-                        break;
+        /* moved int o the class WebSocketClient
+                socket.onmessage = async function (event) {
+                    let data = JSON.parse(event.data);
+                    if (data.action === 'createAvatar') {
+                        //await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
+                        await myWorld.addAvatar2World(data.avatarDetails, data.signData, true, scene);
+                    }
+                    if (data.action === 'createMissingAvatars') {
+                        await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
+                    }
+                    if (data.action === 'startChat') {
+                        ///we need toAvatarID and fromAvatarID to know how to handle each avatar in the world that get the message
+                        switch (data.type) {
+                            case 'chatRequest':
+                                myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
+                                break;
+                            case 'dealResult': ///for all avatars
+                                myWorld.dealResult(data.fromAvatarID, data.toAvatarID, data.senderAnswer, data.destAnswer, data.senderID, data.destID);
+                                break;
+                            case 'updateChat': ///only for the pair avatar (others will not get it)
+        
+                                myWorld.chatUpdated(data.chatText, data.destID);
+                                break;
+                            case 'chatEnd': ///for all avatars
+                                myWorld.chatEnded(data.fromAvatarID, data.toAvatarID);
+                                break;
+                        }
+                    };
+                    // ✅ Handle ACK request from server
+                    if (data.action === 'waitForAck') {
+                        socket.send(JSON.stringify({
+                            action: 'createAvatar',
+                            type: 'ack',
+                            ack: data.nextStep,
+                            previousMessage: data.previousMessage || {}
+                        }));
+                    }
                 }
-            };
-            // ✅ Handle ACK request from server
-            if (data.action === 'waitForAck') {
-                socket.send(JSON.stringify({
-                    action: 'createAvatar',
-                    type: 'ack',
-                    ack: data.nextStep,
-                    previousMessage: data.previousMessage || {}
-                }));
-            }
-        }
-*/
+        */
 
         socket.onclose = function (event) {
             //console.log('Disconnected from WebSocket Server');
