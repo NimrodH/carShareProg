@@ -140,7 +140,7 @@
                         }));
                         break;
                     case 'startChat':
-                        this.confirm2server(data);
+                        ///this.confirm2server(data); needED but with different action 
                         switch (data.type) {
                             case 'chatRequest':
                                 myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
@@ -171,13 +171,16 @@
 */
             ///confirm the message to the server           
             confirm2server(data) {
-                console.log ("confirm2server data:")
-                console.log(data);
-                this.socket.send(JSON.stringify({
+                //console.log ("confirm2server data:")
+                //console.log(data);
+                let confirmMsg = JSON.stringify({
                     action: "createAvatar",
                     serverMsgId: data.serverMsgId,
                     ack: "serverMsgDone"
-                }));
+                })
+                console.log("confirm2server confirmMsg:")
+                console.log(confirmMsg);
+                this.socket.send(confirmMsg);
             }
 
             async safeSend(data, maxRetries = 3, retryDelay = 500) {
