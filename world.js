@@ -115,13 +115,13 @@ class World {
      *
      * @param {string} toID - The ID of the avatar to send the chat request to (toID).
      */
-    chatRequest(toID) {
+    async chatRequest(toID) {
         this.allowPointer = false;///disable the pointer to avoid clicks
         console.log("CHAT- chatRequest sent");
         let toAvatar = this.idToAvatar(toID)
         this.currChat = new Chat(this._avatarsArr[0].avatar, toAvatar, this);
 
-        socket.send(JSON.stringify({
+        await wsClient.safeSend(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'chatRequest',
             chatID: this.currChat.chatID,
@@ -143,7 +143,7 @@ class World {
         if (index > -1) {
             this._avatarsArr.splice(index, 1);
         }
-        socket.send(JSON.stringify({
+        await wsClient.safeSend(JSON.stringify({
             action: 'removeAvatar',
             avatarID: avatarID
         }));
@@ -159,7 +159,7 @@ class World {
         this.doDealSelected(chatID, fromAvatarID, toAvatarID, "noDeal");
     }
 
-    doDealSelected(chatID, fromAvatarID, toAvatarID, answer) {
+    async doDealSelected(chatID, fromAvatarID, toAvatarID, answer) {
         let dest_id///send to the other avatar
         let sender_id//
         if (this.myAvatar.ID == fromAvatarID) {
@@ -170,7 +170,7 @@ class World {
             sender_id = toAvatarID
         }
         console.log("CHAT-doDealSelected");
-        socket.send(JSON.stringify({
+        await wsClient.safeSend(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'dealResult',
             chatID: chatID,
@@ -185,14 +185,14 @@ class World {
     }
 
     ///send all the text with the new line to the server (that will send it to the other avatar)
-    updateChat(chatID, fromAvatarID, toAvatarID, text) {
+    async updateChat(chatID, fromAvatarID, toAvatarID, text) {
         let avatar_id///send to the other avatar
         if (this.myAvatar.ID == fromAvatarID) {
             avatar_id = toAvatarID;
         } else {
             avatar_id = fromAvatarID;
         }
-        socket.send(JSON.stringify({
+        await wsClient.safeSend(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'updateChat',
             chatID: chatID,
@@ -201,8 +201,8 @@ class World {
         }));
     }
 
-    closeChat(avatarFromID, avatarToID) {
-        socket.send(JSON.stringify({
+    async closeChat(avatarFromID, avatarToID) {
+        await wsClient.safeSend(JSON.stringify({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'chatEnd',
             fromAvatarID: avatarFromID,

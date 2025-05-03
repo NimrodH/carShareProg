@@ -116,7 +116,7 @@
                         }
                         break;
                     case 'createAvatar':
-                        this.confirm2server(data)
+                        this.confirm2server(data, "createAvatar")
                         let isMe = false;
                         if (data.isMe == "me") {
                             isMe = true;
@@ -127,11 +127,11 @@
                         console.log("CC- new Avatar created by server request ID: " + data.signData.avatarID);
                         break;
                     case 'createMissingAvatars':
-                        this.confirm2server(data);
+                        this.confirm2server(data, "createAvatar");
                         await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
                         break;
                     case 'waitForAck':
-                        this.confirm2server(data);
+                        this.confirm2server(data, "createAvatar");
                         this.socket.send(JSON.stringify({
                             action: 'createAvatar',
                             type: 'ack',
@@ -140,7 +140,7 @@
                         }));
                         break;
                     case 'startChat':
-                        ///this.confirm2server(data); needED but with different action 
+                        this.confirm2server(data, "startChat"); 
                         switch (data.type) {
                             case 'chatRequest':
                                 myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
@@ -170,11 +170,11 @@
             }
 */
             ///confirm the message to the server           
-            confirm2server(data) {
+            confirm2server(data, destAction) {
                 //console.log ("confirm2server data:")
                 //console.log(data);
                 let confirmMsg = JSON.stringify({
-                    action: "createAvatar",
+                    action: destAction, //"createAvatar",
                     serverMsgId: data.serverMsgId,
                     ack: "serverMsgDone"
                 })
