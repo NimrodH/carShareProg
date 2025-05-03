@@ -106,9 +106,9 @@
             }
 
             async handleServerMessage(data) {
-                let doAnswer = false;
                 switch (data.action) {
                     case "message_done":
+                        ///dont confirm
                         const id = data.messageId;
                         if (id && this.pending.has(id)) {
                             this.pending.get(id).resolve(data);
@@ -116,7 +116,7 @@
                         }
                         break;
                     case 'createAvatar':
-                        doAnswer = true;
+                        this.confirm2server(data)
                         let isMe = false;
                         if (data.isMe == "me") {
                             isMe = true;
@@ -127,11 +127,11 @@
                         console.log("CC- new Avatar created by server request ID: " + data.signData.avatarID);
                         break;
                     case 'createMissingAvatars':
-                        doAnswer = true;
+                        this.confirm2server(data);
                         await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
                         break;
                     case 'waitForAck':
-                        doAnswer = true;
+                        this.confirm2server(data);
                         this.socket.send(JSON.stringify({
                             action: 'createAvatar',
                             type: 'ack',
@@ -140,7 +140,7 @@
                         }));
                         break;
                     case 'startChat':
-                        doAnswer = true;
+                        this.confirm2server(data);
                         switch (data.type) {
                             case 'chatRequest':
                                 myWorld.chatStarted(data.fromAvatarID, data.toAvatarID);
@@ -157,26 +157,25 @@
                         }
                         break;
                 }
-                /*
-                if (doAnswer) {
-                    ///let server know that we got the message
-                    this.socket.send(JSON.stringify({
-                        action: data['responseTo'],
-                        serverMsgId: data.serverMsgId,
-                        ack: "serverMsgDone"
-                    }));
-                    return;
-                }
-*/
-
             }
-
-            confirm(data) {
+            /*
+            if (doAnswer) {
+                ///let server know that we got the message
                 this.socket.send(JSON.stringify({
-                        action: data['responseTo'],
-                        serverMsgId: data.serverMsgId,
-                        ack: "serverMsgDone"
-                    }));
+                    action: data['responseTo'],
+                    serverMsgId: data.serverMsgId,
+                    ack: "serverMsgDone"
+                }));
+                return;
+            }
+*/
+            ///confirm the message to the server           
+            confirm2server(data) {
+                this.socket.send(JSON.stringify({
+                    action: data['responseTo'],
+                    serverMsgId: data.serverMsgId,
+                    ack: "serverMsgDone"
+                }));
             }
 
             async safeSend(data, maxRetries = 3, retryDelay = 500) {
