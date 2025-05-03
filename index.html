@@ -171,8 +171,10 @@
 */
             ///confirm the message to the server           
             confirm2server(data) {
+                console.log ("confirm2server data:")
+                console.log(data);
                 this.socket.send(JSON.stringify({
-                    action: data['responseTo'],
+                    action: "createAvatar",
                     serverMsgId: data.serverMsgId,
                     ack: "serverMsgDone"
                 }));
