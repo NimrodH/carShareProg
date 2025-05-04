@@ -121,13 +121,13 @@ class World {
         let toAvatar = this.idToAvatar(toID)
         this.currChat = new Chat(this._avatarsArr[0].avatar, toAvatar, this);
 
-        await wsClient.safeSend(JSON.stringify({
+        await wsClient.safeSend({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'chatRequest',
             chatID: this.currChat.chatID,
             fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
             toAvatarID: toID
-        }));
+        });
     }
 
     /**
@@ -143,10 +143,10 @@ class World {
         if (index > -1) {
             this._avatarsArr.splice(index, 1);
         }
-        await wsClient.safeSend(JSON.stringify({
+        await wsClient.safeSend({
             action: 'removeAvatar',
             avatarID: avatarID
-        }));
+        });
     }
 
     /**from button on the chat window to send the message to the server*/
@@ -170,7 +170,7 @@ class World {
             sender_id = toAvatarID
         }
         console.log("CHAT-doDealSelected");
-        await wsClient.safeSend(JSON.stringify({
+        await wsClient.safeSend({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'dealResult',
             chatID: chatID,
@@ -180,7 +180,7 @@ class World {
             senderID: this.myAvatar.ID,
             destID: dest_id,
             senderID: sender_id
-        }));
+        });
 
     }
 
@@ -192,23 +192,23 @@ class World {
         } else {
             avatar_id = fromAvatarID;
         }
-        await wsClient.safeSend(JSON.stringify({
+        await wsClient.safeSend({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'updateChat',
             chatID: chatID,
             chatText: text,
             destID: avatar_id
-        }));
+        });
     }
 
     async closeChat(avatarFromID, avatarToID) {
-        await wsClient.safeSend(JSON.stringify({
+        await wsClient.safeSend({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
             type: 'chatEnd',
             fromAvatarID: avatarFromID,
             toAvatarID: avatarToID,
             chatID: this.currChat.chatID
-        }));
+        });
         //this.allowPointer = true;///enable the pointer to allow clicks again ///moved to chatEnded
     }
 
