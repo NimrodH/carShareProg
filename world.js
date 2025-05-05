@@ -303,7 +303,7 @@ class World {
 
 
     chatEnded(fromAvatarID, toAvatarID) {
-        if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {
+        if (this.currChat && (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID)) {
             this.currChat.dispose();
             this.currChat = null;
         }
@@ -314,6 +314,6 @@ class World {
         ///sign the pair in my world
         this.idToAvatar(fromAvatarID).setState("noChat");
         this.idToAvatar(toAvatarID).setState("noChat");
-        this.allowPointer = true;///disable the pointer to avoid clicks
+        this.allowPointer = true;///disable the pointer to allow clicks
     }
 }
