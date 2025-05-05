@@ -87,7 +87,7 @@
                 this.socket.onerror = err => console.error('WebSocket error:', err);
             }
 
-            async sendWithAck(payload, timeout = 3000) {
+            async sendWithAck(payload, timeout = 60000) {
                 const messageId = `msg-${++this.counter}`;
                 const message = { ...payload, messageId };
                 console.log("wsClient.sendWithAck message:")
