@@ -14,7 +14,7 @@ class World {
     
         try {
             const result = await wsClient.safeSend(signData);
-            console.log("wellcomeDone (if null we failed to create Avatar):", result);
+            //console.log("wellcomeDone (if null we failed to create Avatar):", result);
             this.allowPointer = true;
         } catch (err) {
             //if err we already console  message in safeSend function and still want to allow the pointer
@@ -39,15 +39,15 @@ class World {
      */
     async addAvatar2World(avatarDetails, signData, isMe, scene) {
         //ID, URL, x, y, z, signData,
-        console.log("avatarDetails: ");
-        console.log(avatarDetails);
+        //console.log("avatarDetails: ");
+        //console.log(avatarDetails);
         let avatarObj = {
             avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL, this),
             avatarID: signData.avatarID,
             avatarName: signData.userName
         };
-        console.log("avatarObj: ");
-        console.log(avatarObj);
+        //console.log("avatarObj: ");
+        //console.log(avatarObj);
         this._avatarsArr.push(avatarObj);
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
         //console.log("after avatarObj.avatar.initAvatar");
@@ -56,7 +56,7 @@ class World {
         
         if (isMe) {
             ///this is my avatar
-            console.log("this is my avatar: " + avatarObj.avatarID);
+            //console.log("this is my avatar: " + avatarObj.avatarID);
             this.myAvatar = avatarObj.avatar;
             this.myAvatar.avatarMesh.setEnabled(false);
             //console.log("this.myAvatar");
@@ -84,7 +84,7 @@ class World {
                 continue;
             }
             //TODO: verify that avatar ibs not myAvatar
-            console.log("this.myAvatar" );
+            //("this.myAvatar" );
             //console.log(this );
             if (this.myAvatar.ID == currentAvatarId) {
             //if (this.myAvatar.avatarID == currentAvatarId) { //just tried
