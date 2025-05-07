@@ -87,7 +87,7 @@
                 this.socket.onerror = err => console.error('WebSocket error:', err);
             }
 
-            async sendWithAck(payload, timeout = 1000) {//60000 // 60 seconds
+            async sendWithAck(payload, timeout = 750) {//60000 // 60 seconds
                 const messageId = `msg-${++this.counter}`;
                 const message = { ...payload, messageId };
 
