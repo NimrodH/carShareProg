@@ -142,7 +142,7 @@
                         await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
                         break;
                     case 'waitForAck':
-                        //this.confirm2server(data, "createAvatar"); ///as GPT said:  Do not call confirm2server here.
+                        ///this.confirm2server(data, "createAvatar"); ///as GPT said:  Do not call confirm2server here.
                         this.safeSend({
                             action: 'createAvatar',
                             type: 'ack',
