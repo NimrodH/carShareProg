@@ -142,13 +142,13 @@
                         await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
                         break;
                     case 'waitForAck':
-                        ///this.confirm2server(data, "createAvatar"); ///as GPT said:  Do not call confirm2server here.
-                        this.safeSend({
+                        this.confirm2server(data, "createAvatar");
+                        this.socket.send(JSON.stringify({
                             action: 'createAvatar',
                             type: 'ack',
                             ack: data.nextStep,
                             previousMessage: data.previousMessage || {}
-                        });
+                        }));
                         break;
                     case 'startChat':
                         this.confirm2server(data, "startChat");
