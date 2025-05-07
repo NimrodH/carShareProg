@@ -132,12 +132,12 @@
                         break;
                     case 'waitForAck':
                         this.confirm2server(data, "createAvatar");
-                        this.safeSend({
+                        this.socket.send(JSON.stringify({
                             action: 'createAvatar',
                             type: 'ack',
                             ack: data.nextStep,
                             previousMessage: data.previousMessage || {}
-                        });
+                        }));
                         break;
                     case 'startChat':
                         this.confirm2server(data, "startChat"); 
