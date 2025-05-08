@@ -4,16 +4,18 @@ class World {
     constructor(scene) {
         this._avatarsArr = [];///contains objects whith the avata, id and name
         this._wellcome = new Wellcome(this);
-        this.myAvatar;///the avatar of the user that saved inside the _avatarsArr[0].avatar
+        this.myAvatar = null;///the avatar of the user that saved inside the _avatarsArr[0].avatar
+        this.myAvatarID = null;
         this.allowPointer = false;
     }
 
     ///will be called by Message
     async wellcomeDone(signData) {
         signData.action = 'createAvatar';
-    
+
         try {
             const result = await wsClient.safeSend(signData);
+            this.myAvatarID = result.avatarID || signData.avatarID;
             //console.log("wellcomeDone (if null we failed to create Avatar):", result);
             this.allowPointer = true;
         } catch (err) {
@@ -21,10 +23,10 @@ class World {
             console.error("Failed to create avatar after retries:", err);
         }
     }
-            //co pilot sugesst:
-        //this._wellcome.dispose();///remove the wellcome message
-        //this._wellcome = null;///remove the wellcome message
-    
+    //co pilot sugesst:
+    //this._wellcome.dispose();///remove the wellcome message
+    //this._wellcome = null;///remove the wellcome message
+
 
     /**
      * Asynchronously adds an avatar to the world.
@@ -49,11 +51,15 @@ class World {
         //console.log("avatarObj: ");
         //console.log(avatarObj);
         this._avatarsArr.push(avatarObj);
+        const isLocal = (signData.avatarID === this.myAvatarID);
+        if (isLocal) {
+            this.myAvatar = avatarObj.avatar;
+        }
         await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
         //console.log("after avatarObj.avatar.initAvatar");
         ///hide avatar if its the first one
         ///when we will run on all avatars we will start from 1 (not 0)
-        
+
         if (isMe) {
             ///this is my avatar
             //console.log("this is my avatar: " + avatarObj.avatarID);
@@ -62,7 +68,7 @@ class World {
             //console.log("this.myAvatar");
             //console.log(this.myAvatar);
         }
-        
+
     }
 
     /**
@@ -75,32 +81,39 @@ class World {
      */
     async addMissingAvatars2World(avatarsArray, signDataArray, scene) {
         for (const avatar of avatarsArray) {
-            let currentAvatarId = avatar.avatarID;
+            ////////////////let currentAvatarId = avatar.avatarID;
+            const id = avatar.avatarID;///////////
             ////console.log(`avatarId: `);
             ////console.log(currentAvatarId);
             ///verify the avatar is not already in the world   
-            if (this._avatarsArr.find(avatarObj => avatarObj.c == currentAvatarId)) {
-                console.log("CC- avatar not missing in the world: " + currentAvatarId);
+            if (this._avatarsArr.find(a => a.avatarID === id)) {
+                //console.log("CC- avatar not missing in the world: " + currentAvatarId);
                 continue;
             }
             //TODO: verify that avatar ibs not myAvatar
             //("this.myAvatar" );
             //console.log(this );
-            if (this.myAvatar.ID == currentAvatarId) {
-            //if (this.myAvatar.avatarID == currentAvatarId) { //just tried
+            if (this.myAvatar && this.myAvatar.ID === id) {
+                //if (this.myAvatar.avatarID == currentAvatarId) { //just tried
                 //console.log("avatar is my avatar");
                 continue;
             }
-            
 
-            ///find the signData of the avatar;
-            let avatarSignData = signDataArray.find(signData => signData.avatarID == currentAvatarId);
-            ////console.log(`avatarSignData for avatarID ${currentAvatarId}:`, avatarSignData);
-            if (avatarSignData) { ///if the avatar is not in the signDataArray we will not add it to the world
-                //console.log("avatar:");
-                
-                await this.addAvatar2World(avatar, avatarSignData, false, scene);
-                console.log("CC- missing avatar added.  ID: " + currentAvatarId);
+            /******
+                        ///find the signData of the avatar;
+                        let avatarSignData = signDataArray.find(signData => signData.avatarID == currentAvatarId);
+                        ////console.log(`avatarSignData for avatarID ${currentAvatarId}:`, avatarSignData);
+                        if (avatarSignData) { ///if the avatar is not in the signDataArray we will not add it to the world
+                            //console.log("avatar:");
+                            
+                            await this.addAvatar2World(avatar, avatarSignData, false, scene);
+                            console.log("CC- missing avatar added.  ID: " + currentAvatarId);
+                        }
+            
+            *****/
+            const sign = signDataArray.find(s => s.avatarID === id);
+            if (sign) {
+                await this.addAvatar2World(avatar, sign, false, scene);
             }
         }
     }
@@ -282,7 +295,7 @@ class World {
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("otherAccepted");
                         console.log("CHAT-otherAccepted on world");
-                    } 
+                    }
                 }
                 if (destAnswer == "dealDone") {
                     if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
@@ -294,7 +307,7 @@ class World {
                         ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
                         this.currChat.setChatState("refused");
                         console.log("CHAT-otherAccepted on world");
-                    } 
+                    }
                 }
 
             }
@@ -308,9 +321,9 @@ class World {
             this.currChat = null;
         }
         /////TODO
-            //if ( this.myAvatar.ID == fromAvatarID ) {
-            //    this.idToAvatar(toAvatarID).setState("afterChat");///on myworld sign my pair to prevent chat again
-            //}
+        //if ( this.myAvatar.ID == fromAvatarID ) {
+        //    this.idToAvatar(toAvatarID).setState("afterChat");///on myworld sign my pair to prevent chat again
+        //}
         ///sign the pair in my world
         this.idToAvatar(fromAvatarID).setState("noChat");
         this.idToAvatar(toAvatarID).setState("noChat");
