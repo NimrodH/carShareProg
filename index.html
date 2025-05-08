@@ -229,7 +229,7 @@
 
         socket.onopen = function (event) {
             setInterval(() => {
-                ws.send(JSON.stringify({
+                socket.send(JSON.stringify({
                     action: 'createAvatar',
                     type: 'keepalive'   // your server can just ignore or log this
                 }));
