@@ -9,7 +9,7 @@ class AvatarMessage {
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
         this.plane.position = new BABYLON.Vector3(x, y, z);
         this.plane.setParent(this.myAvatar.avatarMesh);
-        this.advancedTexture.background = 'green'
+        this.advancedTexture.background = 'red'//'green'
 
 
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
