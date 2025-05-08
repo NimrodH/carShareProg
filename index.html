@@ -115,7 +115,7 @@
                             try {
                                 this.pending.delete(id);
                                 console.log("<<<<<<<deleted messageId from pending, ID: " + id);
-                                
+
                             } catch (error) {
                                 console.error("<<<<<Error deleting messageId from pending:", error);
                                 console.log(data)
@@ -143,6 +143,8 @@
                         break;
                     case 'waitForAck':
                         this.confirm2server(data, "createAvatar");
+                        ///if we remove conform from here we get alot of waitForAck messages on pendingRetries table
+                        ///and ACK timeout error in the console 
                         this.socket.send(JSON.stringify({
                             action: 'createAvatar',
                             type: 'ack',
@@ -184,7 +186,7 @@
             confirm2server(data, destAction) {
                 //console.log ("confirm2server data:")
                 //console.log(data);
-                
+
                 let confirmMsg = JSON.stringify({
                     action: destAction, //"createAvatar",
                     serverMsgId: data.serverMsgId,
@@ -193,15 +195,15 @@
                 console.log("send confirm 2 server confirmMsg:")
                 console.log(confirmMsg);
                 this.socket.send(confirmMsg);
-                
-               /*
-                let confirmMsg = {
-                    action: destAction, //"createAvatar",
-                    serverMsgId: data.serverMsgId,
-                    ack: "serverMsgDone"
-                }
-                this.safeSend(confirmMsg);
-                */
+
+                /*
+                 let confirmMsg = {
+                     action: destAction, //"createAvatar",
+                     serverMsgId: data.serverMsgId,
+                     ack: "serverMsgDone"
+                 }
+                 this.safeSend(confirmMsg);
+                 */
             }
 
             async safeSend(data, maxRetries = 3, retryDelay = 500) {
@@ -226,7 +228,14 @@
         const wsClient = new WebSocketClient(socket);
 
         socket.onopen = function (event) {
-            //console.log('Connected to WebSocket Server');
+            setInterval(() => {
+                ws.send(JSON.stringify({
+                    action: 'createAvatar',
+                    type: 'keepalive'   // your server can just ignore or log this
+                }));
+                console.log('keepalive sent');
+            }, 1 * 60 * 1000);///9 instaed of 1
+
             /// to remain the connection live more thaen 10 munutes
             ///TODO: clear this interval when the connection is closed
             /*

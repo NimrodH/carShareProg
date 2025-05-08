@@ -32,7 +32,7 @@ class AvatarMessage {
         this.advancedTexture.addControl(this.nextButton);
         this.setState("noChat");
         let text1 = this.textField;
-        text1.color = "white"//"red";
+        text1.color = "red"//"white"//"red";
         text1.fontSize = 36;
         text1.top = "-150px";
         text1.height = "600px"
