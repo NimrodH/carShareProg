@@ -43,6 +43,10 @@ class World {
         //ID, URL, x, y, z, signData,
         //console.log("avatarDetails: ");
         //console.log(avatarDetails);
+        if (this._avatarsArr.find(a => a.avatarID === id)) {
+            //console.log("CC- avatar not missing in the world: " + id);
+            return;
+        }
         let avatarObj = {
             avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL, this),
             avatarID: signData.avatarID,
@@ -68,7 +72,6 @@ class World {
             //console.log("this.myAvatar");
             //console.log(this.myAvatar);
         }
-
     }
 
     /**
