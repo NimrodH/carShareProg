@@ -43,7 +43,7 @@ class World {
         //ID, URL, x, y, z, signData,
         //console.log("avatarDetails: ");
         //console.log(avatarDetails);
-        if (this._avatarsArr.find(a => a.avatarID === id)) {
+        if (this._avatarsArr.find(a => a.avatarID === signData.avatarID)) {
             //console.log("CC- avatar not missing in the world: " + id);
             return;
         }
