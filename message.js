@@ -32,7 +32,7 @@ class AvatarMessage {
         this.advancedTexture.addControl(this.nextButton);
         this.setState("noChat");
         let text1 = this.textField;
-        text1.color = "white"//"red";
+        text1.color = "white"
         text1.fontSize = 36;
         text1.top = "-150px";
         text1.height = "600px"
@@ -42,6 +42,10 @@ class AvatarMessage {
 
     updateText(theText) {
         this.textField.text = theText;
+    }
+
+    getText() {
+        return this.textField.text;
     }
 
     createMessage(signData) {
@@ -367,7 +371,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "red"//'green' debug color
+        this.advancedTexture.background = "green"//'red' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;

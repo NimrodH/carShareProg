@@ -262,10 +262,21 @@ class World {
     //////only for the pair avatar  
     chatUpdated(chatText, destID) {
         if (this.myAvatar.ID == destID) {
-            this.currChat.updateText(chatText)
+            let currText = this.currChat.getText();
+            if (this.countLines(currText) < this.countLines(chatText)) {
+                this.currChat.updateText(chatText)
+            } else {
+                console.log("new text is shorter than the current text, not updating.");
+            }
         }
     }
 
+    countLines(str) {
+        if (!str) return 0;
+        // Split on any common newline sequence
+        const lines = str.split(/\r\n|\r|\n/);
+        return lines.length;
+    }
 
     ///from the server:
     //dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
