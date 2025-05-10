@@ -15,9 +15,7 @@ class Avatar {
         const signY = 0.55;
         const signZ = 0.18;
         this.userName = signData.userName;
-        //console.log("initAvatar 1");
-        this.avatarMesh = await this.createAvatarMesh(this.avatarURL, scene);
-        //console.log(avatarDetails)
+       this.avatarMesh = await this.createAvatarMesh(this.avatarURL, scene);
         if(signData.avatarID[0] == "A") {  
             this.avatarMesh.getChildMeshes().forEach(child => {
                 //child.setEnabled(false); // This will completely disable the mesh
@@ -25,47 +23,35 @@ class Avatar {
                 child.visibility = 0; 
             });
         }
-        //console.log("initAvatar 2");
-        //this.avatarMesh.alpha = 0.5;
         this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
         this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);
-        //this.avatarMesh.visibility = 0;
-        //this.avatarMesh.isVisible = false
-        //const deltaRotation = { x: 0, y: 45, z: 45 }; // Rotate 180 degrees around the Y axis
-        //this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
-        //this.avatarMesh.lookAt(camera.position)
-        //this.rotateMeshByDegrees(deltaRotation);
-        //this.avatarMesh.rotation.y = 0;
-        //this.avatarMesh.rotation.x = 0;
-        //this.avatarMesh.rotation.z = 0;
         this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
         this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
-        
-
-        //console.log("avatar rotation: ");
-
-        ////console.log (this.avatarMesh.rotation)
-        //this.rotateMeshByDegrees({x:0, y:90, z:0});
-        //this.avatarMesh.lookAt(newTargetPos);
-        ////console.log("avatar rotation: ");
-
-        ////console.log (this.avatarMesh.rotation) 
-        ///TODO:set position by avatarDetails.targetX, targetY, targetZ
+ 
     }
 
     async createAvatarMesh(avatarURL, scene) {
         //console.log("avatarURL: " + avatarURL)
+        /*        
        await BABYLON.SceneLoader.AppendAsync("", avatarURL, scene);
         let beforeavatarMesh = scene.meshes[scene.meshes.length - 1];
         let avatarMesh = beforeavatarMesh.parent;
-
-      /*  avatarMesh.getChildMeshes().forEach(child => {
-            //child.setEnabled(false); // This will completely disable the mesh
-            // Alternatively, you can use:
-            child.visibility = 0; 
-        });
-        */
         return avatarMesh.parent;
+        */
+        const result = await BABYLON.SceneLoader.ImportMeshAsync(
+            null,
+            "",    
+            avatarURL,
+            scene
+          );
+        
+          // Find the top-level node among them (those with no parent)
+          const root = result.meshes.find(m => !m.parent);
+          if (!root) {
+            console.warn("No root mesh found in imported GLB!");
+            return null;
+          }
+          return root;
     }
 
     chatRequest() {
