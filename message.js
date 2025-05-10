@@ -44,10 +44,6 @@ class AvatarMessage {
         this.textField.text = theText;
     }
 
-    getText() {
-        return this.textField.text;
-    }
-
     createMessage(signData) {
         const sheTravel = "נוסעת";
         const heTravel = "נוסע";
@@ -269,6 +265,9 @@ class Chat {
         this.textBlock.text = theText;
         //this.myWorld.chatStarted(this.avatarToID, this.avatarFromID);
     }
+    getText() {
+        return this.textBlock.text;
+    }
 
     ///sent from button "שלח ההודעה"
     sendLine() {
@@ -371,7 +370,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green"//'red' for debug color
+        this.advancedTexture.background = "red"//green - 'red' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
@@ -436,7 +435,7 @@ class Wellcome {
         const widthStr = width.toString() + "px";
         let text1 = new BABYLON.GUI.TextBlock("upperText");
         text1.text = text;//"Hello world";
-        text1.color = "white"//"red";
+        text1.color = "white"
         text1.fontSize = 34;
 
         text1.top = topStr;///"-450px";
