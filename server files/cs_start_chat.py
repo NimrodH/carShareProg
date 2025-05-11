@@ -9,6 +9,7 @@ dynamodb_client = boto3.client('dynamodb')
 apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('API_GATEWAY_ENDPOINT'))
 avatars_table_name = os.environ['AVATARS_TABLE_NAME']
 chats_table_name = os.environ['CHATS_TABLE_NAME']
+retry_table = dynamodb.Table('PendingRetries') 
 
 def lambda_handler(event, context):
     # TODO implement
@@ -16,46 +17,73 @@ def lambda_handler(event, context):
     body = json.loads(event['body'])
     print(body)
     connection_id = event['requestContext']['connectionId']
-    match body["type"]:
-        case "updateChat":
-            ### new line added we will get and replace all text
-            chat_id = body["chatID"]
-            new_text =body["chatText"]
-            update_chat(chats_table_name, chat_id, new_text, region="us-east-1")
-        case "chatRequest":
-            current_time = datetime.now().strftime("%H:%M:%S")
-            item = {"chatID": body["chatID"], "fromAvatarID": body["fromAvatarID"], "toAvatarID": body["toAvatarID"], "startTime": current_time}
-            new_item(chats_table_name, item)
-        case "dealResult":
-            writeAvatarAnswer(body["chatID"],body["destID"], body["fromAvatarID"], body["toAvatarID"], body["senderAnswer"])
-            result = getAvatarAnswer(body["chatID"],body["destID"], body["fromAvatarID"], body["toAvatarID"])
-            body["destAnswer"] = result
-        case "chatEnd":
-            current_time = datetime.now().strftime("%H:%M:%S")
-            update_endTime(chats_table_name, body["chatID"], current_time, region="us-east-1")
-            # do nothing to body we just send the body to all as is
-        case _:
-            print("error: wrong body[type]: " + body["type"])
 
-    #send to pair or all (we allreadychanged body when needed )
-    if body["type"] == "chatRequest" or body["type"] == "chatEnd":
-        send_to_other_clients(body)
-    else: #updateChat, deal result
-        send_to_pair(body)
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
-    }
+    if 'ack' in body:
+        #we got approval from client that he got the message and will send him the avatar
+        #print("Received ACK: serverMsgDone")
+        serverMsgId = body.get('serverMsgId')
+        if serverMsgId:                  
+            try:
+                retry_table.delete_item(
+                    Key={
+                        'connectionId': connection_id,
+                        'messageId': serverMsgId
+                    }
+                )
+                print(f"Received serverMsgDone and delete for {serverMsgId}")
+            except Exception as error:
+                print(f"Error saving data serverMsgDone: {error}")
+            
+        return {
+            'statusCode': 200,
+            'body': json.dumps('ACK processed')
+        }
+    else:
+        match body["type"]:
+            case "updateChat":
+                ### new line added we will get and replace all text
+                chat_id = body["chatID"]
+                new_text =body["chatText"]
+                update_chat(chats_table_name, chat_id, new_text, region="us-east-1")
+            case "chatRequest":
+                current_time = datetime.now().strftime("%H:%M:%S")
+                item = {"chatID": body["chatID"], "fromAvatarID": body["fromAvatarID"], "toAvatarID": body["toAvatarID"], "startTime": current_time}
+                new_item(chats_table_name, item)
+            case "dealResult":
+                writeAvatarAnswer(body["chatID"],body["destID"], body["fromAvatarID"], body["toAvatarID"], body["senderAnswer"])
+                result = getAvatarAnswer(body["chatID"],body["destID"], body["fromAvatarID"], body["toAvatarID"])
+                body["destAnswer"] = result
+            case "chatEnd":
+                current_time = datetime.now().strftime("%H:%M:%S")
+                update_endTime(chats_table_name, body["chatID"], current_time, region="us-east-1")
+                # do nothing to body we just send the body to all as is
+            case _:
+                print("error: wrong body[type]: " + body["type"])
+
+        # send confirm to client about getting his message
+        message_id = body.get("messageId")
+        ack_message_done = { "action" : "message_done", "responseTo" : "createAvatar" ,"messageId" : message_id}
+        send2client(connection_id, ack_message_done)
+        #send to pair or all (we allreadychanged body when needed )
+        if body["type"] == "chatRequest" or body["type"] == "chatEnd":
+            send_to_other_clients(body)
+        else: #updateChat, deal result
+            send_to_pair(body)
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Hello from Lambda!')
+        }
 
 def send_to_other_clients(the_body):  ###including me  
     response = dynamodb_client.scan(TableName=avatars_table_name)
     for item in response['Items']:
-        connection_id = item['connectionID']['S']
+        connection_id = item['connectionId']['S']
         try:
-            response = apigatewaymanagementapi.post_to_connection(
-                ConnectionId=connection_id,
-                Data=json.dumps(the_body)
-            )
+            send2client(connection_id, the_body, "multyClients")
+            #response = apigatewaymanagementapi.post_to_connection(
+            #    ConnectionId=connection_id,
+            #    Data=json.dumps(the_body)
+            #)
             print("sent to others sent to: %s", connection_id )
         except ClientError as error:
             print('Error sending message: %s', error)
@@ -74,14 +102,74 @@ def send_to_avatar(the_body, avatarID):
     try:
         dest_con_id = get_connectionId(avatarID)
         print("send_to_avatar sent to avatarID: " + avatarID)
-        response = apigatewaymanagementapi.post_to_connection(
-            #get the connection_id of the pair from table avatars following its ID
-            ConnectionId=dest_con_id,
-            Data=json.dumps(the_body)
-        )
     except ClientError as error:
-        print('Error sending message: %s', error)
+        print('Error getting connection ID: %s', error)
+
+    send2client(dest_con_id, the_body)
+    #response = apigatewaymanagementapi.post_to_connection(
+    #    #get the connection_id of the pair from table avatars following its ID
+    #    ConnectionId=dest_con_id,
+    #    Data=json.dumps(the_body)
+    #)
     return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
+
+def send2client(connection_id, the_body, msg_type = "singleClient"):
+    # add serverMsgId. client will send it back to know we don't need to send again
+    print("send2client the_body:")
+    print(the_body)
+
+    #the_body['msg_type'] = msg_type
+    if the_body["action"] != "message_done":
+        server_msg_id = f"msg-{datetime.utcnow().timestamp()}"
+        the_body['serverMsgId'] = server_msg_id
+    
+    if connection_id:
+        try:
+            response = apigatewaymanagementapi.post_to_connection(
+                ConnectionId=connection_id,
+                Data=json.dumps(the_body)
+            )
+            if the_body["action"] != "message_done":
+            # Save message into DynamoDB to await for client approval
+                retry_table.put_item(
+                    Item={
+                        'connectionId': connection_id,
+                        'messageId': server_msg_id,
+                        "payload": the_body,
+                        'retryCount': 0,
+                        'timestamp': datetime.utcnow().isoformat()
+                    }
+                )
+
+                events = boto3.client('events')
+                EVENTBRIDGE_RULE_NAME = 'RetryEveryMinute'
+                try:
+                    events.enable_rule(
+                        Name=EVENTBRIDGE_RULE_NAME
+                    )
+                    print(f"Enabled EventBridge rule {EVENTBRIDGE_RULE_NAME}")
+                except Exception as e:
+                    print(f"Failed to enable EventBridge rule: {str(e)}")
+
+            return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
+        except ClientError as error:
+            print('Error sending message: %s', error)
+            # Still save it for retry
+            if the_body["action"] != "message_done":
+                retry_table.put_item(
+                    Item={
+                        'connectionId': connection_id,
+                        'messageId': server_msg_id,
+                        "payload": the_body,
+                        'retryCount': 0,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                )
+            if msg_type == "multyClients":
+                raise  # allow to the calling function send2client to continue with other avatars
+ 
+            return {'statusCode': 500, 'body': json.dumps({'message': 'Failed to send message'})}
+
 
 ###find the dest (pair) connection_id by the sender connection_id
 def get_connectionId(dest_id):
@@ -95,8 +183,8 @@ def get_connectionId(dest_id):
     # Check if the item exists and return the value of "connectioID"
     item = response.get('Item')
     if item:
-        print (item.get('connectionID'))
-        return item.get('connectionID')
+        print (item.get('connectionId'))
+        return item.get('connectionId')
     else:
         return None
 

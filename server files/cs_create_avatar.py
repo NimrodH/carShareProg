@@ -11,6 +11,8 @@ import time
 import boto3
 import os
 from botocore.exceptions import ClientError
+import uuid
+from datetime import datetime # for serverMsgId
 #from decimal import Decimal
 
 #class DecimalEncoder(json.JSONEncoder):
@@ -30,6 +32,7 @@ MAX_RETRIES = 50  # Maximum number of retries if an item is locked
 RETRY_DELAY = 2  # Delay in seconds between retries
 apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('API_GATEWAY_ENDPOINT'))
 
+retry_table = dynamodb.Table('PendingRetries')  
 
 def lambda_handler(event, context):
     """
@@ -52,14 +55,69 @@ def lambda_handler(event, context):
     Returns:
     dict: A response object containing the status code and a message indicating the result of the operation.
     """
-    print('Received event:', json.dumps(event, indent=2))
+    ##print('Received event:', json.dumps(event, indent=2))
     # TODO implement
     connection_id = event['requestContext']['connectionId']
+    
     ### retrieve from the event body the data that user entered to welcome message
     body = json.loads(event['body'])
-    print(body)
-    if body['address'] == "AA":
-        return set_all_items_free()
+    message_id = body.get("messageId")
+    #print("body got from client:")
+    #print(body)
+    if body.get(type) == "keepalive":
+        #print("keepalive")
+        return {
+            'statusCode': 200,
+            'body': json.dumps('keepalive')
+        }
+    if 'ack' in body:
+        match body['ack']:
+            case "serverMsgDone":
+                #we got approval from client that he got the message and will send him the avatar
+                ##print("Received ACK: serverMsgDone")
+                serverMsgId = body.get('serverMsgId')
+                if serverMsgId:                  
+                    try:
+                        retry_table.delete_item(
+                            Key={
+                                'connectionId': connection_id,
+                                'messageId': serverMsgId
+                            }
+                        )
+                        #print(f"Received serverMsgDone and delete for {serverMsgId}")
+                    except Exception as error:
+                        print(f"Error saving data serverMsgDone: {error}")                    
+                return {
+                    'statusCode': 200,
+                    'body': json.dumps('ACK processed')
+                }
+
+            case "others":
+                # need to send to each availabe client message to create the new one of sender (is it do it?)
+                #print("Received ACK: others, message_id:")
+                #print(message_id)
+                ack_message_done = { "action" : "message_done", "responseTo" : "createAvatar" ,"messageId" : message_id}
+                send2client(connection_id, ack_message_done)
+                send_to_other_clients(connection_id, body.get("previousMessage", {}))
+                #handleServerMessage(connection_id, body.get("previousMessage", {}))
+                # Ask client to ACK before sending older avatars
+                ack_message = {
+                    "action": "waitForAck",
+                    "nextStep": "older",
+                    "previousMessage": body.get("previousMessage", {})
+                }
+                send2client(connection_id, ack_message)
+            case "older": #need to add to sender all avatars in list if he dont have them
+                ack_message_done = { "action" : "message_done", "responseTo" : "createAvatar" ,"messageId" : message_id}##
+                send2client(connection_id, ack_message_done)##
+                send_to_me_older_avatars(connection_id)##
+                #print("Received ACK: older")
+                ##ack: "serverMsgDone"(connection_id)
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'ACK processed'})
+        }
+
     avatarID = body.get('avatarID')
     if avatarID is None:
         print("Error: 'avatarID' key is missing in the body.")
@@ -72,17 +130,36 @@ def lambda_handler(event, context):
     if avatar_pos_url:
         print(f"Locked item details: {avatar_pos_url}")
     else:
-        print("Could not find or lock any item.")
+        print("ERROR: Could not find or lock any item.")
         return {
             'statusCode': 400,
             'body': json.dumps({'message': 'Could not find or lock any item'})
     }
+    #write in avatar table in dynamoDB
     write_avatar(avatarID, avatar_pos_url, connection_id)
-    print('Avatar created successfully')
-    message = { "action" : "createAvatar", "avatarDetails" : avatar_pos_url, "signData": body }
-    response = send2client(connection_id, message) 
-    send_to_other_clients(connection_id, message)
-    send_to_me_older_avatars(connection_id)
+    #tell client that his message to createAvatar recived by the server
+    ack_message_done = { "action" : "message_done", "responseTo" : "createAvatar" ,"messageId" : message_id}
+    send2client(connection_id, ack_message_done)
+    #print('message_done - createAvatar sent')
+    #ask client to create the avatar in its own world
+    currentMessage = { "action" : "createAvatar", "avatarDetails" : avatar_pos_url, "signData": body, "isMe" : "me", "connectionId" : connection_id}
+    #print("send2client - - me")
+    response = send2client(connection_id, currentMessage)
+    message = { "action" : "createAvatar", "avatarDetails" : avatar_pos_url, "signData": body, "isMe" : "No", "connectionId" : connection_id}
+    # Send instruction to client to ACK before next steps
+    ack_message = { "action": "waitForAck", "nextStep": "others", "previousMessage": message }
+    try:
+        send2client(connection_id, ack_message)
+        #print("waitForAck sent")
+    except ClientError as error:
+        print('Error sending message: %s', error)
+
+
+    
+
+    ## moved to ACK answer
+    #send_to_other_clients(connection_id, message)
+    #send_to_me_older_avatars(connection_id)
     return {
         'statusCode': 200,
         'body': json.dumps({'message': 'Avatar created successfully'})
@@ -141,7 +218,7 @@ def write_avatar(avatarID, avatar_pos_url, connection_id):
             'targetY': avatar_pos_url["targetY"],
             'targetZ': avatar_pos_url["targetZ"],
             'isTalking': False,
-            'connectionID': connection_id,
+            'connectionId': connection_id,
             'avatarURL': avatar_pos_url["avatarURL"]
         }
     }
@@ -192,8 +269,8 @@ def lock_item(unlocked_item_id):
         )
         return (True, None)
     except dynamodb_client.exceptions.TransactionCanceledException as e:
-        print("TransactionCanceledException:")
-        print(e)
+        #print("ERROR: TransactionCanceledException:")
+        #print(e)
         if 'CancellationReasons' in e.response:
             for reason in e.response['CancellationReasons']:
                 print(json.dumps(reason, indent=2))
@@ -208,14 +285,14 @@ def find_and_lock_item():
     while retries < MAX_RETRIES:
         # Attempt to fetch an unlocked item from the URLs table
         item = get_unlocked_item()
-        print("lock_item:")
-        print(item)
+        ##print("lock_item:")
+        ##print(item)
         if not item:
-            print("No available unlocked items found in the URLs table.")
+            print("ERROR: No available unlocked items found in the URLs table.")
             return None
 
         unlocked_item_id = item['num']#['S']
-        print(f"Trying to lock item: {unlocked_item_id}")
+        ##print(f"Trying to lock item: {unlocked_item_id}")
 
         # Attempt to lock the item
         success, error_message = lock_item(unlocked_item_id)
@@ -225,34 +302,79 @@ def find_and_lock_item():
         
         # If locking failed, wait and retry
         retries += 1
-        print(f"Retrying... ({retries}/{MAX_RETRIES})")
+        #print(f"Retrying... ({retries}/{MAX_RETRIES})")
         time.sleep(RETRY_DELAY)
     
-    print("Max retries reached. Unable to lock an item.")
+    #print("Max retries reached. Unable to lock an item.")
     return None
 
-def send2client(connection_id, the_body):
+### msg_type:  multyClients, singleClient
+def send2client(connection_id, the_body, msg_type = "singleClient"):
+    # add serverMsgId. client will send it back to know we don't need to send again
+    print("send2client the_body:")
+    print(the_body)
+
+    #the_body['msg_type'] = msg_type
+    if the_body["action"] != "message_done":
+        server_msg_id = f"msg-{datetime.utcnow().timestamp()}"
+        the_body['serverMsgId'] = server_msg_id
+    
     if connection_id:
         try:
             response = apigatewaymanagementapi.post_to_connection(
                 ConnectionId=connection_id,
                 Data=json.dumps(the_body)
             )
+            if the_body["action"] != "message_done":
+            # Save message into DynamoDB to await for client approval
+                retry_table.put_item(
+                    Item={
+                        'connectionId': connection_id,
+                        'messageId': server_msg_id,
+                        "payload": the_body,
+                        'retryCount': 0,
+                        'timestamp': datetime.utcnow().isoformat()
+                    }
+                )
+
+                events = boto3.client('events')
+                EVENTBRIDGE_RULE_NAME = 'RetryEveryMinute'
+                try:
+                    events.enable_rule(
+                        Name=EVENTBRIDGE_RULE_NAME
+                    )
+                    #print(f"Enabled EventBridge rule {EVENTBRIDGE_RULE_NAME}")
+                except Exception as e:
+                    print(f"Failed to enable EventBridge rule: {str(e)}")
+
             return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
         except ClientError as error:
-            print('Error sending message: %s', error)
+            #print('Error sending message: %s', error)
+            # Still save it for retry
+            if the_body["action"] != "message_done":
+                retry_table.put_item(
+                    Item={
+                        'connectionId': connection_id,
+                        'messageId': server_msg_id,
+                        "payload": the_body,
+                        'retryCount': 0,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                )
+            if msg_type == "multyClients":
+                raise  # allow to the calling function send2client to continue with other avatars
+ 
             return {'statusCode': 500, 'body': json.dumps({'message': 'Failed to send message'})}
         
-def send_to_other_clients(my_connection_id, the_body):    
+def send_to_other_clients(my_connection_id, the_body):  
+    #print("send_to_other_clients--> the_body") 
+    #print(the_body) 
     response = dynamodb_client.scan(TableName=os.environ['AVATARS_TABLE_NAME'])
     for item in response['Items']:
-        connection_id = item['connectionID']['S']
+        connection_id = item['connectionId']['S']
         if connection_id != my_connection_id:
             try:
-                response = apigatewaymanagementapi.post_to_connection(
-                    ConnectionId=connection_id,
-                    Data=json.dumps(the_body)
-                )
+                send2client(connection_id, the_body, "multyClients")
             except ClientError as error:
                 print('Error sending message: %s', error)
                 continue
@@ -260,11 +382,11 @@ def send_to_other_clients(my_connection_id, the_body):
 
 def send_to_me_older_avatars(my_connection_id):
     avatrs_array = dynamodb_client.scan(TableName=os.environ['AVATARS_TABLE_NAME'])
-    print(avatrs_array)
+    ##print(avatrs_array)
     extracted_avatrs_array = extract_all_values(avatrs_array['Items'])
-    print(extracted_avatrs_array)
+    ##print(extracted_avatrs_array)
     signs_data_array = dynamodb_client.scan(TableName=os.environ['SIGNS_TABLE_NAME'])
-    print(signs_data_array)
+    ##print(signs_data_array)
     extracted_signs_data_array = extract_all_values(signs_data_array['Items'])
     message = { "action" : "createMissingAvatars", "avatarArray" : extracted_avatrs_array, "signDataArray": extracted_signs_data_array }
     response = send2client(my_connection_id, message)
