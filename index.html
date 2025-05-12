@@ -68,6 +68,26 @@
         ///the  socket URL 
         const socketUrl = 'wss://j5i50qrird.execute-api.us-east-1.amazonaws.com/production/';
 
+        class Deduplicator {
+            constructor(ttlMs = 5 * 60 * 1000) {  // default: remember IDs for 5 minutes
+                this.seen = new Set();
+                this.ttl = ttlMs;
+            }
+
+            /**
+             * Returns true if id is new (and registers it), or false if it was seen before.
+             */
+            checkAndMark(id) {
+                if (this.seen.has(id)) return false; /// already seen
+                // mark as seen
+                this.seen.add(id);
+                // schedule automatic forgetting after TTL
+                setTimeout(() => this.seen.delete(id), this.ttl);
+                return true;
+            }
+        }
+        const deduper = new Deduplicator(2 * 60 * 1000);  // e.g. 2 min TTL
+
 
         // #region///////////////////SOCKET //////////////////////////
         var socket = new WebSocket(socketUrl);
@@ -81,7 +101,16 @@
                     const data = JSON.parse(event.data);
                     console.log("message from server data:")
                     console.log(data);
+                    ///see if data.serverMsgId already implemented (=>checkAndMark=true).
+                    ///  if already implemented return and don't continue if not mark it
+                    if (data.serverMsgId) { ///do anyway if no serverMsgId
+                        ///if we get the same message from the server we dont want to handle it again
+                        if (!deduper.checkAndMark(data.serverMsgId)) {
+                            console.log("<<<<<Duplicate message from server. ID: " + data.serverMsgId);
+                            return;
+                        }
 
+                    }
                     this.handleServerMessage(data);
                 }
                 this.socket.onerror = err => console.error('WebSocket error:', err);

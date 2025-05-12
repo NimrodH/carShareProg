@@ -10,6 +10,7 @@ import json
 import time
 import boto3
 import os
+import copy
 from botocore.exceptions import ClientError
 import uuid
 from datetime import datetime # for serverMsgId
@@ -311,27 +312,25 @@ def find_and_lock_item():
 ### msg_type:  multyClients, singleClient
 def send2client(connection_id, the_body, msg_type = "singleClient"):
     # add serverMsgId. client will send it back to know we don't need to send again
-    print("send2client the_body:")
-    print(the_body)
+    payload = copy.deepcopy(the_body)
 
-    #the_body['msg_type'] = msg_type
-    if the_body["action"] != "message_done":
+    if payload["action"] != "message_done":
         server_msg_id = f"msg-{datetime.utcnow().timestamp()}"
-        the_body['serverMsgId'] = server_msg_id
+        payload['serverMsgId'] = server_msg_id
     
     if connection_id:
         try:
             response = apigatewaymanagementapi.post_to_connection(
                 ConnectionId=connection_id,
-                Data=json.dumps(the_body)
+                Data=json.dumps(payload)
             )
-            if the_body["action"] != "message_done":
+            if payload["action"] != "message_done":
             # Save message into DynamoDB to await for client approval
                 retry_table.put_item(
                     Item={
                         'connectionId': connection_id,
                         'messageId': server_msg_id,
-                        "payload": the_body,
+                        "payload": payload,
                         'retryCount': 0,
                         'timestamp': datetime.utcnow().isoformat()
                     }
@@ -351,12 +350,12 @@ def send2client(connection_id, the_body, msg_type = "singleClient"):
         except ClientError as error:
             #print('Error sending message: %s', error)
             # Still save it for retry
-            if the_body["action"] != "message_done":
+            if payload["action"] != "message_done":
                 retry_table.put_item(
                     Item={
                         'connectionId': connection_id,
                         'messageId': server_msg_id,
-                        "payload": the_body,
+                        "payload": payload,
                         'retryCount': 0,
                         "timestamp": datetime.utcnow().isoformat()
                     }
