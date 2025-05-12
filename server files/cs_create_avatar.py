@@ -32,8 +32,18 @@ signs_table = dynamodb.Table(os.environ['SIGNS_TABLE_NAME'])
 MAX_RETRIES = 50  # Maximum number of retries if an item is locked
 RETRY_DELAY = 2  # Delay in seconds between retries
 apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('API_GATEWAY_ENDPOINT'))
-
+TTL_SECONDS = 5 * 60 #the time to keep each message (5 min)
+_message_cache = {}      # maps messageId -> timestamp when first seen
 retry_table = dynamodb.Table('PendingRetries')  
+
+def _purge_expired():
+    """Remove any entries older than TTL_SECONDS."""
+    now = time.time()
+    expired = [mid for mid, ts in _message_cache.items() if (now - ts) > TTL_SECONDS]
+    for mid in expired:
+        del _message_cache[mid]
+
+
 
 def lambda_handler(event, context):
     """
@@ -58,6 +68,8 @@ def lambda_handler(event, context):
     """
     ##print('Received event:', json.dumps(event, indent=2))
     # TODO implement
+    _purge_expired()
+
     connection_id = event['requestContext']['connectionId']
     
     ### retrieve from the event body the data that user entered to welcome message
@@ -65,6 +77,18 @@ def lambda_handler(event, context):
     message_id = body.get("messageId")
     #print("body got from client:")
     #print(body)
+    #if it has no messageId we will execute anyway
+    if (message_id):
+        #if message already in catch do noting and return
+        if message_id in _message_cache:
+            # duplicate detected → drop on the floor
+            return {
+                "statusCode": 200,
+                "body": json.dumps({"ok": True, "note": "duplicate, ignored"})
+            }
+        #we have messageId and its new message - write its number in catch
+        _message_cache[message_id] = time.time()
+
     if body.get(type) == "keepalive":
         #print("keepalive")
         return {

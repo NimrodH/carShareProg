@@ -236,6 +236,11 @@ class World {
     ///toAvatarID is alwayes the ID of the avatar that clicked
     ///fromAvatarID is the ID of the avatar that request the chat
     chatStarted(fromAvatarID, toAvatarID) {
+        const chatID = `${fromAvatarID}_${toAvatarID}`;
+        if (this.currChat && this.currChat.chatID === chatID) {
+            console.log('Ignoring duplicate chatStarted for', chatID);
+            return;
+        }
         console.log("CHAT- chatStarted on world");
         let toAvatar = this.idToAvatar(toAvatarID);
         let fromAvatar = this.idToAvatar(fromAvatarID);

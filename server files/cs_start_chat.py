@@ -1,4 +1,5 @@
 import json
+import time
 import boto3
 import os
 import copy
@@ -11,6 +12,16 @@ apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=o
 avatars_table_name = os.environ['AVATARS_TABLE_NAME']
 chats_table_name = os.environ['CHATS_TABLE_NAME']
 retry_table = dynamodb.Table('PendingRetries') 
+TTL_SECONDS = 5 * 60 #the time to keep each message (5 min)
+_message_cache = {}      # maps messageId -> timestamp when first seen
+
+def _purge_expired():
+    """Remove any entries older than TTL_SECONDS."""
+    now = time.time()
+    expired = [mid for mid, ts in _message_cache.items() if (now - ts) > TTL_SECONDS]
+    for mid in expired:
+        del _message_cache[mid]
+
 
 def lambda_handler(event, context):
     # TODO implement
@@ -18,7 +29,17 @@ def lambda_handler(event, context):
     body = json.loads(event['body'])
     print(body)
     connection_id = event['requestContext']['connectionId']
-
+    _purge_expired()
+    message_id = body.get("messageId")
+    if message_id:
+        if message_id in _message_cache:
+            print(f"Duplicate message {message_id}")
+            return {
+                'statusCode': 200,
+                'body': json.dumps('Duplicate message')
+            }
+        _message_cache[message_id] = time.time()
+        
     if 'ack' in body:
         #we got approval from client that he got the message and will send him the avatar
         #print("Received ACK: serverMsgDone")
@@ -62,7 +83,7 @@ def lambda_handler(event, context):
                 print("error: wrong body[type]: " + body["type"])
 
         # send confirm to client about getting his message
-        message_id = body.get("messageId")
+        
         ack_message_done = { "action" : "message_done", "responseTo" : "createAvatar" ,"messageId" : message_id}
         send2client(connection_id, ack_message_done)
         #send to pair or all (we allreadychanged body when needed )
