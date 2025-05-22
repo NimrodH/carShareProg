@@ -310,10 +310,10 @@ class Chat {
         switch (state) {
             case "start":
                 //this.textBlock.text = "שלום"
-                this.sendButton.isEnabled = true;
-                this.buttonClose.isEnabled = false;
+                this.sendButton.isEnabled = true;                
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
+                this.buttonClose.isEnabled = true;//false; ///true for test to see why other some times not closed
                 break;
             case "refused":
                 this.textBlock.text = "המשתתף השני בחר באפשרות [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת.";
@@ -324,10 +324,10 @@ class Chat {
                 break;
             case "wait":
                 this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן, והקלק שוב על תשובתך"
-                this.sendButton.isEnabled = false;
-                this.buttonClose.isEnabled = false;
+                this.sendButton.isEnabled = false;                
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
+                this.buttonClose.isEnabled = true;//false; ///true for test to see why other some times not closed
                 break;
             case "done":
                 this.textBlock.text = "סוכם על ביצוע נסיעה משותפת. לחץ [סגור] כדי לסיים את השיחה";
@@ -370,7 +370,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "red"//green - 'red' for debug color
+        this.advancedTexture.background = "green"//green - 'red' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
