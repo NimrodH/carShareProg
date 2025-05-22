@@ -339,6 +339,7 @@ class World {
 
 
     chatEnded(fromAvatarID, toAvatarID) {
+        console.log("CHAT>>>- chatEnded on world from:" + fromAvatarID + "to: " + toAvatarID + "my: " + this.myAvatar.ID);
         if (this.currChat && (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID)) {
             this.currChat.dispose();
             this.currChat = null;
