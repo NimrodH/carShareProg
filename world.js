@@ -132,6 +132,10 @@ class World {
      * @param {string} toID - The ID of the avatar to send the chat request to (toID).
      */
     async chatRequest(toID) {
+        if (this.currChat) {
+            console.log("CHAT- chatRequest: already in chat");
+            return;
+        }
         this.allowPointer = false;///disable the pointer to avoid clicks
         console.log("CHAT- chatRequest sent");
         let toAvatar = this.idToAvatar(toID)
