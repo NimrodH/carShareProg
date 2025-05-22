@@ -282,11 +282,13 @@ class Chat {
 
     dealDoneSelected() {
         //console.log("dealDone clicked: ");
+        this.buttonClose.isEnabled = true;
         this.myWorld.dealDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
     dealNotDoneSelected() {
         //console.log("dealNotDone clicked: ");
+        this.buttonClose.isEnabled = true;
         this.myWorld.dealNotDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
@@ -313,7 +315,7 @@ class Chat {
                 this.sendButton.isEnabled = true;                
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
-                this.buttonClose.isEnabled = true;//false; ///true for test to see why other some times not closed
+                this.buttonClose.isEnabled = false;//false; ///true for test to see why other some times not closed
                 break;
             case "refused":
                 this.textBlock.text = "המשתתף השני בחר באפשרות [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת.";
@@ -327,7 +329,7 @@ class Chat {
                 this.sendButton.isEnabled = false;                
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
-                this.buttonClose.isEnabled = true;//false; ///true for test to see why other some times not closed
+                this.buttonClose.isEnabled = false;//false; ///true for test to see why other some times not closed
                 break;
             case "done":
                 this.textBlock.text = "סוכם על ביצוע נסיעה משותפת. לחץ [סגור] כדי לסיים את השיחה";
