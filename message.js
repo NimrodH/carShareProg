@@ -329,7 +329,7 @@ class Chat {
                 this.sendButton.isEnabled = false;                
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
-                this.buttonClose.isEnabled = false;//false; ///true for test to see why other some times not closed
+                this.buttonClose.isEnabled = true;//false; ///true for test to see why other some times not closed
                 break;
             case "done":
                 this.textBlock.text = "סוכם על ביצוע נסיעה משותפת. לחץ [סגור] כדי לסיים את השיחה";
