@@ -367,6 +367,6 @@ class World {
         let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
         if (avatarObj) {
             avatarObj.avatar.setDone();
- 
+        }
     }
 }
