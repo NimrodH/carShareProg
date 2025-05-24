@@ -181,6 +181,10 @@
                             previousMessage: data.previousMessage || {}
                         }));
                         break;
+                    case 'avatarLeft':
+                        this.confirm2server(data, "avatarLeft");
+                        myWorld.doAvatarLeft(data.avatarID);
+                        break;
                     case 'startChat':
                         this.confirm2server(data, "startChat");
                         switch (data.type) {

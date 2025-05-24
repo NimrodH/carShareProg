@@ -153,20 +153,22 @@ class World {
     /**
       * Asynchronously removes an avatar from the world.
       * remove the avatar from the _avatarsArr
-      * ask the server to notify all worlds that the avatar has been removed
+      * dispose the avatar mesh
       *
       * @param {number} avatarID - The ID of the avatar to be removed.
       * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
       */
     async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsArr
+        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
+        if (avatarObj) {
+            avatarObj.avatar.dispose();
+            avatarObj.avatar = null;
+        }
         let index = this._avatarsArr.findIndex(avatarObj => avatarObj.avatarID == avatarID);
         if (index > -1) {
             this._avatarsArr.splice(index, 1);
         }
-        await wsClient.safeSend({
-            action: 'removeAvatar',
-            avatarID: avatarID
-        });
+        console.log("CHAT- removeAvatarFromWorld: " + avatarID);
     }
 
     /**from button on the chat window to send the message to the server*/
@@ -352,5 +354,14 @@ class World {
         this.idToAvatar(fromAvatarID).setState("noChat");
         this.idToAvatar(toAvatarID).setState("noChat");
         this.allowPointer = true;///disable the pointer to allow clicks
+    }
+
+    doAvatarLeft(avatarID) {
+        console.log("CHAT>>>- avatarLeft on world: " + avatarID);
+        if (this.currChat && (this.myAvatar.ID == avatarID)) {
+            this.currChat.dispose();
+            this.currChat = null;
+        }
+        this.removeAvatarFromWorld(avatarID);
     }
 }
