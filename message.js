@@ -301,7 +301,11 @@ class Chat {
         if (this.myWorld.currChat.chatID == this.chatID) {
             this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
         } else {
+            ///somthing wrong, close the chat popup and set currChat to null (to enable other chats)
             this.dispose();
+            if (this.myWorld.currChat) {
+                this.myWorld.currChat = null;
+            }
         }
     }
 
@@ -381,7 +385,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "red"//green - 'red' for debug color
+        this.advancedTexture.background = "green"//green - 'red' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
