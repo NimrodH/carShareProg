@@ -103,7 +103,6 @@ class Avatar {
         this.frontSign.setState(state);
     }
     dispose() {
-        this.frontSign.dispose();
-        this.avatarMesh.dispose();
+        this.frontSign.setState("done");
     }
 }
