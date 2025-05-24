@@ -158,8 +158,13 @@ class World {
       * @param {number} avatarID - The ID of the avatar to be removed.
       * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
       */
+        /*
     async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsArr
         let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
+        if (avatarObj) {
+            avatarObj.avatar.setDone();
+        }
+
         if (avatarObj) {
             avatarObj.avatar.dispose();
             avatarObj.avatar = null;
@@ -168,9 +173,10 @@ class World {
         if (index > -1) {
             this._avatarsArr.splice(index, 1);
         }
+        
         console.log("CHAT- removeAvatarFromWorld: " + avatarID);
     }
-
+*/
     /**from button on the chat window to send the message to the server*/
     dealDoneSelected(chatID, fromAvatarID, toAvatarID) {
         this.doDealSelected(chatID, fromAvatarID, toAvatarID, "dealDone");
@@ -358,10 +364,9 @@ class World {
 
     doAvatarLeft(avatarID) {
         console.log("CHAT>>>- avatarLeft on world: " + avatarID);
-        if (this.currChat && (this.myAvatar.ID == avatarID)) {
-            this.currChat.dispose();
-            this.currChat = null;
-        }
-        this.removeAvatarFromWorld(avatarID);
+        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
+        if (avatarObj) {
+            avatarObj.avatar.setDone();
+ 
     }
 }

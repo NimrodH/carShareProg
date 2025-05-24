@@ -102,7 +102,7 @@ class Avatar {
     setState(state) {
         this.frontSign.setState(state);
     }
-    dispose() {
+    setDone() {
         this.frontSign.setState("done");
     }
 }
