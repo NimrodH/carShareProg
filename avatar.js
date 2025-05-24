@@ -1,7 +1,7 @@
 
 
 class Avatar {
- 
+
     constructor(avatarID, avatarURL, world) {
         this.myWorld = world;
         this.avatarURL = avatarURL;
@@ -9,25 +9,25 @@ class Avatar {
         //console.log("Avatar ID: " + this.ID);
     }
 
-    async initAvatar( avatarDetails, signData, scene) {
+    async initAvatar(avatarDetails, signData, scene) {
         const planeSize = 0.85;
         const signX = 0;
         const signY = 0.55;
         const signZ = 0.18;
         this.userName = signData.userName;
-       this.avatarMesh = await this.createAvatarMesh(this.avatarURL, scene);
-        if(signData.avatarID[0] == "A") {  
+        this.avatarMesh = await this.createAvatarMesh(this.avatarURL, scene);
+        if (signData.avatarID[0] == "A") {
             this.avatarMesh.getChildMeshes().forEach(child => {
                 //child.setEnabled(false); // This will completely disable the mesh
                 // Alternatively, you can use:
-                child.visibility = 0; 
+                child.visibility = 0;
             });
         }
         this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
         this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);
         this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
         this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
- 
+
     }
 
     async createAvatarMesh(avatarURL, scene) {
@@ -40,18 +40,18 @@ class Avatar {
         */
         const result = await BABYLON.SceneLoader.ImportMeshAsync(
             null,
-            "",    
+            "",
             avatarURL,
             scene
-          );
-        
-          // Find the top-level node among them (those with no parent)
-          const root = result.meshes.find(m => !m.parent);
-          if (!root) {
+        );
+
+        // Find the top-level node among them (those with no parent)
+        const root = result.meshes.find(m => !m.parent);
+        if (!root) {
             console.warn("No root mesh found in imported GLB!");
             return null;
-          }
-          return root;
+        }
+        return root;
     }
 
     chatRequest() {
@@ -82,27 +82,28 @@ class Avatar {
             y: BABYLON.Tools.ToRadians(deltaRotationDegrees.y),
             z: BABYLON.Tools.ToRadians(deltaRotationDegrees.z)
         };
-    
+
         // Get the current position of the mesh
         const currentPosition = mesh.position;
-    
+
         // Calculate the direction vector based on the current rotation and the desired delta rotation
         const direction = new BABYLON.Vector3(
             Math.sin(deltaRotationRadians.y),
             0,
             Math.cos(deltaRotationRadians.y)
         );
-    
+
         // Calculate the target position by adding the direction vector to the current position
         const targetPosition = currentPosition.add(direction);
-    
+
         return targetPosition;
     }
     ///noChat, myChat, inChat
     setState(state) {
         this.frontSign.setState(state);
     }
-     dispose() {
+    dispose() {
         this.frontSign.dispose();
         this.avatarMesh.dispose();
+    }
 }
