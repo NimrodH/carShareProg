@@ -298,7 +298,11 @@ class Chat {
     }
 
     closeChat() {
-        this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
+        if (this.myWorld.currChat.chatID == this.chatID) {
+            this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
+        } else {
+            this.dispose();
+        }
     }
 
     dispose() {
@@ -317,7 +321,7 @@ class Chat {
         switch (state) {
             case "start":
                 //this.textBlock.text = "שלום"
-                this.sendButton.isEnabled = true;                
+                this.sendButton.isEnabled = true;
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
                 this.buttonClose.isEnabled = false;//false; ///true for test to see why other some times not closed
@@ -331,7 +335,7 @@ class Chat {
                 break;
             case "wait":
                 this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן, והקלק שוב על תשובתך"
-                this.sendButton.isEnabled = false;                
+                this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
                 this.buttonClose.isEnabled = true;//false; ///true for test to see why other some times not closed
@@ -377,7 +381,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green"//green - 'red' for debug color
+        this.advancedTexture.background = "red"//green - 'red' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;

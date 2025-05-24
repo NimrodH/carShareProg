@@ -158,24 +158,24 @@ class World {
       * @param {number} avatarID - The ID of the avatar to be removed.
       * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
       */
-        /*
-    async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsArr
-        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
-        if (avatarObj) {
-            avatarObj.avatar.setDone();
-        }
-
-        if (avatarObj) {
-            avatarObj.avatar.dispose();
-            avatarObj.avatar = null;
-        }
-        let index = this._avatarsArr.findIndex(avatarObj => avatarObj.avatarID == avatarID);
-        if (index > -1) {
-            this._avatarsArr.splice(index, 1);
-        }
-        
-        console.log("CHAT- removeAvatarFromWorld: " + avatarID);
+    /*
+async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsArr
+    let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
+    if (avatarObj) {
+        avatarObj.avatar.setDone();
     }
+
+    if (avatarObj) {
+        avatarObj.avatar.dispose();
+        avatarObj.avatar = null;
+    }
+    let index = this._avatarsArr.findIndex(avatarObj => avatarObj.avatarID == avatarID);
+    if (index > -1) {
+        this._avatarsArr.splice(index, 1);
+    }
+    
+    console.log("CHAT- removeAvatarFromWorld: " + avatarID);
+}
 */
     /**from button on the chat window to send the message to the server*/
     dealDoneSelected(chatID, fromAvatarID, toAvatarID) {
@@ -230,13 +230,18 @@ class World {
     }
 
     async closeChat(avatarFromID, avatarToID) {
-        await wsClient.safeSend({
-            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-            type: 'chatEnd',
-            fromAvatarID: avatarFromID,
-            toAvatarID: avatarToID,
-            chatID: this.currChat.chatID
-        });
+        if (this.currChat) {
+            await wsClient.safeSend({
+                action: 'startChat',///wrong route name for message to any message to cs_chat lambda
+                type: 'chatEnd',
+                fromAvatarID: avatarFromID,
+                toAvatarID: avatarToID,
+                chatID: this.currChat.chatID
+            });
+        } else {
+            console.log("CHAT- closeChat: no chat to close");
+            this.allowPointer = true;
+        }
         //this.allowPointer = true;///enable the pointer to allow clicks again ///moved to chatEnded
     }
 
@@ -249,10 +254,17 @@ class World {
     ///fromAvatarID is the ID of the avatar that request the chat
     chatStarted(fromAvatarID, toAvatarID) {
         const chatID = `${fromAvatarID}_${toAvatarID}`;
-        if (this.currChat && this.currChat.chatID === chatID) {
-            console.log('Ignoring duplicate chatStarted for', chatID);
+        if (this.currChat) {
+            console.log("CHAT- chatStarted: already in chat");
+            if ( this.currChat.chatID === chatID ) {
+                console.log("CHAT- chatStarted: already in chat with the same ID");
+                return;
+            }
+            ///close current chat????????
+            //this.chatEnded(fromAvatarID, toAvatarID);///close the current chat
             return;
         }
+
         console.log("CHAT- chatStarted on world");
         let toAvatar = this.idToAvatar(toAvatarID);
         let fromAvatar = this.idToAvatar(fromAvatarID);
