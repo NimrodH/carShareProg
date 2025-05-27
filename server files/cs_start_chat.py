@@ -32,13 +32,14 @@ def lambda_handler(event, context):
     _purge_expired()
     message_id = body.get("messageId")
     if message_id:
-        if message_id in _message_cache:
-            print(f"Duplicate message {message_id}")
+        id4catch = message_id + "-" + connection_id
+        if id4catch in _message_cache:
+            print(f"Duplicate message {id4catch}")
             return {
                 'statusCode': 200,
                 'body': json.dumps('Duplicate message')
             }
-        _message_cache[message_id] = time.time()
+        _message_cache[id4catch] = time.time()
         
     if 'ack' in body:
         #we got approval from client that he got the message and will send him the avatar

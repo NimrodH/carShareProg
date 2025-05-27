@@ -75,19 +75,22 @@ def lambda_handler(event, context):
     ### retrieve from the event body the data that user entered to welcome message
     body = json.loads(event['body'])
     message_id = body.get("messageId")
+    
     print("body got from client:")
     print(body)
     #if it has no messageId we will execute anyway
     if (message_id):
+        id4catch = message_id + "-" + connection_id
         #if message already in catch do noting and return
-        if message_id in _message_cache:
+        if id4catch in _message_cache:
             # duplicate detected → drop on the floor
+            print("duplicate detected → drop on the floor")
             return {
                 "statusCode": 200,
                 "body": json.dumps({"ok": True, "note": "duplicate, ignored"})
             }
         #we have messageId and its new message - write its number in catch
-        _message_cache[message_id] = time.time()
+        _message_cache[id4catch] = time.time()
 
     if body.get(type) == "keepalive":
         #print("keepalive")
