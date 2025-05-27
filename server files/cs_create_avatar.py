@@ -345,9 +345,10 @@ def send2client(connection_id, the_body, msg_type = "singleClient"):
     # add serverMsgId. client will send it back to know we don't need to send again
     payload = copy.deepcopy(the_body)
 
-    if payload["action"] != "message_done":
+    if payload["action"] == "message_done":
         server_msg_id = f"msg-{datetime.utcnow().timestamp()}"
         payload['serverMsgId'] = server_msg_id
+        
     
     if connection_id:
         try:
