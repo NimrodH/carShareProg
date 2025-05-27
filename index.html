@@ -117,6 +117,8 @@
             }
 
             async sendWithAck(payload, timeout = 750, messageId = null) {//60000 // 60 seconds
+                console.log("sendWithAck payload:")
+                console.log(payload);
                 const id = messageId || `msg-${++this.counter}`;
                 payload.messageId = id;
 
@@ -240,12 +242,14 @@
             }
 
             async safeSend(data, maxRetries = 3, retryDelay = 500) {
+                console.log("safeSend data:")
+                console.log(data);
                 const messageId = `msg-${++this.counter}`;
                 data.messageId = messageId;
 
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
                     try {
-                        const result = await wsClient.sendWithAck(data, retryDelay, messageId)); //return promise
+                        const result = await wsClient.sendWithAck(data, retryDelay, messageId); //return promise
                         return result;
                     } catch (error) {
                         console.warn(`Attempt ${attempt} failed:`, error);
