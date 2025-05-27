@@ -75,8 +75,8 @@ def lambda_handler(event, context):
     ### retrieve from the event body the data that user entered to welcome message
     body = json.loads(event['body'])
     message_id = body.get("messageId")
-    #print("body got from client:")
-    #print(body)
+    print("body got from client:")
+    print(body)
     #if it has no messageId we will execute anyway
     if (message_id):
         #if message already in catch do noting and return
@@ -161,7 +161,7 @@ def lambda_handler(event, context):
             'body': json.dumps({'message': 'Could not find or lock any item'})
     }
     #write in avatar table in dynamoDB
-    write_avatar(avatarID, avatar_pos_url, connection_id)
+    write_avatar(avatarID, avatar_pos_url, connection_id, body['isMan'])
     #tell client that his message to createAvatar recived by the server
     ack_message_done = { "action" : "message_done", "responseTo" : "createAvatar" ,"messageId" : message_id}
     send2client(connection_id, ack_message_done)
@@ -231,7 +231,11 @@ def save_sign_data(body, avatarID):
  ##############
 
     ### create line for the avatar in the avatars table
-def write_avatar(avatarID, avatar_pos_url, connection_id):
+def write_avatar(avatarID, avatar_pos_url, connection_id, isMan):
+    if (isMan):
+        url = avatar_pos_url["avatarURLBoy"]
+    else:
+        url = avatar_pos_url["avatarURL"]
     avatar_params = {
         'TableName': avatars_table.name,
         'Item': {
@@ -244,7 +248,7 @@ def write_avatar(avatarID, avatar_pos_url, connection_id):
             'targetZ': avatar_pos_url["targetZ"],
             'isTalking': False,
             'connectionId': connection_id,
-            'avatarURL': avatar_pos_url["avatarURL"]
+            'avatarURL': url
         }
     }
     try:
