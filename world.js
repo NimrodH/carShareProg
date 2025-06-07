@@ -4,29 +4,27 @@ class World {
     constructor(scene) {
         this._avatarsArr = [];///contains objects whith the avata, id and name
         this._wellcome = new Wellcome(this);
-        this.myAvatar = null;///the avatar of the user that saved inside the _avatarsArr[0].avatar
-        this.myAvatarID = null;
+        this.myAvatar = {};///the avatar of the user that saved inside the _avatarsArr[0].avatar
+        //this.myAvatarID = null;
         this.allowPointer = false;
+        this.msg = null;/// for messageScreen
     }
 
     ///will be called by Message
     async wellcomeDone(signData) {
-        signData.action = 'createAvatar';
-
-        try {
-            const result = await wsClient.safeSend(signData);
-            this.myAvatarID = result.avatarID || signData.avatarID;
-            //console.log("wellcomeDone (if null we failed to create Avatar):", result);
-            this.allowPointer = true;
-        } catch (err) {
-            //if err we already console  message in safeSend function and still want to allow the pointer
-            console.error("Failed to create avatar after retries:", err);
+        ///TODO:
+        ///show message: "loading"
+        this.msg = new MessageScreen(this, "Loading avatars, please wait...", 'info');
+        ///send HTTP request to create the avatar 
+        postData("addAvatar", signData)
+        ///save myAvatar details (no need to object avatar for my avartar))
+        this.myAvatar.Id = signData.avatarID;///save the avatarID of my avatar
+        this.myAvatar.name = signData.name;///save the avatarID of my avatar
+        ///loop to upload all avatar images 
+        ///hide message "loading"
+        ///start update by ping
+        ///this.allowPointer = true;
         }
-    }
-    //co pilot sugesst:
-    //this._wellcome.dispose();///remove the wellcome message
-    //this._wellcome = null;///remove the wellcome message
-
 
     /**
      * Asynchronously adds an avatar to the world.

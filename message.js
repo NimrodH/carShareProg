@@ -558,6 +558,107 @@ class Wellcome {
 }
 ////this.nextButton.isEnabled = true;
 
+class MessageScreen {   //plane = BABYLON.Mesh.CreatePlane("plane2",  { height: 1, width: 1 });
+    plane = BABYLON.Mesh.CreatePlane("plane2", 10);
+    advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
+    currentScreen = "info";
+    nextButton;///also sent as parameter in new session and called from there
+    constructor(world, msg, screenType = "info") {
+        let showButton = false;
+        this.world = world;
+        this.msg = msg
+        this.screenType = screenType;
+        if (this.screenType == "info") {
+            showButton = false;
+        } else {
+            showButton = true;
+        }
+
+        this.plane.position.z = 20;///-20
+        this.plane.position.y = 4;///
+        this.plane.position.x = 0;
+        this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
+
+        this.advancedTexture.background = "green"//green - 'red' for debug color
+        if (showButton) {
+            this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
+            this.nextButton.width = 1;
+            this.nextButton.height = 0.4;
+            this.nextButton.color = "white";
+            this.nextButton.fontSize = 50;
+            this.nextButton.background = "green";
+            this.nextButton.onPointerUpObservable.add(this.okClicked.bind(this));
+            this.nextButton.top = "300";//90
+            this.nextButton.left = "10px";
+            this.nextButton.height = "70px";
+            this.advancedTexture.addControl(this.nextButton);
+        }
+        const gap = 150;
+        const topLines = -450;
+        const gapLines = -100
+        this._addTextField(this.msg)
+
+    }
+    _addTextField(text, left = 400, top = 100, width = 70, height = 100) {
+        //"-450px"
+        const leftStr = left.toString() + "px";
+        const topStr = top.toString() + "px";
+        const widthStr = width.toString() + "px";
+        const hight = height.toString() + "px";
+        let text1 = new BABYLON.GUI.TextBlock("upperText");
+        text1.text = text;//"Hello world";
+        text1.color = "white"
+        text1.fontSize = 34;
+
+        text1.top = topStr;///"-450px";
+        text1.left = leftStr;///"400px"
+        text1.height = height;///"660px"
+        text1.width = widthStr;
+        this.advancedTexture.addControl(text1);
+        return text1;
+    }
+
+    _addInputText(left, top, areaWidth = 120, areaHight = 70) {
+        const leftStr = left.toString() + "px";
+        const topStr = top.toString() + "px";
+        const hightStr = areaHight.toString() + "px";
+        const widthStr = areaWidth.toString() + "px";
+        let inputTextArea = new BABYLON.GUI.InputText('id', "");
+        inputTextArea.height = "40px";
+        inputTextArea.color = "white";
+        inputTextArea.fontSize = 34;
+        inputTextArea.top = topStr;
+        inputTextArea.height = hightStr;
+        inputTextArea.width = widthStr;
+        inputTextArea.left = leftStr;
+        inputTextArea.onTextChangedObservable.add(() => this.nextButton.isEnabled = true);
+        this.advancedTexture.addControl(inputTextArea);
+        //this.keyboard.connect(inputTextArea);//needed for headset not pc. If used, neeed more place & uncomment this._addKeyboard();, too
+
+        return inputTextArea;
+    }
+
+    okClicked() {
+        this.world.okClicked(this.screenType)
+        this.clearInstance();
+    }
+
+    clearInstance() {
+        this.advancedTexture.dispose();
+        this.plane.dispose();
+
+        // Remove reference to the instance itself if needed
+        // Assuming `this` is the only reference to the instance
+        for (let prop in this) {
+            if (this.hasOwnProperty(prop)) {
+                delete this[prop];
+            }
+        }
+    }
+
+}
+
+
 /* + "\n" + "\n" +
     "מאחוריך מספר לבנים לבניית המודל" + "\n" + "\n" + 
     "[אחרי שראינו את האבנים יש להקליק על כפתור [המשך" + "\n" +

@@ -51,6 +51,320 @@
     <script>
         ///CAMERA//////LIGHT//////SKYBOX//////GROUND///ELEMENTS MENU///MODEL//////NEAR MENU///messages
         //////////////////// Ort MODE FUNCTIONS/////////////////////////////////
+        const avatarData = [
+            {
+                num: 8,
+                avatarURL: "https://models.readyplayer.me/67ff3e3113b3fb7e8ab511f1.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800943a31f1c6f08b68bf21.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -0.627905,
+                y: 0.0,
+                z: 5.97153
+            },
+            {
+                num: 9,
+                avatarURL: "https://models.readyplayer.me/67ff3f4564ce38bc90b4529c.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800a94a679b181682ce3dd0.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -1.854102,
+                y: 0.0,
+                z: 5.707107
+            },
+            {
+                num: 6,
+                avatarURL: "https://models.readyplayer.me/67ff3cdb31f1c6f0c2cda6fa.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 1.854102,
+                y: 0.0,
+                z: 5.707107
+            },
+            {
+                num: 5,
+                avatarURL: "https://models.readyplayer.me/67ff3c7356f46e30908bdc8f.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff3e9c31f1c6f084df53ec.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 3.0,
+                y: 0.0,
+                z: 5.196153
+            },
+            {
+                num: 4,
+                avatarURL: "https://models.readyplayer.me/67ff3c0613b3fb7e8ab4e847.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff3db06026f5144da76157.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 4.014784,
+                y: 0.0,
+                z: 4.458869
+            },
+            {
+                num: 7,
+                avatarURL: "https://models.readyplayer.me/67ff3d5e6026f5144da76641.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff3e7364ce38bc90b4565f.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 3.0,
+                y: 0.0,
+                z: 5.196153
+            },
+            {
+                num: 22,
+                avatarURL: "https://models.readyplayer.me/67ffb72c56f46e306f2f4c5d.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ffb67a679b181682d02be8.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 5.868886,
+                y: 0.0,
+                z: -1.24747
+            },
+            {
+                num: 18,
+                avatarURL: "https://models.readyplayer.me/6800e47031f1c6f0c2cda6fa.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -4.014784,
+                y: 0.0,
+                z: -4.458869
+            },
+            {
+                num: 16,
+                avatarURL: "https://models.readyplayer.me/6800e37231f1c6f0c2cda6fa.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800943a31f1c6f08b68bf21.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 4.014784,
+                y: 0.0,
+                z: -4.458869
+            },
+            {
+                num: 2,
+                avatarURL: "https://models.readyplayer.me/67ff38df13b3fb7e8ab499e7.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff39e331f1c6f0c2cda173.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 3.0,
+                y: 0.0,
+                z: -5.196153
+            },
+            {
+                num: 13,
+                avatarURL: "https://models.readyplayer.me/6800a816d620f8954da82b03.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800b0f0d620f8954da82cb9.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 1.854102,
+                y: 0.0,
+                z: -5.707107
+            },
+            {
+                num: 1,
+                avatarURL: "https://models.readyplayer.me/67ff35cc679b1816cf9c669b.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff35cc679b1816cf9c669b.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 0.627905,
+                y: 0.0,
+                z: -5.97153
+            },
+            {
+                num: 28,
+                avatarURL: "https://models.readyplayer.me/6800e47031f1c6f0c2cda6fa.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -3.0,
+                y: 0.0,
+                z: 0.0
+            },
+            {
+                num: 24,
+                avatarURL: "https://models.readyplayer.me/6800e2b5679b181682d01664.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -1.854102,
+                y: 0.0,
+                z: -5.707107
+            },
+            {
+                num: 27,
+                avatarURL: "https://models.readyplayer.me/6800e3e5679b181682d01664.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 3.0,
+                y: 0.0,
+                z: -5.196153
+            },
+            {
+                num: 21,
+                avatarURL: "https://models.readyplayer.me/67ffb67a679b181682d02be8.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ffb72c56f46e306f2f4c5d.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -4.854102,
+                y: 0.0,
+                z: 3.526712
+            },
+            {
+                num: 19,
+                avatarURL: "https://models.readyplayer.me/67ffb67a679b181682d02be8.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ffb72c56f46e306f2f4c5d.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -5.481273,
+                y: 0.0,
+                z: -2.44042
+            },
+            {
+                num: 26,
+                avatarURL: "https://models.readyplayer.me/6800b0f0d620f8954da82cb9.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800b4c7d620f8954da82e9f.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -3.0,
+                y: 0.0,
+                z: 5.196153
+            },
+            {
+                num: 23,
+                avatarURL: "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800b4c7d620f8954da82e9f.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -6.0,
+                y: 0.0,
+                z: 0.0
+            },
+            {
+                num: 20,
+                avatarURL: "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800b4c7d620f8954da82e9f.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -5.868886,
+                y: 0.0,
+                z: 1.24747
+            },
+            {
+                num: 3,
+                avatarURL: "https://models.readyplayer.me/67ff38df13b3fb7e8ab499e7.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff39e331f1c6f0c2cda173.glb",
+                isUsed: false,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 4.854102,
+                y: 0.0,
+                z: 3.526712
+            },
+            {
+                num: 17,
+                avatarURL: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                isUsed: true,
+                targetX: 4.854102,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: null,
+                y: 0.0,
+                z: null
+            },
+            {
+                num: 11,
+                avatarURL: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                isUsed: false,
+                targetX: 6.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            },
+            {
+                num: 10,
+                avatarURL: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                isUsed: false,
+                targetX: 0.627905,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: null,
+                y: 0.0,
+                z: null
+            },
+            {
+                num: 12,
+                avatarURL: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                avatarURLBoy: "https://models.readyplayer.me/67ff3fa56026f5144da76641.glb",
+                isUsed: false,
+                targetX: -4.014784,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: null,
+                y: 0.0,
+                z: null
+            },
+            {
+                num: 14,
+                avatarURL: "https://models.readyplayer.me/6800e2b5679b181682d01664.glb",
+                avatarURLBoy: "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                isUsed: true,
+                targetX: 0.0,
+                targetY: 0.0,
+                targetZ: 0.0,
+                x: -5.868886,
+                y: 0.0,
+                z: 1.24747
+            }
+        ];
 
 
         const menuX = 1;//1;
@@ -301,19 +615,30 @@
         }
 
 
-        async function postData(url = '', data = {}) {
-            ////console.log(JSON.stringify(data))
-            fullURL = url + '?' + new URLSearchParams(data)
-            fetch(fullURL, {
-                method: 'POST',
-                body: JSON.stringify(data),
+        async function postData(route, payload = {}) {
+            URL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';///TODO: change to your URL""
+            routeURL = URL + route;
+            fetch(routeURL, {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
-                }
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(payload)
             })
-                .then(response => response.json())
-                .then(data2 => console.log("postData done"))
-                .catch(error => console.error("postData error: " + error));
+                .then(async (res) => {
+                    if (!res.ok) {
+                        console.error("Server error:", res.status, await res.text());
+                        return;
+                    }
+                    const data = await res.json();
+                    console.log("Item created:", data);
+                })
+                .catch(err => {
+                    console.error("Network or CORS error:", err);
+                });
+
+
         }
         //#endregion
         //#region///////////////////// VR stansdart issues ///////////////
