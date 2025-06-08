@@ -619,6 +619,15 @@
             URL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';///TODO: change to your URL""
             routeURL = URL + route;
             console.log("postData routeURL: " + routeURL);
+            fetch('https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/addAvatar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(yourData)
+            })
+            /*
             fetch(routeURL, {
                 method: "POST",
                 headers: {
@@ -639,7 +648,7 @@
                     console.error("Network or CORS error:", err);
                 });
 
-
+*/
         }
         //#endregion
         //#region///////////////////// VR stansdart issues ///////////////
