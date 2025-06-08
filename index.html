@@ -618,11 +618,13 @@
         async function postData(route, payload = {}) {
             URL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';///TODO: change to your URL""
             routeURL = URL + route;
+            console.log("postData routeURL: " + routeURL);
             fetch(routeURL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Accept": "application/json"
+                    "Accept": "application/json",
+                    "Access-Control-Allow-Origin": "*", // Allow all origins
                 },
                 body: JSON.stringify(payload)
             })
