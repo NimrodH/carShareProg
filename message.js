@@ -150,7 +150,7 @@ class Chat {
         this.rect1.width = "35%" //"500px";
         this.rect1.height = "85%"//"600px";
         this.rect1.cornerRadius = 20;
-        this.rect1.color = "green";///orange for debug green for product
+        this.rect1.color = "green";
         this.rect1.thickness = 4;
         this.rect1.background = "black";
         this.rect1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -385,7 +385,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange"//green - 'red' for debug color
+        this.advancedTexture.background = "green"//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
