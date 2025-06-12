@@ -47,8 +47,8 @@ class World {
 
         this.allowPointer = true;
         ///start update by ping
-        //let signs =  getData("getAllStatuses");
-        //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
+        let signs =  getData("getAllStatuses");
+        console.log("CC- getAllStatuses: " + JSON.stringify(signs));
         //return signs; ///return the signs to the caller
     }
 
