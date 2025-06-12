@@ -657,9 +657,9 @@
         //#region/////////////////// get/post to html api gateway - not in use /////////////////////
         ///const queryParam = `?foo=${encodeURIComponent(fooValue)}`;
         async function getData(route, queryParam = {}) {
-            URL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+            let baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
             queryParam4URL = encodeURIComponent(queryParam);
-            const fullURL = `${URL}${route}${queryParam4URL}`;
+            const fullURL = `${baseURL}${route}${queryParam4URL}`;
 
             try {
                 const response = await fetch(fullURL, {
@@ -686,8 +686,8 @@
         }
 
         async function postData(route, payload = {}) {
-            URL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
-            routeURL = URL + route;
+            let baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+            routeURL = baseURL + route;
             console.log("postData routeURL: " + routeURL);
             console.log(payload);
             fetch(routeURL, {
