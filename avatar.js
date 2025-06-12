@@ -2,12 +2,18 @@
 
 class Avatar {
 
-    constructor(avatarID, avatarURL, world) {
+    constructor(avatarData, world) {
         this.myWorld = world;
-        this.avatarURL = avatarURL;
-        this.ID = avatarID;
+        this.avatarData = avatarData; ///The data related to the avatar (differ then the user own it)
+        this.userData = {};///will be filled with data from signdata
+        this.stausData = {}; ///will be filled with data from signdata
+        this.avatarMesh = null; ///the mesh of the avatar
+        this.frontSign = null; ///the sign in front of the avatar
+        
         //console.log("Avatar ID: " + this.ID);
     }
+
+
 
     async initAvatar(avatarDetails, signData, scene) {
         const planeSize = 0.85;
@@ -27,10 +33,9 @@ class Avatar {
         this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);
         this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
         this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
-
     }
 
-    async createAvatarMesh(avatarURL, scene) {
+    async createAvatarMesh(scene) {
         //console.log("avatarURL: " + avatarURL)
         /*        
        await BABYLON.SceneLoader.AppendAsync("", avatarURL, scene);
@@ -38,6 +43,25 @@ class Avatar {
         let avatarMesh = beforeavatarMesh.parent;
         return avatarMesh.parent;
         */
+        // Load the GLB model from the URL
+        ///select gender by even or odd numb
+        let avatarURL
+        if (this.avatarData.num % 2 === 0) {
+            avatarURL = this.avatarData.avatarURL;
+            this.avatarData.loadedGender = "girl";
+        } else {
+            avatarURL = this.avatarData.avatarURLBoy;
+            this.avatarData.loadedGender="Boy";
+        }
+
+        const response = await fetch(avatarURL, { method: 'HEAD' });
+
+        if (!response.ok) {
+            console.warn(`GLB file not found at: ${avatarURL}`);
+            return;
+        }
+
+
         const result = await BABYLON.SceneLoader.ImportMeshAsync(
             null,
             "",
@@ -51,7 +75,18 @@ class Avatar {
             console.warn("No root mesh found in imported GLB!");
             return null;
         }
-        return root;
+        this.avatarMesh = root;
+        ///return root;
+    }
+    ///place the avatar in the world
+    placeAvatar() {
+        // Use this.avatarData instead of avatarDetails
+        const data = this.avatarData;
+        if (this.avatarMesh) {
+            this.avatarMesh.position = new BABYLON.Vector3(data.x, data.y, data.z);
+            this.avatarMesh.lookAt(new BABYLON.Vector3(data.targetX, data.targetY, data.targetZ));
+            this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
+        }
     }
 
     chatRequest() {

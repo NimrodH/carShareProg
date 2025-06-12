@@ -14,17 +14,48 @@ class World {
     async wellcomeDone(signData) {
         ///TODO:
         ///show message: "loading"
-        this.msg = new MessageScreen(this, "Loading avatars, please wait...", 'info');
+        const loadingMessage = `המתן - טוען אווטרים
+כאשר שלט זה  ייסגר חלק מהאווטרים יציגו 
+שלט עם פרטי הנסיעה המעניינים אותם
+ניתן יהיה ללחוץ על הכפתור בשלט
+ כדי לקיים שיחת צ'אט עם אווטר רלוונטי`;
+        this.msg = new MessageScreen(this, loadingMessage, 'info');
         ///send HTTP request to create the avatar 
         postData("addAvatar", signData)
         ///save myAvatar details (no need to object avatar for my avartar))
         this.myAvatar.Id = signData.avatarID;///save the avatarID of my avatar
         this.myAvatar.name = signData.name;///save the avatarID of my avatar
-        ///loop to upload all avatar images 
-        ///hide message "loading"
-        ///start update by ping
-        ///this.allowPointer = true;
+        ///loop avatarsDataArray to create (new Avatar) and then load (use acreateAvatarMesh and placeAvatr from Avatar.js) all avatar images
+        let iterationText = 1;
+        if (Array.isArray(avatarsDataArray)) {
+            for (const avatarData of avatarsDataArray) {
+                this.msg.updateIterationText(`${iterationText} / ${avatarsDataArray.length}`);
+                iterationText++;
+                // Create a new Avatar instance
+                const avatar = new Avatar(avatarData, this);
+                // Optionally, store avatar object if needed
+                // await to ensure mesh is created and placed before continuing
+                await avatar.createAvatarMesh(scene);
+                await avatar.placeAvatar();
+                // Add to _avatarsArr for tracking
+                this._avatarsArr.push(avatar);
+            }
         }
+        ///hide message "loading"
+        this.msg.clearInstance();///clear the message screen
+        this.msg = null;///clear the message screen
+
+        this.allowPointer = true;
+        ///start update by ping
+        let signs =  getData("getAllStatuses");
+        console.log("CC- getAllStatuses: " + JSON.stringify(signs));
+        //return signs; ///return the signs to the caller
+    }
+
+readUpdateStatus() {
+    ///read the update status from the server
+    get()
+}
 
     /**
      * Asynchronously adds an avatar to the world.
@@ -254,7 +285,7 @@ async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsAr
         const chatID = `${fromAvatarID}_${toAvatarID}`;
         if (this.currChat) {
             console.log("CHAT- chatStarted: already in chat");
-            if ( this.currChat.chatID === chatID ) {
+            if (this.currChat.chatID === chatID) {
                 console.log("CHAT- chatStarted: already in chat with the same ID");
                 return;
             }

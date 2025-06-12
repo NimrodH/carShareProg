@@ -385,7 +385,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green"//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
@@ -563,6 +563,7 @@ class MessageScreen {   //plane = BABYLON.Mesh.CreatePlane("plane2",  { height: 
     advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
     currentScreen = "info";
     nextButton;///also sent as parameter in new session and called from there
+
     constructor(world, msg, screenType = "info") {
         let showButton = false;
         this.world = world;
@@ -596,10 +597,11 @@ class MessageScreen {   //plane = BABYLON.Mesh.CreatePlane("plane2",  { height: 
         const gap = 150;
         const topLines = -450;
         const gapLines = -100
-        this._addTextField(this.msg)
+        this.iterationField = this._addTextField(this.msg, 10, -450, 150, 60 )
+        this.msgField = this._addTextField(this.msg)
 
     }
-    _addTextField(text, left = 400, top = 100, width = 70, height = 100) {
+    _addTextField(text, left = -50, top = -200, width = 800, height = 400) {
         //"-450px"
         const leftStr = left.toString() + "px";
         const topStr = top.toString() + "px";
@@ -633,9 +635,19 @@ class MessageScreen {   //plane = BABYLON.Mesh.CreatePlane("plane2",  { height: 
         inputTextArea.left = leftStr;
         inputTextArea.onTextChangedObservable.add(() => this.nextButton.isEnabled = true);
         this.advancedTexture.addControl(inputTextArea);
+
+
         //this.keyboard.connect(inputTextArea);//needed for headset not pc. If used, neeed more place & uncomment this._addKeyboard();, too
 
         return inputTextArea;
+    }
+
+    updateIterationText(iteration) {
+        this.iterationField.text = iteration;
+    }
+
+    updateMessageText(message) {
+        this.msgField.text = message;
     }
 
     okClicked() {
