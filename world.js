@@ -21,7 +21,7 @@ class World {
  כדי לקיים שיחת צ'אט עם אווטר רלוונטי`;
         this.msg = new MessageScreen(this, loadingMessage, 'info');
         ///send HTTP request to create the avatar 
-        postData("addAvatar", signData)
+        postData("addAvatar", signData);
         ///save myAvatar details (no need to object avatar for my avartar))
         this.myAvatar.Id = signData.avatarID;///save the avatarID of my avatar
         this.myAvatar.name = signData.name;///save the avatarID of my avatar
@@ -47,8 +47,8 @@ class World {
 
         this.allowPointer = true;
         ///start update by ping
-        let signs =  getData("getAllStatuses");
-        console.log("CC- getAllStatuses: " + JSON.stringify(signs));
+        //let signs =  getData("getAllStatuses");
+        //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
         //return signs; ///return the signs to the caller
     }
 
