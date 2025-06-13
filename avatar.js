@@ -15,13 +15,13 @@ class Avatar {
 
 
 
-    async initAvatar(avatarDetails, signData, scene) {
+    async matchUser(signData) {
         const planeSize = 0.85;
         const signX = 0;
         const signY = 0.55;
         const signZ = 0.18;
         this.userName = signData.userName;
-        this.avatarMesh = await this.createAvatarMesh(this.avatarURL, scene);
+        
         if (signData.avatarID[0] == "A") {
             this.avatarMesh.getChildMeshes().forEach(child => {
                 //child.setEnabled(false); // This will completely disable the mesh
@@ -30,9 +30,6 @@ class Avatar {
             });
         }
         this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
-        this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);
-        this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
-        this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
     }
 
     async createAvatarMesh(scene) {
