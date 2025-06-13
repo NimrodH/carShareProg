@@ -60,7 +60,7 @@ class World {
             ///add the avatar to the world
             //await this.addAvatar2World(avatarDetails, sign, true, scene);
         }
-        console.log("CC- getAllStatuses: " + JSON.stringify(signs));
+        //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
         //return signs; ///return the signs to the caller
     }
     getFreeAvatar() {
@@ -68,6 +68,8 @@ class World {
         ///TODO: handel gender and all used condition
         for (const avatarObj of this._avatarsArr) {
             if (!avatarObj.avatarData.isUsed) {
+                !avatarObj.avatarData.isUsed = true; ///set the avatar as used
+                console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.num);
                 return avatarObj;
             } else {
                 console.log("CC- getFreeAvatar: no free avatars");
