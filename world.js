@@ -68,7 +68,7 @@ class World {
         ///TODO: handel gender and all used condition
         for (const avatarObj of this._avatarsArr) {
             if (!avatarObj.avatarData.isUsed) {
-                !avatarObj.avatarData.isUsed = true; ///set the avatar as used
+                avatarObj.avatarData.isUsed = true; ///set the avatar as used
                 console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.num);
                 return avatarObj;
             } else {
