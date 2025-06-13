@@ -48,7 +48,7 @@ class World {
         this.allowPointer = true;
         ///start update by ping
         let signs =  await getData("getAllStatuses");
-        console.log("CC- getAllStatuses: " + JSON.stringify(signs));
+        //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
         for (const sign of signs) {
             let currAvatar= this.getFreeAvatar();
             if (!currAvatar) {
@@ -58,7 +58,7 @@ class World {
             currAvatar.matchUser(sign);///match the user to the avatar
             ///console.log("CC- getAllStatuses: " + JSON.stringify(sign));
             ///add the avatar to the world
-            await this.addAvatar2World(avatarDetails, sign, true, scene);
+            //await this.addAvatar2World(avatarDetails, sign, true, scene);
         }
         console.log("CC- getAllStatuses: " + JSON.stringify(signs));
         //return signs; ///return the signs to the caller
@@ -69,6 +69,9 @@ class World {
         for (const avatarObj of this._avatarsArr) {
             if (!avatarObj.avatarData.isUsed) {
                 return avatarObj;
+            } else {
+                console.log("CC- getFreeAvatar: no free avatars");
+                return false
             }
         }
         ///if all avatars are in use return the first one
