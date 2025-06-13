@@ -50,7 +50,7 @@ class World {
         let signs =  await getData("getAllStatuses");
         console.log("CC- getAllStatuses: " + JSON.stringify(signs));
         for (const sign of signs) {
-            currAvatar= this.getFreeAvatar();
+            let currAvatar= this.getFreeAvatar();
             if (!currAvatar) {
                 console.warn("No free avatar found to add to the world.");
                 continue;
