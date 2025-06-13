@@ -47,8 +47,9 @@ class World {
 
         this.allowPointer = true;
         ///start update by ping
-        let signs =  getData("getAllStatuses");
-        for (sign of signs) {
+        let signs =  await getData("getAllStatuses");
+        console.log("CC- getAllStatuses: " + JSON.stringify(signs));
+        for (const sign of signs) {
             currAvatar= this.getFreeAvatar();
             if (!currAvatar) {
                 console.warn("No free avatar found to add to the world.");
