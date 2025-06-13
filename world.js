@@ -67,7 +67,7 @@ class World {
         ///get the first avatar that is not in use
         ///TODO: handel gender and all used condition
         for (const avatarObj of this._avatarsArr) {
-            if (!avatarObj.avatarData.isInUse()) {
+            if (!avatarObj.avatarData.isUsed) {
                 return avatarObj;
             }
         }
