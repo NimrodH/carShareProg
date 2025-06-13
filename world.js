@@ -47,10 +47,10 @@ class World {
 
         this.allowPointer = true;
         ///start update by ping
-        let signs =  await getData("getAllStatuses");
+        let signs = await getData("getAllStatuses");
         //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
         for (const sign of signs) {
-            let currAvatar= this.getFreeAvatar();
+            let currAvatar = this.getFreeAvatar();
             if (!currAvatar) {
                 console.warn("No free avatar found to add to the world.");
                 continue;
@@ -71,19 +71,18 @@ class World {
                 avatarObj.avatarData.isUsed = true; ///set the avatar as used
                 console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.num);
                 return avatarObj;
-            } else {
-                console.log("CC- getFreeAvatar: no free avatars");
-                return false
             }
         }
+        console.log("CC- getFreeAvatar: no free avatars");
+        return false;
         ///if all avatars are in use return the first one
         //return this._avatarsArr[0].avatar;
     }
 
-readUpdateStatus() {
-    ///read the update status from the server
-    get()
-}
+    readUpdateStatus() {
+        ///read the update status from the server
+        get()
+    }
 
     /**
      * Asynchronously adds an avatar to the world.
