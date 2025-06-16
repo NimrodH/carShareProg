@@ -4,11 +4,11 @@ class Avatar {
 
     constructor(avatarData, world) {
         this.myWorld = world;
-        this.avatarData = avatarData; ///The data related to the avatar (differ then the user own it)
-        this.userData = {};///will be filled with data from signdata
-        this.stausData = {}; ///will be filled with data from signdata
+        this.avatarData = avatarData; ///The data related to the avatar (differ then the user own it) see avatarsDataArray
+        this.userData = {};///will be filled with data from signdata including name and avatarID (see debugUsersArray)
+        this.statusData = {}; ///will be updated with the status of the avatar (noChat, myChat, inChat...)
         this.avatarMesh = null; ///the mesh of the avatar
-        this.frontSign = null; ///the sign in front of the avatar
+        this.frontSign = null; ///the sign in front of the avatar (AvatarMessage)
 
         //console.log("Avatar ID: " + this.ID);
     }
@@ -20,7 +20,8 @@ class Avatar {
         const signX = 0;
         const signY = 0.55;
         const signZ = 0.18;
-        this.userName = signData.userName;
+        this.userData = signData; ///The data related to the user (the one who own the avatar)
+        //this.userName = signData.userName;
         //console.log("avatarMesh:", this.avatarMesh);
         if (signData.avatarID[0] == "A") {
             this.avatarMesh.getChildMeshes().forEach(child => {

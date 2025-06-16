@@ -15,7 +15,7 @@ class World {
         ///TODO:
         ///show message: "loading"
         const loadingMessage = `המתן - טוען אווטרים
-כאשר שלט זה  ייסגר חלק מהאווטרים יציגו 
+כאשר שלט זה ייסגר חלק מהאווטרים יציגו 
 שלט עם פרטי הנסיעה המעניינים אותם
 ניתן יהיה ללחוץ על הכפתור בשלט
  כדי לקיים שיחת צ'אט עם אווטר רלוונטי`;
@@ -24,9 +24,11 @@ class World {
         await postData("addAvatar", signData);/// comment for debug without server. change get , too
         ///save myAvatar details (no need to object avatar for my avartar))
         this.myAvatar.Id = signData.avatarID;///save the avatarID of my avatar
-        this.myAvatar.name = signData.name;///save the avatarID of my avatar
+        this.myAvatar.name = signData.name;///save the user name of my avatar
         ///loop avatarsDataArray to create (new Avatar) and then load (use acreateAvatarMesh and placeAvatr from Avatar.js) all avatar images
         let iterationText = 1;
+        ///avatarsDataArray contains URLs and other constant data for all avatars differ then user data. each iten has unic "num"
+        ///in this loop we create avatarObj with avatarMesh for each item in avatarsDataArray and add it to the _avatarsArr
         if (Array.isArray(avatarsDataArray)) {
             for (const avatarData of avatarsDataArray) {
                 this.msg.updateIterationText(`${iterationText} / ${avatarsDataArray.length}`);
@@ -48,7 +50,8 @@ class World {
         this.allowPointer = true;
         ///start update by ping
         let signs = await getData("getAllStatuses");/////get all the signs from the server
-        //////let signs = debugSignArray;///for debug without server. change post, too.
+            //////let signs = debugUsersArray;///for debug without server. change post, too.
+        ///in this loop for each user (list of them returned from server) we collect free avatr and add to it the user data
         if (Array.isArray(signs)) {
             //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
             for (const sign of signs) {
