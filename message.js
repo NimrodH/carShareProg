@@ -3,12 +3,28 @@
 class AvatarMessage {
     //nextButton;///also sent as parameter in new session and called from there
     constructor(planeSize, x, y, z, signData, avatar) {
+        console.log("in AvatarMessage")
         this.myAvatar = avatar;
         this.plane = BABYLON.MeshBuilder.CreatePlane("plane", { height: planeSize, width: -planeSize });
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
-        this.plane.position = new BABYLON.Vector3(x, y, z);
+        //this.plane.position = new BABYLON.Vector3(x, y, z);
+        ///this.plane.position = new BABYLON.Vector3(0, 0, 0);///////////////
+        //this.plane.setParent(this.myAvatar.avatarMesh);
+//////////////////////////////
+        //this.avatarMesh.scaling = new BABYLON.Vector3(1, 1, 1);
+        const anchor = new BABYLON.TransformNode("anchor", scene);
+        anchor.scaling = new BABYLON.Vector3(-1, 1, -1);
+        //anchor.scaling = new BABYLON.Vector3(1, 1, 1);
+        anchor.parent = this.myAvatar.avatarMesh;
+        anchor.position = new BABYLON.Vector3(x, y, z); // try different Y/Z to move above chest
+        this.plane.parent = anchor;
+        //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;
+
+////////////////////
+
         this.plane.setParent(this.myAvatar.avatarMesh);
+
         this.advancedTexture.background = 'green'
 
 
@@ -597,7 +613,7 @@ class MessageScreen {   //plane = BABYLON.Mesh.CreatePlane("plane2",  { height: 
         const gap = 150;
         const topLines = -450;
         const gapLines = -100
-        this.iterationField = this._addTextField(this.msg, 10, -450, 150, 60 )
+        this.iterationField = this._addTextField(this.msg, 10, -450, 150, 60)
         this.msgField = this._addTextField(this.msg)
 
     }

@@ -9,7 +9,7 @@ class Avatar {
         this.stausData = {}; ///will be filled with data from signdata
         this.avatarMesh = null; ///the mesh of the avatar
         this.frontSign = null; ///the sign in front of the avatar
-        
+
         //console.log("Avatar ID: " + this.ID);
     }
 
@@ -21,7 +21,7 @@ class Avatar {
         const signY = 0.55;
         const signZ = 0.18;
         this.userName = signData.userName;
-        
+        //console.log("avatarMesh:", this.avatarMesh);
         if (signData.avatarID[0] == "A") {
             this.avatarMesh.getChildMeshes().forEach(child => {
                 //child.setEnabled(false); // This will completely disable the mesh
@@ -29,7 +29,9 @@ class Avatar {
                 child.visibility = 0;
             });
         }
+        //console.log("matchUser: " + JSON.stringify(signData));
         this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
+
     }
 
     async createAvatarMesh(scene) {
@@ -48,7 +50,7 @@ class Avatar {
             this.avatarData.loadedGender = "girl";
         } else {
             avatarURL = this.avatarData.avatarURLBoy;
-            this.avatarData.loadedGender="Boy";
+            this.avatarData.loadedGender = "Boy";
         }
 
         const response = await fetch(avatarURL, { method: 'HEAD' });
@@ -65,14 +67,19 @@ class Avatar {
             avatarURL,
             scene
         );
-
+/*
         // Find the top-level node among them (those with no parent)
+        result.meshes.forEach(m => {
+            console.log(`Mesh: ${m.name} | Vertices: ${m.getTotalVertices()} | Visible: ${m.isVisible}`);
+        });
+        */
         const root = result.meshes.find(m => !m.parent);
         if (!root) {
             console.warn("No root mesh found in imported GLB!");
             return null;
         }
         this.avatarMesh = root;
+        //this.avatarMesh.scaling = new BABYLON.Vector3(1, 1, 1);
         ///return root;
     }
     ///place the avatar in the world
@@ -80,9 +87,11 @@ class Avatar {
         // Use this.avatarData instead of avatarDetails
         const data = this.avatarData;
         if (this.avatarMesh) {
+            //this.avatarMesh.scaling = new BABYLON.Vector3(-1, 1, -1);
             this.avatarMesh.position = new BABYLON.Vector3(data.x, data.y, data.z);
             this.avatarMesh.lookAt(new BABYLON.Vector3(data.targetX, data.targetY, data.targetZ));
             this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
+            
         }
     }
 

@@ -21,7 +21,7 @@ class World {
  כדי לקיים שיחת צ'אט עם אווטר רלוונטי`;
         this.msg = new MessageScreen(this, loadingMessage, 'info');
         ///send HTTP request to create the avatar 
-        await postData("addAvatar", signData);
+        await postData("addAvatar", signData);/// comment for debug without server. change get , too
         ///save myAvatar details (no need to object avatar for my avartar))
         this.myAvatar.Id = signData.avatarID;///save the avatarID of my avatar
         this.myAvatar.name = signData.name;///save the avatarID of my avatar
@@ -47,29 +47,38 @@ class World {
 
         this.allowPointer = true;
         ///start update by ping
-        let signs = await getData("getAllStatuses");
-        //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
-        for (const sign of signs) {
-            let currAvatar = this.getFreeAvatar();
-            if (!currAvatar) {
-                console.warn("No free avatar found to add to the world.");
-                continue;
+        let signs = await getData("getAllStatuses");/////get all the signs from the server
+        //////let signs = debugSignArray;///for debug without server. change post, too.
+        if (Array.isArray(signs)) {
+            //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
+            for (const sign of signs) {
+                //console.log("CC- getAllStatuses: " + JSON.stringify(sign));
+                let currAvatar = this.getFreeAvatar();
+                if (!currAvatar) {
+                    console.warn("No free avatar found to add to the world.");
+                    continue;
+                }
+                currAvatar.matchUser(sign);///match the user to the avatar
+                
+                ///console.log("CC- getAllStatuses: " + JSON.stringify(sign));
+                ///add the avatar to the world
+                //await this.addAvatar2World(avatarDetails, sign, true, scene);
             }
-            currAvatar.matchUser(sign);///match the user to the avatar
-            ///console.log("CC- getAllStatuses: " + JSON.stringify(sign));
-            ///add the avatar to the world
-            //await this.addAvatar2World(avatarDetails, sign, true, scene);
+        } else {
+            console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
         }
         //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
         //return signs; ///return the signs to the caller
     }
+
     getFreeAvatar() {
         ///get the first avatar that is not in use
         ///TODO: handel gender and all used condition
+        //console.log("CC- getFreeAvatar: " + this.safeStringifySkipMyWorld(this._avatarsArr) );
         for (let avatarObj of this._avatarsArr) {
             if (!avatarObj.avatarData.isUsed) {
                 avatarObj.avatarData.isUsed = true; ///set the avatar as used
-                console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.num);
+                //console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.avatarData.num);
                 return avatarObj;
             }
         }
@@ -437,4 +446,17 @@ async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsAr
             avatarObj.avatar.setDone();
         }
     }
+
+    safeStringifySkipMyWorld(obj) {///for debug
+    const seen = new WeakSet();
+    return JSON.stringify(obj, (key, value) => {
+        if (key === "myWorld") return undefined; // Skip this property
+
+        if (typeof value === "object" && value !== null) {
+            if (seen.has(value)) return "[Circular]";
+            seen.add(value);
+        }
+        return value;
+    }, 2); // Pretty-print with 2 spaces
+}
 }
