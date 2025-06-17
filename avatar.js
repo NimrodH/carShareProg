@@ -1,7 +1,6 @@
 
 
 class Avatar {
-
     constructor(avatarData, world) {
         this.myWorld = world;
         this.avatarData = avatarData; ///The data related to the avatar (differ then the user own it) see avatarsDataArray
@@ -12,8 +11,17 @@ class Avatar {
 
         //console.log("Avatar ID: " + this.ID);
     }
-
-
+    ///getters for the avatar data for old code compatibility
+    get ID() {
+        console.log("get avatar ID used")
+        return this.userData.avatarID;
+    }
+    get userName() {
+        return this.userData.userName;
+    }
+    get avatarID() {
+        return this.userData.avatarID;
+    }
 
     async matchUser(signData) {
         const planeSize = 0.85;

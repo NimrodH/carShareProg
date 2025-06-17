@@ -577,21 +577,6 @@
                             console.log(data);
                         }
                         break;
-                    case 'createAvatar':
-                        this.confirm2server(data, "createAvatar")
-                        let isMe = false;
-                        if (data.isMe == "me") {
-                            isMe = true;
-                        } else {
-                            isMe = false;
-                        }
-                        await myWorld.addAvatar2World(data.avatarDetails, data.signData, isMe, scene);
-                        console.log("CC- new Avatar created by server request ID: " + data.signData.avatarID);
-                        break;
-                    case 'createMissingAvatars':
-                        this.confirm2server(data, "createAvatar");
-                        await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
-                        break;
                     case 'waitForAck':
                         this.confirm2server(data, "createAvatar");
                         ///if we remove conform from here we get alot of waitForAck messages on pendingRetries table
@@ -626,17 +611,7 @@
                         break;
                 }
             }
-            /*
-            if (doAnswer) {
-                ///let server know that we got the message
-                this.socket.send(JSON.stringify({
-                    action: data['responseTo'],
-                    serverMsgId: data.serverMsgId,
-                    ack: "serverMsgDone"
-                }));
-                return;
-            }
-*/
+ 
             ///confirm the message to the server           
             confirm2server(data, destAction) {
                 //console.log ("confirm2server data:")
@@ -650,15 +625,6 @@
                 console.log("send confirm 2 server confirmMsg:")
                 console.log(confirmMsg);
                 this.socket.send(confirmMsg);
-
-                /*
-                 let confirmMsg = {
-                     action: destAction, //"createAvatar",
-                     serverMsgId: data.serverMsgId,
-                     ack: "serverMsgDone"
-                 }
-                 this.safeSend(confirmMsg);
-                 */
             }
 
             async safeSend(data, maxRetries = 3, retryDelay = 500) {
@@ -690,16 +656,6 @@
                 }));
                 console.log('keepalive sent');
             }, 1 * 60 * 1000);///9 instaed of 1
-
-            /// to remain the connection live more thaen 10 munutes
-            ///TODO: clear this interval when the connection is closed
-            /*
-            pingInterval = setInterval(() => {
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'ping' }));
-                }
-            }, 300000); // Send a ping every 5 minutes (300 seconds)
-            */
         };
 
         socket.onclose = function (event) {
@@ -918,79 +874,13 @@
             environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
 
             ///INIT///
-            //console.log("scene.meshes 0");
-            //console.log(scene.meshes);
 
             myWorld = await new World(scene);
-
-
-            /*
-           elementsMenu = BABYLON.MeshBuilder.CreateSphere("elementsMenu", { diameter: 0.01 });
-
-           elementsMenu.position.x = menuX;
-           elementsMenu.position.y = elementsMenuY;///position of center of B1X3 TODO:we need to replace it with virtual mesh
-
-          
-           elementsMenu.metadata = {
-               labelObj: new FbMessages("תפריט אבני בניין", 1, 1, 0)
-           }
-           
-
-           const b1X5 = meshBlock(scene, 5);
-           b1X5.setParent(elementsMenu);
-           b1X5.position.x = -7;//
-           const b1X3 = meshBlock(scene, 3);
-           b1X3.setParent(elementsMenu);
-           b1X3.position.x = -1;
-
-           const b1X2 = meshBlock(scene, 2);
-           b1X2.setParent(elementsMenu);
-           b1X2.position.x = 3;
-
-           const c1 = meshWheel(scene, 1);
-           c1.setParent(elementsMenu);
-           c1.position.x = 6;
-
-
-           elementsMenu.scaling = scailingMenuModel;
-*/
-            //const avatar1 = scene.getMeshByName(theName);
-
-            ///end ELEMENTS MENU///
-
-            ///MODEL///
-            //currentModel = createModel("one", -5, 0 ,-5 );
-            ///end MODEL///
-
-            ///NEAR MENU///
-            //near = createNearMenu();///called now from messages. implemented in lego 1
-
-            ///end NEAR MENU///
-            /*////////////////////
-            var newPlane = BABYLON.Mesh.CreatePlane("plane", 10);
-              //newPlane.position.y = 1;
-              newPlane.position.z = -25;
-                    newPlane.position.y = 2;/////2
-                    newPlane.position.x = 0;
-              var newADT = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(newPlane);
-              var newImage = new BABYLON.GUI.Image("erji", "textures/pink_py.png");
-              newADT.addControl(newImage);
-            *////////////////////
-            //////messageBox = new Messages();
 
             const xr = await scene.createDefaultXRExperienceAsync({
                 floorMeshes: [ground]
             });
-            ////console.log("xr"); 
-            ////console.log(xr); 
             xr.pointerSelection.laserPointerDefaultColor = new BABYLON.Color3(1, 1, 0); //....
-
-            /*
-            scene.debugLayer.show({
-                embedMode: true,
-            });
-            */
-            ////scene.debugLayer.show();
             return scene;
         };
         /////// END CREATE SCENE ////////////

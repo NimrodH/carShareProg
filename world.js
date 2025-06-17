@@ -12,8 +12,7 @@ class World {
 
     ///will be called by Message
     async wellcomeDone(signData) {
-        ///TODO:
-        ///show message: "loading"
+         ///show message: "loading"
         const loadingMessage = `המתן - טוען אווטרים
 כאשר שלט זה ייסגר חלק מהאווטרים יציגו 
 שלט עם פרטי הנסיעה המעניינים אותם
@@ -21,10 +20,10 @@ class World {
  כדי לקיים שיחת צ'אט עם אווטר רלוונטי`;
         this.msg = new MessageScreen(this, loadingMessage, 'info');
         ///send HTTP request to create the avatar 
-        await postData("addAvatar", signData);/// comment for debug without server. change get , too
+        await postData("addAvatar", signData);/// comment for debug without server. change get , too ////////////////////////
         ///save myAvatar details (no need to object avatar for my avartar))
-        this.myAvatar.Id = signData.avatarID;///save the avatarID of my avatar
-        this.myAvatar.name = signData.name;///save the user name of my avatar
+        this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
+        this.myAvatar.userData = signData;///save the avatarID of my avatar
         ///loop avatarsDataArray to create (new Avatar) and then load (use acreateAvatarMesh and placeAvatr from Avatar.js) all avatar images
         let iterationText = 1;
         ///avatarsDataArray contains URLs and other constant data for all avatars differ then user data. each iten has unic "num"
@@ -49,11 +48,10 @@ class World {
 
         this.allowPointer = true;
         ///start update by ping
-        let signs = await getData("getAllStatuses");/////get all the signs from the server
-            //////let signs = debugUsersArray;///for debug without server. change post, too.
+        let signs = await getData("getAllStatuses");/////get all the signs from the server////////////
+        //let signs = debugUsersArray;///for debug without server. change post, too.//////////////////
         ///in this loop for each user (list of them returned from server) we collect free avatr and add to it the user data
         if (Array.isArray(signs)) {
-            //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
             for (const sign of signs) {
                 //console.log("CC- getAllStatuses: " + JSON.stringify(sign));
                 let currAvatar = this.getFreeAvatar();
@@ -62,22 +60,15 @@ class World {
                     continue;
                 }
                 currAvatar.matchUser(sign);///match the user to the avatar
-                
-                ///console.log("CC- getAllStatuses: " + JSON.stringify(sign));
-                ///add the avatar to the world
-                //await this.addAvatar2World(avatarDetails, sign, true, scene);
             }
         } else {
             console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
         }
-        //console.log("CC- getAllStatuses: " + JSON.stringify(signs));
-        //return signs; ///return the signs to the caller
     }
 
     getFreeAvatar() {
         ///get the first avatar that is not in use
         ///TODO: handel gender and all used condition
-        //console.log("CC- getFreeAvatar: " + this.safeStringifySkipMyWorld(this._avatarsArr) );
         for (let avatarObj of this._avatarsArr) {
             if (!avatarObj.avatarData.isUsed) {
                 avatarObj.avatarData.isUsed = true; ///set the avatar as used
@@ -96,98 +87,7 @@ class World {
         get()
     }
 
-    /**
-     * Asynchronously adds an avatar to the world.
-     * create the acvatar as object and add it to the _avatarsArr
-     * in the costructor set the avatarURL and the avatarID
-     * and then call the avatar.initAvatar to create the mesh and the sign
-     *
-     * @param {Object} avatarDetails - An object containing the avatar details (already created before the current).
-     * @param {Object} signData - An object containing the sign data for the avatar.
-     * @param {Object} scene - The scene object where the avatar will be added.
-     * @returns {Promise<void>} A promise that resolves when the avatar has been added and initialized
-     */
-    async addAvatar2World(avatarDetails, signData, isMe, scene) {
-        //ID, URL, x, y, z, signData,
-        //console.log("avatarDetails: ");
-        //console.log(avatarDetails);
-        if (this._avatarsArr.find(a => a.avatarID === signData.avatarID)) {
-            //console.log("CC- avatar not missing in the world: " + id);
-            return;
-        }
-        let avatarObj = {
-            avatar: new Avatar(signData.avatarID, avatarDetails.avatarURL, this),
-            avatarID: signData.avatarID,
-            avatarName: signData.userName
-        };
-        //console.log("avatarObj: ");
-        //console.log(avatarObj);
-        this._avatarsArr.push(avatarObj);
-        const isLocal = (signData.avatarID === this.myAvatarID);
-        if (isLocal) {
-            this.myAvatar = avatarObj.avatar;
-        }
-        await avatarObj.avatar.initAvatar(avatarDetails, signData, scene);
-        //console.log("after avatarObj.avatar.initAvatar");
-        ///hide avatar if its the first one
-        ///when we will run on all avatars we will start from 1 (not 0)
 
-        if (isMe) {
-            ///this is my avatar
-            //console.log("this is my avatar: " + avatarObj.avatarID);
-            this.myAvatar = avatarObj.avatar;
-            this.myAvatar.avatarMesh.setEnabled(false);
-            //console.log("this.myAvatar");
-            //console.log(this.myAvatar);
-        }
-    }
-
-    /**
-     * Asynchronously adds multiple avatars to the world.
-     *
-     * @param {Array<Object>} avatarsArray - An array of objects containing the avatar details (already created before the current).
-     * @param {Array<Object>} signDataArray - An array of objects containing the sign data for each avatar.
-     * @param {Object} scene - The scene object where the avatars will be added.
-     * @returns {Promise<void>} A promise that resolves when all avatars have been added and initialized.
-     */
-    async addMissingAvatars2World(avatarsArray, signDataArray, scene) {
-        for (const avatar of avatarsArray) {
-            ////////////////let currentAvatarId = avatar.avatarID;
-            const id = avatar.avatarID;///////////
-            ////console.log(`avatarId: `);
-            ////console.log(currentAvatarId);
-            ///verify the avatar is not already in the world   
-            if (this._avatarsArr.find(a => a.avatarID === id)) {
-                //console.log("CC- avatar not missing in the world: " + currentAvatarId);
-                continue;
-            }
-            //TODO: verify that avatar ibs not myAvatar
-            //("this.myAvatar" );
-            //console.log(this );
-            if (this.myAvatar && this.myAvatar.ID === id) {
-                //if (this.myAvatar.avatarID == currentAvatarId) { //just tried
-                //console.log("avatar is my avatar");
-                continue;
-            }
-
-            /******
-                        ///find the signData of the avatar;
-                        let avatarSignData = signDataArray.find(signData => signData.avatarID == currentAvatarId);
-                        ////console.log(`avatarSignData for avatarID ${currentAvatarId}:`, avatarSignData);
-                        if (avatarSignData) { ///if the avatar is not in the signDataArray we will not add it to the world
-                            //console.log("avatar:");
-                            
-                            await this.addAvatar2World(avatar, avatarSignData, false, scene);
-                            console.log("CC- missing avatar added.  ID: " + currentAvatarId);
-                        }
-            
-            *****/
-            const sign = signDataArray.find(s => s.avatarID === id);
-            if (sign) {
-                await this.addAvatar2World(avatar, sign, false, scene);
-            }
-        }
-    }
     //////////////////FROM CHAT TO THE SERVER//////////////////////////////////
 
     /**
@@ -207,7 +107,7 @@ class World {
         this.allowPointer = false;///disable the pointer to avoid clicks
         console.log("CHAT- chatRequest sent");
         let toAvatar = this.idToAvatar(toID)
-        this.currChat = new Chat(this._avatarsArr[0].avatar, toAvatar, this);
+        this.currChat = new Chat(this.myAvatar, toAvatar, this);
 
         await wsClient.safeSend({
             action: 'startChat',///wrong route name for message to any message to cs_chat lambda
@@ -226,25 +126,7 @@ class World {
       * @param {number} avatarID - The ID of the avatar to be removed.
       * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
       */
-    /*
-async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsArr
-    let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
-    if (avatarObj) {
-        avatarObj.avatar.setDone();
-    }
 
-    if (avatarObj) {
-        avatarObj.avatar.dispose();
-        avatarObj.avatar = null;
-    }
-    let index = this._avatarsArr.findIndex(avatarObj => avatarObj.avatarID == avatarID);
-    if (index > -1) {
-        this._avatarsArr.splice(index, 1);
-    }
-    
-    console.log("CHAT- removeAvatarFromWorld: " + avatarID);
-}
-*/
     /**from button on the chat window to send the message to the server*/
     dealDoneSelected(chatID, fromAvatarID, toAvatarID) {
         this.doDealSelected(chatID, fromAvatarID, toAvatarID, "dealDone");
@@ -354,7 +236,7 @@ async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsAr
 
     idToAvatar(id) {
         let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == id);
-        return avatarObj.avatar;
+        return avatarObj;
     }
     //////only for the pair avatar  
     chatUpdated(chatText, destID) {
@@ -446,7 +328,7 @@ async removeAvatarFromWorld(avatarID) { ///remove the avatar from the _avatarsAr
         console.log("CHAT>>>- avatarLeft on world: " + avatarID);
         let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
         if (avatarObj) {
-            avatarObj.avatar.setDone();
+            avatarObj.setDone();
         }
     }
 
