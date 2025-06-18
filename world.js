@@ -12,7 +12,7 @@ class World {
 
     ///will be called by Message
     async wellcomeDone(signData) {
-         ///show message: "loading"
+        ///show message: "loading"
         const loadingMessage = `המתן - טוען אווטרים
 כאשר שלט זה ייסגר חלק מהאווטרים יציגו 
 שלט עם פרטי הנסיעה המעניינים אותם
@@ -21,6 +21,15 @@ class World {
         this.msg = new MessageScreen(this, loadingMessage, 'info');
         ///send HTTP request to create the avatar 
         await postData("addAvatar", signData);/// comment for debug without server. change get , too ////////////////////////
+        ///open websocket connection to the server and write the connection ID to get updates about others
+        ///the original state of the is "loading". we will set it to "noChat" only when all avatars in his world are loaded
+        await wsClient.safeSend({
+            action: 'createAvatar',
+            type: 'createAvatar',
+            avatarID: signData.avatarID,
+            status: "loading"
+        });
+
         ///save myAvatar details (no need to object avatar for my avartar))
         this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
         this.myAvatar.userData = signData;///save the avatarID of my avatar
@@ -60,15 +69,21 @@ class World {
                     continue;
                 }
                 currAvatar.matchUser(sign);///match the user to the avatar
-                
+
             }
         } else {
             console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
         }
+        ///after all avatars are loaded we can set the status of my avatar to "noChat" in all sessions
+        ///the ones that already rgistered to the server will get this websocket update
+        ///others will see the status on the avatars table
+        ///(we will reupdate it in seperate http get repeating message, too)
         await wsClient.safeSend({
             action: 'createAvatar',
-            avatarID: signData.avatarID 
-        });        
+            type: 'avatarReady',
+            avatarID: signData.avatarID
+        });
+
     }
 
     getFreeAvatar() {
@@ -345,16 +360,27 @@ class World {
         }
     }
 
-    safeStringifySkipMyWorld(obj) {///for debug
-    const seen = new WeakSet();
-    return JSON.stringify(obj, (key, value) => {
-        if (key === "myWorld") return undefined; // Skip this property
 
-        if (typeof value === "object" && value !== null) {
-            if (seen.has(value)) return "[Circular]";
-            seen.add(value);
-        }
-        return value;
-    }, 2); // Pretty-print with 2 spaces
-}
+
+
+    ///function to safely stringify an object, skipping the myWorld property
+    /**
+     * Safely stringify an object, skipping the 'myWorld' property.
+     * This is useful for debugging purposes to avoid circular references.
+     *
+     * @param {Object} obj - The object to stringify.
+     * @returns {string} - The JSON string representation of the object, excluding 'myWorld'.
+     */
+    safeStringifySkipMyWorld(obj) {///for debug
+        const seen = new WeakSet();
+        return JSON.stringify(obj, (key, value) => {
+            if (key === "myWorld") return undefined; // Skip this property
+
+            if (typeof value === "object" && value !== null) {
+                if (seen.has(value)) return "[Circular]";
+                seen.add(value);
+            }
+            return value;
+        }, 2); // Pretty-print with 2 spaces
+    }
 }
