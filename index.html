@@ -577,20 +577,13 @@
                             console.log(data);
                         }
                         break;
-                    case 'waitForAck':
-                        this.confirm2server(data, "createAvatar");
-                        ///if we remove conform from here we get alot of waitForAck messages on pendingRetries table
-                        ///and ACK timeout error in the console 
-                        this.socket.send(JSON.stringify({
-                            action: 'createAvatar',
-                            type: 'ack',
-                            ack: data.nextStep,
-                            previousMessage: data.previousMessage || {}
-                        }));
-                        break;
                     case 'avatarLeft':
                         this.confirm2server(data, "avatarLeft");
                         myWorld.doAvatarLeft(data.avatarID);
+                        break;
+                    case 'avatar_ready':
+                        this.confirm2server(data, "avatarCeated");
+                        myWorld.doAvatarReady(data.avatarID);
                         break;
                     case 'startChat':
                         this.confirm2server(data, "startChat");
@@ -611,7 +604,7 @@
                         break;
                 }
             }
- 
+
             ///confirm the message to the server           
             confirm2server(data, destAction) {
                 //console.log ("confirm2server data:")

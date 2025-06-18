@@ -60,10 +60,15 @@ class World {
                     continue;
                 }
                 currAvatar.matchUser(sign);///match the user to the avatar
+                
             }
         } else {
             console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
         }
+        await wsClient.safeSend({
+            action: 'createAvatar',
+            avatarID: signData.avatarID 
+        });        
     }
 
     getFreeAvatar() {
@@ -329,6 +334,14 @@ class World {
         let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
         if (avatarObj) {
             avatarObj.setDone();
+        }
+    }
+
+    doAvatarReady(ID) {
+        console.log("CHAT>>>- avatarReady on world: " + ID);
+        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == ID);
+        if (avatarObj) {
+            avatarObj.setState("noChat");
         }
     }
 
