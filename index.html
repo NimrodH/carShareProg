@@ -541,8 +541,8 @@
                 this.socket.onerror = err => console.error('WebSocket error:', err);
             }
 
-            async sendWithAck(payload, timeout = 750) {
-                const messageId = `msg-${++this.counter}`;
+            async sendWithAck(payload, sender, timeout = 750) {
+                const messageId = `msg-${++this.counter}${sender}`;
                 const message = { ...payload, messageId };
 
                 return new Promise((resolve, reject) => {
@@ -620,10 +620,10 @@
                 this.socket.send(confirmMsg);
             }
 
-            async safeSend(data, maxRetries = 3, retryDelay = 500) {
+            async safeSend(data, sender, maxRetries = 3, retryDelay = 500) {
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
                     try {
-                        const result = await wsClient.sendWithAck(data); // new ID each time!
+                        const result = await wsClient.sendWithAck(data, sender); // new ID each time!
                         return result;
                     } catch (error) {
                         console.warn(`Attempt ${attempt} failed:`, error);

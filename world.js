@@ -28,7 +28,7 @@ class World {
             type: 'createAvatar',
             avatarID: signData.avatarID,
             status: "loading"
-        });
+        },signData.avatarID);
 
         ///save myAvatar details (no need to object avatar for my avartar))
         this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
@@ -82,7 +82,7 @@ class World {
             action: 'createAvatar',
             type: 'avatarReady',
             avatarID: signData.avatarID
-        });
+        },signData.avatarID);
 
     }
 
@@ -135,7 +135,7 @@ class World {
             chatID: this.currChat.chatID,
             fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
             toAvatarID: toID
-        });
+        }, this.myAvatar.ID + this.currChat.chatID);///send the request to the server with my avatar ID
     }
 
     /**
@@ -178,7 +178,7 @@ class World {
             senderID: this.myAvatar.ID,
             destID: dest_id,
             senderID: sender_id
-        });
+        },this.myAvatar.ID + chatID);
 
     }
 
@@ -196,7 +196,7 @@ class World {
             chatID: chatID,
             chatText: text,
             destID: avatar_id
-        });
+        },this.myAvatar.ID + chatID);
     }
 
     async closeChat(avatarFromID, avatarToID) {
@@ -207,7 +207,7 @@ class World {
                 fromAvatarID: avatarFromID,
                 toAvatarID: avatarToID,
                 chatID: this.currChat.chatID
-            });
+            },this.myAvatar.ID + this.currChat.chatID);
         } else {
             console.log("CHAT- closeChat: no chat to close");
             this.allowPointer = true;
