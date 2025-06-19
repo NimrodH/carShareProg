@@ -622,11 +622,11 @@
 
             async safeSend(data, sender, maxRetries = 3, retryDelay = 500) {
                 const messageId = `msg-${++this.counter}${sender}`;
-                const message = { ...payload, messageId };
+                const message = { ...data, messageId };
 
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
                     try {
-                        const result = await wsClient.sendWithAck(data, sender); // new ID each time!
+                        const result = await wsClient.sendWithAck(message, sender); // new ID each time!
                         return result;
                     } catch (error) {
                         console.warn(`Attempt ${attempt} failed for ${messageId}`);
