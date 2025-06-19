@@ -542,8 +542,8 @@
             }
 
             async sendWithAck(payload, sender, timeout = 750) {
-                const messageId = `msg-${++this.counter}${sender}`;
-                const message = { ...payload, messageId };
+                ///const messageId = `msg-${++this.counter}${sender}`;
+                ///const message = { ...payload, messageId };
 
                 return new Promise((resolve, reject) => {
                     this.pending.set(messageId, { resolve, reject });
@@ -613,7 +613,7 @@
                 let confirmMsg = JSON.stringify({
                     action: destAction, //"createAvatar",
                     serverMsgId: data.serverMsgId,
-                    ack: "serverMsgDone"
+                    type: "serverMsgDone"
                 })
                 console.log("send confirm 2 server confirmMsg:")
                 console.log(confirmMsg);
@@ -621,12 +621,15 @@
             }
 
             async safeSend(data, sender, maxRetries = 3, retryDelay = 500) {
+                const messageId = `msg-${++this.counter}${sender}`;
+                const message = { ...payload, messageId };
+
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
                     try {
                         const result = await wsClient.sendWithAck(data, sender); // new ID each time!
                         return result;
                     } catch (error) {
-                        console.warn(`Attempt ${attempt} failed:`, error);
+                        console.warn(`Attempt ${attempt} failed for ${messageId}`);
                         if (attempt === maxRetries) {
                             //throw new Error("Failed after max retries");
                             //we can handle the error here (just by console it), to allow allowPointer in the calling function
