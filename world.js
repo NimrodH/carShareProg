@@ -62,6 +62,10 @@ class World {
         ///in this loop for each user (list of them returned from server) we collect free avatr and add to it the user data
         if (Array.isArray(signs)) {
             for (const sign of signs) {
+                if (!sign.avatarID) {
+                    console.warn("CC- getAllStatuses: sign has no avatarID, skipping.");
+                    continue;
+                }
                 //console.log("CC- getAllStatuses: " + JSON.stringify(sign));
                 let currAvatar = this.getFreeAvatar();
                 if (!currAvatar) {
@@ -69,11 +73,11 @@ class World {
                     continue;
                 }
                 currAvatar.matchUser(sign);///match the user to the avatar
-
             }
         } else {
             console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
         }
+        this.myAvatar.setState("me");///hide the buttons on my avatar
         ///after all avatars are loaded we can set the status of my avatar to "noChat" in all sessions
         ///the ones that already rgistered to the server will get this websocket update
         ///others will see the status on the avatars table

@@ -149,6 +149,14 @@ class Avatar {
         return targetPosition;
     }
     ///noChat, myChat, inChat
+    hideButtons() {
+        //this.statusData = { status: "noChat" };
+        if (this.frontSign) {
+            this.frontSign.hideButtons();
+        }
+
+    }
+
     setState(state) {
         this.frontSign.setState(state);
     }
