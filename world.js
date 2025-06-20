@@ -31,8 +31,8 @@ class World {
         },signData.avatarID);
 
         ///save myAvatar details (no need to object avatar for my avartar))
-        this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
-        this.myAvatar.userData = signData;///save the avatarID of my avatar
+        //this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
+        //this.myAvatar.userData = signData;///save the avatarID of my avatar
         ///loop avatarsDataArray to create (new Avatar) and then load (use acreateAvatarMesh and placeAvatr from Avatar.js) all avatar images
         let iterationText = 1;
         ///avatarsDataArray contains URLs and other constant data for all avatars differ then user data. each iten has unic "num"
@@ -67,6 +67,9 @@ class World {
                 if (!currAvatar) {
                     console.warn("No free avatar found to add to the world.");
                     continue;
+                }
+                if (sign.avatarID == signData.avatarID) {
+                    this.myAvatar = currAvatar;///set myAvatar to the one that my signData post for it before
                 }
                 await currAvatar.matchUser(sign);///match the user to the avatar
             }
