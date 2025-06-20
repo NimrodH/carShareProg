@@ -39,7 +39,7 @@ class Avatar {
             });
         }
         //console.log("matchUser: " + JSON.stringify(signData));
-        this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
+        this.frontSign =  new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
 
     }
 

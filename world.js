@@ -62,17 +62,13 @@ class World {
         ///in this loop for each user (list of them returned from server) we collect free avatr and add to it the user data
         if (Array.isArray(signs)) {
             for (const sign of signs) {
-                if (!sign.avatarID) {
-                    console.warn("CC- getAllStatuses: sign has no avatarID, skipping.");
-                    continue;
-                }
                 //console.log("CC- getAllStatuses: " + JSON.stringify(sign));
                 let currAvatar = this.getFreeAvatar();
                 if (!currAvatar) {
                     console.warn("No free avatar found to add to the world.");
                     continue;
                 }
-                currAvatar.matchUser(sign);///match the user to the avatar
+                await currAvatar.matchUser(sign);///match the user to the avatar
             }
         } else {
             console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
