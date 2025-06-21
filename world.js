@@ -19,7 +19,8 @@ class World {
 ניתן יהיה ללחוץ על הכפתור בשלט
  כדי לקיים שיחת צ'אט עם אווטר רלוונטי`;
         this.msg = new MessageScreen(this, loadingMessage, 'info');
-        ///send HTTP request to create the avatar 
+        ///send HTTP request to create the avatar
+        signData.isLoading = true;///set the loading state to true
         await postData("addAvatar", signData);/// comment for debug without server. change get , too ////////////////////////
         ///open websocket connection to the server and write the connection ID to get updates about others
         ///the original state of the is "loading". we will set it to "noChat" only when all avatars in his world are loaded
@@ -28,7 +29,7 @@ class World {
             type: 'createAvatar',
             avatarID: signData.avatarID,
             status: "loading"
-        },signData.avatarID);
+        }, signData.avatarID);
 
         ///save myAvatar details (no need to object avatar for my avartar))
         //this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
@@ -83,10 +84,20 @@ class World {
         ///(we will reupdate it in seperate http get repeating message, too)
         await wsClient.safeSend({
             action: 'createAvatar',
-            type: 'avatarReady',
-            avatarID: signData.avatarID
-        },signData.avatarID);
-
+            type: 'setStatus',
+            avatarID: signData.avatarID,
+            status: "noChat"
+        }, signData.avatarID);
+        /// write isLoading=false (to set status) to signData as backup to the setting of stause=noChat in table cs_avatars
+        /// we will use it in case that websocket failed(in the periodic update)
+        ///  and when we create new user that allready end loading
+        patchData(signData.avatarID, "isLoading", false);///set the loading state to false in the server
+            .then(res => {
+                console.log("Update success:", res);
+            })
+            .catch(err => {
+                console.error("Update failed:", err.message);
+            });
     }
 
     getFreeAvatar() {
@@ -181,7 +192,7 @@ class World {
             senderID: this.myAvatar.ID,
             destID: dest_id,
             senderID: sender_id
-        },this.myAvatar.ID + chatID);
+        }, this.myAvatar.ID + chatID);
 
     }
 
@@ -199,7 +210,7 @@ class World {
             chatID: chatID,
             chatText: text,
             destID: avatar_id
-        },this.myAvatar.ID + chatID);
+        }, this.myAvatar.ID + chatID);
     }
 
     async closeChat(avatarFromID, avatarToID) {
@@ -210,7 +221,7 @@ class World {
                 fromAvatarID: avatarFromID,
                 toAvatarID: avatarToID,
                 chatID: this.currChat.chatID
-            },this.myAvatar.ID + this.currChat.chatID);
+            }, this.myAvatar.ID + this.currChat.chatID);
         } else {
             console.log("CHAT- closeChat: no chat to close");
             this.allowPointer = true;
@@ -355,11 +366,11 @@ class World {
         }
     }
 
-    doAvatarReady(ID) {
-        console.log("CHAT>>>- avatarReady on world: " + ID);
+    doSetStatus(ID, status) {
+        console.log("CHAT>>>- doSetStatus on world: " + ID);
         let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == ID);
         if (avatarObj) {
-            avatarObj.setState("noChat");
+            avatarObj.setState(status);
         }
     }
 

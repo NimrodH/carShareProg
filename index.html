@@ -581,9 +581,9 @@
                         this.confirm2server(data, "avatarLeft");
                         myWorld.doAvatarLeft(data.avatarID);
                         break;
-                    case 'avatar_ready':
+                    case 'setStatus':///'avatar_ready'
                         this.confirm2server(data, "avatarCeated");
-                        myWorld.doAvatarReady(data.avatarID);
+                        myWorld.doSetStatus(data.avatarID, data.status);
                         break;
                     case 'startChat':
                         this.confirm2server(data, "startChat");
@@ -670,7 +670,7 @@
         }
 
         // #endregion
-        //#region/////////////////// get/post to html api gateway - not in use /////////////////////
+        //#region/////////////////// get/post to html api gateway /////////////////////
         ///const queryParam = `?foo=${encodeURIComponent(fooValue)}`;
         async function getData(route, queryParam = "") {
             let baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
@@ -728,6 +728,41 @@
 
 
         }
+
+        async function patchData(avatarID, field, value) {
+            const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+            const route = `/avatars/${encodeURIComponent(avatarID)}`;
+            const url = `${baseURL}${route}`;
+
+            const body = {
+                field: field,
+                value: value
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    console.error("❌ Error updating avatar:", result.error || result);
+                    throw new Error(result.error || "Update failed");
+                }
+
+                console.log("✅ Avatar updated:", result);
+                return result;
+            } catch (error) {
+                console.error("❗ Network or server error:", error);
+                throw error;
+            }
+        }
+
         //#endregion
         //#region///////////////////// VR stansdart issues ///////////////
 

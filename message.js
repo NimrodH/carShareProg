@@ -46,7 +46,12 @@ class AvatarMessage {
         this.nextButton.left = "10px";
         this.nextButton.height = "70px";
         this.advancedTexture.addControl(this.nextButton);
-        this.setState("loading");
+        if signData.isLoading {
+            this.setState("loading");
+        } else{
+            this.setState("noChat");
+        }
+    
         let text1 = this.textField;
         text1.color = "white"
         text1.fontSize = 36;
@@ -411,7 +416,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
