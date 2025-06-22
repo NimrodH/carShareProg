@@ -52,10 +52,7 @@ class World {
                 this._avatarsArr.push(avatar);
             }
         }
-        ///hide message "loading"
-        this.msg.clearInstance();///clear the message screen
-        this.msg = null;///clear the message screen
-
+        this.msg.updateMessageText("ממתין לאחרים");///update the message to "waiting for others"
         this.allowPointer = true;
         ///start update by ping
         let result = await getData("getAllStatuses");/////get all the signs and avatars from the server////////////
@@ -67,7 +64,7 @@ class World {
         if (Array.isArray(signs)) {
             for (const sign of signs) {
                 //console.log("CC- getAllStatuses: " + JSON.stringify(sign));
-                let currAvatar = this.getFreeAvatar();
+                let currAvatar = this.getFreeAvatar(sign.isMan);
                 if (!currAvatar) {
                     console.warn("No free avatar found to add to the world.");
                     continue;
@@ -102,6 +99,11 @@ class World {
             .catch(err => {
                 console.error("Update failed:", err.message);
             });
+
+        ///hide message "loading"
+        this.msg.clearInstance();///clear the message screen
+        this.msg = null;///clear the message screen
+
         this.periodicUpdateInterval = this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
         console.log("CC- wellcomeDone: End");
     }
@@ -142,13 +144,12 @@ class World {
 
                 if (!currAvatar) {
                     console.log(`CC- periodicUpdate: Avatar with ID ${sign.avatarID} not found in _avatarsArr. Getting free avatar...`);
-                    currAvatar = await this.getFreeAvatar();
+                    currAvatar = await this.getFreeAvatar(sign.isMan);
 
                     if (!currAvatar) {
                         console.warn("CC- periodicUpdate: No free avatar found to add to the world.");
                         continue;
                     }
-
                     console.log("CC- periodicUpdate: Matching free avatar with sign", sign);
                     await currAvatar.matchUser(sign);
                 } else {
@@ -171,7 +172,7 @@ class World {
                 console.log(`CC- periodicUpdate: myAvatar ID ${this.myAvatar.ID} not found in avatars. Sending safeSend`);
                 await wsClient.safeSend({
                     action: 'createAvatar',
-                    type: 'getMyAvatar',
+                    type: 'createAvatar',
                     avatarID: this.myAvatar.ID
                 }, this.myAvatar.ID);
             }
@@ -214,7 +215,7 @@ class World {
                     //console.log("CC- periodicUpdate: " + JSON.stringify(sign));
                     let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == sign.avatarID);
                     if (!currAvatar) {///if the avatar is not in the world
-                        currAvatar = await this.getFreeAvatar();///get a free avatar
+                        currAvatar = await this.getFreeAvatar(sign.isMan);///get a free avatar
                         if (!currAvatar) {
                             console.warn("No free avatar found to add to the world.");
                             continue;
@@ -238,7 +239,7 @@ class World {
                 if (!avatars.some(item => item["avatarID"] === this.myAvatar.ID)) {
                     await wsClient.safeSend({
                         action: 'createAvatar',
-                        type: 'getMyAvatar',
+                        type: 'createAvatar',
                         avatarID: this.myAvatar.ID
                     }, this.myAvatar.ID);
                 } else {
@@ -283,26 +284,31 @@ class World {
             .filter(value => !referenceValues.has(value));
     }
 
-    getFreeAvatar() {
+    getFreeAvatar(isMan) {
         ///get the first avatar that is not in use
         ///TODO: handel gender and all used condition
-        for (let avatarObj of this._avatarsArr) {
-            if (!avatarObj.avatarData.isUsed) {
-                avatarObj.avatarData.isUsed = true; ///set the avatar as used
-                //console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.avatarData.num);
-                return avatarObj;
-            }
+        let genderArray;
+        genderArray = this._avatarsArr.filter(avatarObj => (avatarObj.avatarData.loadedIsMan == isMan) && (avatarObj.avatarData.isUsed == false));
+        if (genderArray.length === 0) {///try on wrong gender
+            genderArray = this._avatarsArr.filter(avatarObj => (avatarObj.avatarData.loadedIsMan == !isMan) && (avatarObj.avatarData.isUsed == false));
+            console.warn("CC- getFreeAvatar: No free avatars found for the specified genger")
         }
-        console.log("CC- getFreeAvatar: no free avatars");
-        return false;
-        ///if all avatars are in use return the first one
-        //return this._avatarsArr[0].avatar;
+        if (genderArray.length === 0) {///even on other gender no avatar
+            console.log("CC- getFreeAvatar: no free avatars");
+            return false;
+        }
+        avatarObj.avatarData.isUsed = true; ///set the avatar as used
+        //console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.avatarData.num);
+        return avatarObj;
     }
+    ///if all avatars are in use return the first one
+    //return this._avatarsArr[0].avatar;
+}
 
-    readUpdateStatus() {
-        ///read the update status from the server
-        get()
-    }
+readUpdateStatus() {
+    ///read the update status from the server
+    get()
+}
 
 
     //////////////////FROM CHAT TO THE SERVER//////////////////////////////////
@@ -317,267 +323,267 @@ class World {
      * @param {string} toID - The ID of the avatar to send the chat request to (toID).
      */
     async chatRequest(toID) {
-        if (this.currChat) {
-            console.log("CHAT- chatRequest: already in chat");
-            return;
-        }
-        this.allowPointer = false;///disable the pointer to avoid clicks
-        console.log("CHAT- chatRequest sent");
-        let toAvatar = this.idToAvatar(toID)
-        this.currChat = new Chat(this.myAvatar, toAvatar, this);
-
-        await wsClient.safeSend({
-            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-            type: 'chatRequest',
-            chatID: this.currChat.chatID,
-            fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
-            toAvatarID: toID
-        }, this.myAvatar.ID + this.currChat.chatID);///send the request to the server with my avatar ID
+    if (this.currChat) {
+        console.log("CHAT- chatRequest: already in chat");
+        return;
     }
+    this.allowPointer = false;///disable the pointer to avoid clicks
+    console.log("CHAT- chatRequest sent");
+    let toAvatar = this.idToAvatar(toID)
+    this.currChat = new Chat(this.myAvatar, toAvatar, this);
 
-    /**
-      * Asynchronously removes an avatar from the world.
-      * remove the avatar from the _avatarsArr
-      * dispose the avatar mesh
-      *
-      * @param {number} avatarID - The ID of the avatar to be removed.
-      * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
-      */
+    await wsClient.safeSend({
+        action: 'startChat',///wrong route name for message to any message to cs_chat lambda
+        type: 'chatRequest',
+        chatID: this.currChat.chatID,
+        fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
+        toAvatarID: toID
+    }, this.myAvatar.ID + this.currChat.chatID);///send the request to the server with my avatar ID
+}
 
-    /**from button on the chat window to send the message to the server*/
-    dealDoneSelected(chatID, fromAvatarID, toAvatarID) {
-        this.doDealSelected(chatID, fromAvatarID, toAvatarID, "dealDone");
-    }
+/**
+  * Asynchronously removes an avatar from the world.
+  * remove the avatar from the _avatarsArr
+  * dispose the avatar mesh
+  *
+  * @param {number} avatarID - The ID of the avatar to be removed.
+  * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
+  */
 
-    /**from button on the chat window to send the message to the server*/
-    dealNotDoneSelected(chatID, fromAvatarID, toAvatarID) {
-        this.doDealSelected(chatID, fromAvatarID, toAvatarID, "noDeal");
-    }
+/**from button on the chat window to send the message to the server*/
+dealDoneSelected(chatID, fromAvatarID, toAvatarID) {
+    this.doDealSelected(chatID, fromAvatarID, toAvatarID, "dealDone");
+}
+
+/**from button on the chat window to send the message to the server*/
+dealNotDoneSelected(chatID, fromAvatarID, toAvatarID) {
+    this.doDealSelected(chatID, fromAvatarID, toAvatarID, "noDeal");
+}
 
     async doDealSelected(chatID, fromAvatarID, toAvatarID, answer) {
-        let dest_id///send to the other avatar
-        let sender_id//
-        if (this.myAvatar.ID == fromAvatarID) {
-            dest_id = toAvatarID;
-            sender_id = fromAvatarID;
-        } else {
-            dest_id = fromAvatarID;
-            sender_id = toAvatarID
-        }
-        console.log("CHAT-doDealSelected");
-        await wsClient.safeSend({
-            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-            type: 'dealResult',
-            chatID: chatID,
-            fromAvatarID: fromAvatarID,///this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
-            toAvatarID: toAvatarID,
-            senderAnswer: answer,
-            senderID: this.myAvatar.ID,
-            destID: dest_id,
-            senderID: sender_id
-        }, this.myAvatar.ID + chatID);
-
+    let dest_id///send to the other avatar
+    let sender_id//
+    if (this.myAvatar.ID == fromAvatarID) {
+        dest_id = toAvatarID;
+        sender_id = fromAvatarID;
+    } else {
+        dest_id = fromAvatarID;
+        sender_id = toAvatarID
     }
+    console.log("CHAT-doDealSelected");
+    await wsClient.safeSend({
+        action: 'startChat',///wrong route name for message to any message to cs_chat lambda
+        type: 'dealResult',
+        chatID: chatID,
+        fromAvatarID: fromAvatarID,///this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
+        toAvatarID: toAvatarID,
+        senderAnswer: answer,
+        senderID: this.myAvatar.ID,
+        destID: dest_id,
+        senderID: sender_id
+    }, this.myAvatar.ID + chatID);
+
+}
 
     ///send all the text with the new line to the server (that will send it to the other avatar)
     async updateChat(chatID, fromAvatarID, toAvatarID, text) {
-        let avatar_id///send to the other avatar
-        if (this.myAvatar.ID == fromAvatarID) {
-            avatar_id = toAvatarID;
-        } else {
-            avatar_id = fromAvatarID;
-        }
-        await wsClient.safeSend({
-            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-            type: 'updateChat',
-            chatID: chatID,
-            chatText: text,
-            destID: avatar_id
-        }, this.myAvatar.ID + chatID);
+    let avatar_id///send to the other avatar
+    if (this.myAvatar.ID == fromAvatarID) {
+        avatar_id = toAvatarID;
+    } else {
+        avatar_id = fromAvatarID;
     }
+    await wsClient.safeSend({
+        action: 'startChat',///wrong route name for message to any message to cs_chat lambda
+        type: 'updateChat',
+        chatID: chatID,
+        chatText: text,
+        destID: avatar_id
+    }, this.myAvatar.ID + chatID);
+}
 
     async closeChat(avatarFromID, avatarToID) {
-        if (this.currChat) {
-            await wsClient.safeSend({
-                action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-                type: 'chatEnd',
-                fromAvatarID: avatarFromID,
-                toAvatarID: avatarToID,
-                chatID: this.currChat.chatID
-            }, this.myAvatar.ID + this.currChat.chatID);
-        } else {
-            console.log("CHAT- closeChat: no chat to close");
-            this.allowPointer = true;
-        }
-        //this.allowPointer = true;///enable the pointer to allow clicks again ///moved to chatEnded
+    if (this.currChat) {
+        await wsClient.safeSend({
+            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
+            type: 'chatEnd',
+            fromAvatarID: avatarFromID,
+            toAvatarID: avatarToID,
+            chatID: this.currChat.chatID
+        }, this.myAvatar.ID + this.currChat.chatID);
+    } else {
+        console.log("CHAT- closeChat: no chat to close");
+        this.allowPointer = true;
     }
+    //this.allowPointer = true;///enable the pointer to allow clicks again ///moved to chatEnded
+}
 
-    ///////////////////FROM SERVER TO WORLD/////////////////////////////////////
+///////////////////FROM SERVER TO WORLD/////////////////////////////////////
 
 
-    ///got from server when chat requested
-    ///if requested from me I open a chat object. call it currChat
-    ///toAvatarID is alwayes the ID of the avatar that clicked
-    ///fromAvatarID is the ID of the avatar that request the chat
-    chatStarted(fromAvatarID, toAvatarID) {
-        const chatID = `${fromAvatarID}_${toAvatarID}`;
-        if (this.currChat) {
-            console.log("CHAT- chatStarted: already in chat");
-            if (this.currChat.chatID === chatID) {
-                console.log("CHAT- chatStarted: already in chat with the same ID");
-                return;
-            }
-            ///close current chat????????
-            //this.chatEnded(fromAvatarID, toAvatarID);///close the current chat
+///got from server when chat requested
+///if requested from me I open a chat object. call it currChat
+///toAvatarID is alwayes the ID of the avatar that clicked
+///fromAvatarID is the ID of the avatar that request the chat
+chatStarted(fromAvatarID, toAvatarID) {
+    const chatID = `${fromAvatarID}_${toAvatarID}`;
+    if (this.currChat) {
+        console.log("CHAT- chatStarted: already in chat");
+        if (this.currChat.chatID === chatID) {
+            console.log("CHAT- chatStarted: already in chat with the same ID");
             return;
         }
-
-        console.log("CHAT- chatStarted on world");
-        let toAvatar = this.idToAvatar(toAvatarID);
-        let fromAvatar = this.idToAvatar(fromAvatarID);
-        if (this.myAvatar.ID == fromAvatarID) {///I sent the request
-            this.idToAvatar(toAvatarID).setState("myChat");//on myworld sign my pair
-        }
-        if (this.myAvatar.ID == toAvatarID) {///I got the request
-            this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
-            ///create the chat object in my world do not update the server (the server already know about the chat)
-            this.currChat = new Chat(fromAvatar, toAvatar, this);
-            this.allowPointer = false;///disable the pointer to avoid clicks
-        }
-        if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
-            ///sign the pair in my world
-            fromAvatar.setState("inChat");
-            toAvatar.setState("inChat");
-        }
+        ///close current chat????????
+        //this.chatEnded(fromAvatarID, toAvatarID);///close the current chat
+        return;
     }
 
-    idToAvatar(id) {
-        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == id);
-        return avatarObj;
+    console.log("CHAT- chatStarted on world");
+    let toAvatar = this.idToAvatar(toAvatarID);
+    let fromAvatar = this.idToAvatar(fromAvatarID);
+    if (this.myAvatar.ID == fromAvatarID) {///I sent the request
+        this.idToAvatar(toAvatarID).setState("myChat");//on myworld sign my pair
     }
-    //////only for the pair avatar  
-    chatUpdated(chatText, destID) {
-        if (this.myAvatar.ID == destID) {
-            let currText = this.currChat.getText();
-            if (this.countLines(currText) < this.countLines(chatText)) {
-                this.currChat.updateText(chatText)
-            } else {
-                console.log("new text is shorter than the current text, not updating.");
-            }
-        }
+    if (this.myAvatar.ID == toAvatarID) {///I got the request
+        this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
+        ///create the chat object in my world do not update the server (the server already know about the chat)
+        this.currChat = new Chat(fromAvatar, toAvatar, this);
+        this.allowPointer = false;///disable the pointer to avoid clicks
     }
-
-    countLines(str) {
-        if (!str) return 0;
-        // Split on any common newline sequence
-        const lines = str.split(/\r\n|\r|\n/);
-        return lines.length;
-    }
-
-    ///from the server:
-    //dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
-    dealResult(fromAvatarID, toAvatarID, senderAnswer, destAnswer, senderID, destID) {
-        console.log("CHAT- dealResult on world dest: " + destAnswer + " sender " + senderAnswer);
-        //signData.action = 'dealNotDone';
-        if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {
-            ///if the chat is not in my world I will not handle the message
-            if (destAnswer == senderAnswer) {
-                if (destAnswer == "dealDone") {
-                    this.currChat.setChatState("done");
-                    console.log("CHAT- dealDone on world");
-                } else {
-                    this.currChat.setChatState("notDone")
-                    console.log("CHAT-dealNotDone on world");
-                }
-            } else { ///the other avatar answered differently
-                if (this.myAvatar.ID == senderID && destAnswer == null) {///I sent and he didnt answer yet
-                    ///write in the chat object in my world to wait and then click again
-                    this.currChat.setChatState("wait");
-                    console.log("CHAT-dealWait on world");
-                }
-                if (destAnswer == "noDeal") {
-                    if (this.myAvatar.ID == senderID) { ///I sent yes, he refused
-                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
-                        this.currChat.setChatState("refused");
-                        console.log("CHAT-dealRefused on world");
-                    }
-                    if (this.myAvatar.ID == destID) { ///He sent no, I accepted
-                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
-                        this.currChat.setChatState("otherAccepted");
-                        console.log("CHAT-otherAccepted on world");
-                    }
-                }
-                if (destAnswer == "dealDone") {
-                    if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
-                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
-                        this.currChat.setChatState("otherAccepted");
-                        console.log("CHAT-dealRefused on world");
-                    }
-                    if (this.myAvatar.ID == destID) { ///I sent no, he accepted
-                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
-                        this.currChat.setChatState("refused");
-                        console.log("CHAT-otherAccepted on world");
-                    }
-                }
-
-            }
-        }
-    }
-
-
-    chatEnded(fromAvatarID, toAvatarID) {
-        console.log("CHAT>>>- chatEnded on world from:" + fromAvatarID + "to: " + toAvatarID + "my: " + this.myAvatar.ID);
-        if (this.currChat && (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID)) {
-            this.currChat.dispose();
-            this.currChat = null;
-        }
-        /////TODO
-        //if ( this.myAvatar.ID == fromAvatarID ) {
-        //    this.idToAvatar(toAvatarID).setState("afterChat");///on myworld sign my pair to prevent chat again
-        //}
+    if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
         ///sign the pair in my world
-        this.idToAvatar(fromAvatarID).setState("noChat");
-        this.idToAvatar(toAvatarID).setState("noChat");
-        this.allowPointer = true;///disable the pointer to allow clicks
+        fromAvatar.setState("inChat");
+        toAvatar.setState("inChat");
     }
+}
 
-    doAvatarLeft(avatarID) {
-        console.log("CHAT>>>- avatarLeft on world: " + avatarID);
-        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
-        if (avatarObj) {
-            avatarObj.setDone();
+idToAvatar(id) {
+    let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == id);
+    return avatarObj;
+}
+//////only for the pair avatar  
+chatUpdated(chatText, destID) {
+    if (this.myAvatar.ID == destID) {
+        let currText = this.currChat.getText();
+        if (this.countLines(currText) < this.countLines(chatText)) {
+            this.currChat.updateText(chatText)
+        } else {
+            console.log("new text is shorter than the current text, not updating.");
         }
     }
+}
 
-    doSetStatus(ID, status) {
-        console.log("CHAT>>>- doSetStatus on world: " + ID);
-        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == ID);
-        if (avatarObj) {
-            avatarObj.setState(status);
-        }
-    }
+countLines(str) {
+    if (!str) return 0;
+    // Split on any common newline sequence
+    const lines = str.split(/\r\n|\r|\n/);
+    return lines.length;
+}
 
-
-
-
-    ///function to safely stringify an object, skipping the myWorld property
-    /**
-     * Safely stringify an object, skipping the 'myWorld' property.
-     * This is useful for debugging purposes to avoid circular references.
-     *
-     * @param {Object} obj - The object to stringify.
-     * @returns {string} - The JSON string representation of the object, excluding 'myWorld'.
-     */
-    safeStringifySkipMyWorld(obj) {///for debug
-        const seen = new WeakSet();
-        return JSON.stringify(obj, (key, value) => {
-            if (key === "myWorld") return undefined; // Skip this property
-
-            if (typeof value === "object" && value !== null) {
-                if (seen.has(value)) return "[Circular]";
-                seen.add(value);
+///from the server:
+//dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
+dealResult(fromAvatarID, toAvatarID, senderAnswer, destAnswer, senderID, destID) {
+    console.log("CHAT- dealResult on world dest: " + destAnswer + " sender " + senderAnswer);
+    //signData.action = 'dealNotDone';
+    if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {
+        ///if the chat is not in my world I will not handle the message
+        if (destAnswer == senderAnswer) {
+            if (destAnswer == "dealDone") {
+                this.currChat.setChatState("done");
+                console.log("CHAT- dealDone on world");
+            } else {
+                this.currChat.setChatState("notDone")
+                console.log("CHAT-dealNotDone on world");
             }
-            return value;
-        }, 2); // Pretty-print with 2 spaces
+        } else { ///the other avatar answered differently
+            if (this.myAvatar.ID == senderID && destAnswer == null) {///I sent and he didnt answer yet
+                ///write in the chat object in my world to wait and then click again
+                this.currChat.setChatState("wait");
+                console.log("CHAT-dealWait on world");
+            }
+            if (destAnswer == "noDeal") {
+                if (this.myAvatar.ID == senderID) { ///I sent yes, he refused
+                    ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
+                    this.currChat.setChatState("refused");
+                    console.log("CHAT-dealRefused on world");
+                }
+                if (this.myAvatar.ID == destID) { ///He sent no, I accepted
+                    ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
+                    this.currChat.setChatState("otherAccepted");
+                    console.log("CHAT-otherAccepted on world");
+                }
+            }
+            if (destAnswer == "dealDone") {
+                if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
+                    ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
+                    this.currChat.setChatState("otherAccepted");
+                    console.log("CHAT-dealRefused on world");
+                }
+                if (this.myAvatar.ID == destID) { ///I sent no, he accepted
+                    ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
+                    this.currChat.setChatState("refused");
+                    console.log("CHAT-otherAccepted on world");
+                }
+            }
+
+        }
     }
+}
+
+
+chatEnded(fromAvatarID, toAvatarID) {
+    console.log("CHAT>>>- chatEnded on world from:" + fromAvatarID + "to: " + toAvatarID + "my: " + this.myAvatar.ID);
+    if (this.currChat && (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID)) {
+        this.currChat.dispose();
+        this.currChat = null;
+    }
+    /////TODO
+    //if ( this.myAvatar.ID == fromAvatarID ) {
+    //    this.idToAvatar(toAvatarID).setState("afterChat");///on myworld sign my pair to prevent chat again
+    //}
+    ///sign the pair in my world
+    this.idToAvatar(fromAvatarID).setState("noChat");
+    this.idToAvatar(toAvatarID).setState("noChat");
+    this.allowPointer = true;///disable the pointer to allow clicks
+}
+
+doAvatarLeft(avatarID) {
+    console.log("CHAT>>>- avatarLeft on world: " + avatarID);
+    let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
+    if (avatarObj) {
+        avatarObj.setDone();
+    }
+}
+
+doSetStatus(ID, status) {
+    console.log("CHAT>>>- doSetStatus on world: " + ID);
+    let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == ID);
+    if (avatarObj) {
+        avatarObj.setState(status);
+    }
+}
+
+
+
+
+///function to safely stringify an object, skipping the myWorld property
+/**
+ * Safely stringify an object, skipping the 'myWorld' property.
+ * This is useful for debugging purposes to avoid circular references.
+ *
+ * @param {Object} obj - The object to stringify.
+ * @returns {string} - The JSON string representation of the object, excluding 'myWorld'.
+ */
+safeStringifySkipMyWorld(obj) {///for debug
+    const seen = new WeakSet();
+    return JSON.stringify(obj, (key, value) => {
+        if (key === "myWorld") return undefined; // Skip this property
+
+        if (typeof value === "object" && value !== null) {
+            if (seen.has(value)) return "[Circular]";
+            seen.add(value);
+        }
+        return value;
+    }, 2); // Pretty-print with 2 spaces
+}
 }

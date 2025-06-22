@@ -56,10 +56,10 @@ class Avatar {
         let avatarURL
         if (this.avatarData.num % 2 === 0) {
             avatarURL = this.avatarData.avatarURL;
-            this.avatarData.loadedGender = "girl";
+            this.avatarData.loadedIsMan = false;
         } else {
             avatarURL = this.avatarData.avatarURLBoy;
-            this.avatarData.loadedGender = "Boy";
+            this.avatarData.loadedIsMan = true;
         }
 
         const response = await fetch(avatarURL, { method: 'HEAD' });
