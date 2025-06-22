@@ -46,7 +46,7 @@ class AvatarMessage {
         this.nextButton.left = "10px";
         this.nextButton.height = "70px";
         this.advancedTexture.addControl(this.nextButton);
-        if signData.isLoading {
+        if (signData.isLoading) {
             this.setState("loading");
         } else{
             this.setState("noChat");

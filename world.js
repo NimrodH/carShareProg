@@ -91,7 +91,8 @@ class World {
         /// write isLoading=false (to set status) to signData as backup to the setting of stause=noChat in table cs_avatars
         /// we will use it in case that websocket failed(in the periodic update)
         ///  and when we create new user that allready end loading
-        patchData(signData.avatarID, "isLoading", false);///set the loading state to false in the server
+        ///set the loading state to false in the server
+        patchData(signData.avatarID, "isLoading", false)
             .then(res => {
                 console.log("Update success:", res);
             })
