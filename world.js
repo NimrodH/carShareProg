@@ -297,7 +297,7 @@ class World {
             console.log("CC- getFreeAvatar: no free avatars");
             return false;
         }
-        avatarObj = genderArray[0];///get the first avatar that is not in use
+        let avatarObj = genderArray[0];///get the first avatar that is not in use
         avatarObj.avatarData.isUsed = true; ///set the avatar as used
         //console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.avatarData.num);
         return avatarObj;
