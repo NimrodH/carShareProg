@@ -51,8 +51,9 @@ class Avatar {
         let avatarMesh = beforeavatarMesh.parent;
         return avatarMesh.parent;
         */
-        // Load the GLB model from the URL
-        ///select gender by even or odd numb
+        /// Load the GLB model from the URL
+        ///select gender by even or odd num
+        /// if we know how mwny boys and have way to set it we can replace it with a better way
         let avatarURL
         if (this.avatarData.num % 2 === 0) {
             avatarURL = this.avatarData.avatarURL;

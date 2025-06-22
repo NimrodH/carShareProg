@@ -303,12 +303,6 @@ class World {
     }
     ///if all avatars are in use return the first one
     //return this._avatarsArr[0].avatar;
-}
-
-readUpdateStatus() {
-    ///read the update status from the server
-    get()
-}
 
 
     //////////////////FROM CHAT TO THE SERVER//////////////////////////////////
