@@ -58,9 +58,12 @@ class World {
 
         this.allowPointer = true;
         ///start update by ping
-        let signs = await getData("getAllStatuses");/////get all the signs from the server////////////
+        let result = await getData("getAllStatuses");/////get all the signs and avatars from the server////////////
         //let signs = debugUsersArray;///for debug without server. change post, too.//////////////////
         ///in this loop for each user (list of them returned from server) we collect free avatr and add to it the user data
+        const signs = result.signs;
+        //const avatars = result.avatars;
+
         if (Array.isArray(signs)) {
             for (const sign of signs) {
                 //console.log("CC- getAllStatuses: " + JSON.stringify(sign));
@@ -99,6 +102,185 @@ class World {
             .catch(err => {
                 console.error("Update failed:", err.message);
             });
+        this.periodicUpdateInterval = this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
+        console.log("CC- wellcomeDone: End");
+    }
+
+    startPeriodicUpdate() {
+        return setInterval(() => {
+            this.periodicUpdate()
+            console.log('keepalive sent');
+        }, 1 * 60 * 1000);///9 instaed of 1
+    }
+
+    stopPeriodicUpdate() {
+        if (this.periodicUpdateInterval) {
+            clearInterval(this.periodicUpdateInterval);
+            this.periodicUpdateInterval = null;
+            console.log("CC- periodicUpdate: Stopped");
+        } else {
+            console.warn("CC- periodicUpdate: No periodic update interval to stop.");
+        }
+    }
+
+    async periodicUpdate() {
+        console.log("CC- periodicUpdate: Start");
+
+        let result = await getData("getAllStatuses");
+        console.log("CC- periodicUpdate: Received data", result);
+
+        const signs = result.signs;
+        const avatars = result.avatars;
+
+        if (Array.isArray(signs)) {
+            console.log(`CC- periodicUpdate: Processing ${signs.length} signs`);
+
+            for (const sign of signs) {
+                console.log("CC- periodicUpdate: Processing sign", sign);
+
+                let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == sign.avatarID);
+
+                if (!currAvatar) {
+                    console.log(`CC- periodicUpdate: Avatar with ID ${sign.avatarID} not found in _avatarsArr. Getting free avatar...`);
+                    currAvatar = await this.getFreeAvatar();
+
+                    if (!currAvatar) {
+                        console.warn("CC- periodicUpdate: No free avatar found to add to the world.");
+                        continue;
+                    }
+
+                    console.log("CC- periodicUpdate: Matching free avatar with sign", sign);
+                    await currAvatar.matchUser(sign);
+                } else {
+                    console.log(`CC- periodicUpdate: Avatar found for ID ${sign.avatarID}. Setting state based on sign.isLoading`);
+                    if (sign.isLoading) {
+                        currAvatar.setState("loading");
+                    } else {
+                        currAvatar.setState("noChat");
+                    }
+                }
+            }
+        } else {
+            console.warn("CC- periodicUpdate: No signs found or signs is not an array.");
+        }
+
+        if (this.myAvatar && this.myAvatar.ID) {
+            console.log("CC- periodicUpdate: Checking if myAvatar is included in avatars");
+
+            if (!avatars.some(item => item["avatarID"] === this.myAvatar.ID)) {
+                console.log(`CC- periodicUpdate: myAvatar ID ${this.myAvatar.ID} not found in avatars. Sending safeSend`);
+                await wsClient.safeSend({
+                    action: 'createAvatar',
+                    type: 'getMyAvatar',
+                    avatarID: this.myAvatar.ID
+                }, this.myAvatar.ID);
+            }
+        } else {
+            console.warn("CC- periodicUpdate: myAvatar is not set or does not have an ID.");
+        }
+
+        if (Array.isArray(avatars)) {
+            console.log(`CC- periodicUpdate: Processing ${avatars.length} avatars`);
+
+            for (const avatarData of avatars) {
+                console.log("CC- periodicUpdate: Processing avatarData", avatarData);
+
+                let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarData.avatarID);
+
+                if (currAvatar) {
+                    console.log(`CC- periodicUpdate: Found avatar in _avatarsArr with ID ${avatarData.avatarID}. Setting state to ${avatarData.status}`);
+                    currAvatar.setState(avatarData.status);
+                } else {
+                    console.warn("CC- periodicUpdate: Avatar not found in _avatarsArr for ID:", avatarData.avatarID);
+                }
+            }
+        } else {
+            console.warn("CC- periodicUpdate: No avatars found or avatars is not an array.");
+        }
+
+        console.log("CC- periodicUpdate: End");
+    }
+
+
+    /*
+        async periodicUpdate() {
+            let result = await getData("getAllStatuses");/////get all the signs and avatars from the server////////////
+            const signs = result.signs;
+            const avatars = result.avatars;
+            ///console.log("CC- periodicUpdate: " + JSON.stringify(signs));
+            ///find avatars that not added to the world and add them (compare signs with _avatarsArr)
+            if (Array.isArray(signs)) {
+                for (const sign of signs) {
+                    //console.log("CC- periodicUpdate: " + JSON.stringify(sign));
+                    let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == sign.avatarID);
+                    if (!currAvatar) {///if the avatar is not in the world
+                        currAvatar = await this.getFreeAvatar();///get a free avatar
+                        if (!currAvatar) {
+                            console.warn("No free avatar found to add to the world.");
+                            continue;
+                        }
+                        await currAvatar.matchUser(sign);///match the user to the avatar
+                    } else {
+                        if (sign.isLoading) {
+                            currAvatar.setState("loading");
+                        } else {
+                            currAvatar.setState("noChat");
+                        }
+                    }
+                }
+                ///compare signs to avatars and send websocket createAvatar message to the ones that are missing on avatars
+    
+            } else {
+                console.warn("CC- periodicUpdate: No signs found or signs is not an array.");
+            }
+            ///if mayAvatar did not open websocket connection, yet - do it now
+            if (this.myAvatar && this.myAvatar.ID) {
+                if (!avatars.some(item => item["avatarID"] === this.myAvatar.ID)) {
+                    await wsClient.safeSend({
+                        action: 'createAvatar',
+                        type: 'getMyAvatar',
+                        avatarID: this.myAvatar.ID
+                    }, this.myAvatar.ID);
+                } else {
+                    console.warn("CC- periodicUpdate: myAvatar is not set or does not have an ID.");
+                }
+            }
+     
+            ///for each avatar in avatars get the status from avatar.status and set it to the avatar with the same avatarID in the world
+            if (Array.isArray(avatars)) {
+                for (const avatarData of avatars) {
+                    //console.log("CC- periodicUpdate: " + JSON.stringify(avatarData));
+                    let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarData.avatarID);
+                    if (currAvatar) {
+                        ///set the status of the avatar in the world
+                        currAvatar.setState(avatarData.status);
+                        ///if the avatar is loading, set it to loading
+                   } else {
+                        console.warn("CC- periodicUpdate: Avatar not found in _avatarsArr for ID: " + avatarData.avatarID);
+                    }
+                }
+            } else {
+                console.warn("CC- periodicUpdate: No avatars found or avatars is not an array.");
+            }
+            
+    
+        }
+    */
+    ///not in use
+    filterByMatching(sourceArray, referenceArray, attributeKey) {
+        ///filter the sourceArray by the IDs in the referenceArray based on the attributeKey
+        ///return the items in sourceArray that have the same attributeKey value as in referenceArray
+        const referenceIDs = new Set(referenceArray.map(item => item[attributeKey])); ///create a set of IDs from the reference array
+        return sourceArray.filter(item => referenceIDs.has(item[attributeKey])); ///filter the source array by the IDs in the reference array
+    }
+
+    ///not in use
+    getMissingAttributeValues(sourceArray, referenceArray, attributeKey) {
+        ///get the values of the attributeKey from the sourceArray that are not in the referenceArray
+        const referenceValues = new Set(referenceArray.map(item => item[attributeKey]));
+        return sourceArray
+            .map(item => item[attributeKey])
+            .filter(value => !referenceValues.has(value));
     }
 
     getFreeAvatar() {
