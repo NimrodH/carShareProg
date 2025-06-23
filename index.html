@@ -702,31 +702,35 @@
         }
 
         async function postData(route, payload = {}) {
-            let baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
-            routeURL = baseURL + route;
-            console.log("postData routeURL: " + routeURL);
+            const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+            const routeURL = baseURL + route;
+            console.log("postData routeURL:", routeURL);
             console.log(payload);
-            fetch(routeURL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-                body: JSON.stringify(payload)
-            })
-                .then(async (res) => {
-                    if (!res.ok) {
-                        console.error("Server error:", res.status, await res.text());
-                        return;
-                    }
-                    const data = await res.json();
-                    console.log("Item created:", data);
-                })
-                .catch(err => {
-                    console.error("Network or CORS error:", err);
+
+            try {
+                const res = await fetch(routeURL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                    },
+                    body: JSON.stringify(payload)
                 });
 
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error("Server error:", res.status, errorText);
+                    return null;
+                }
 
+                const data = await res.json();
+                console.log("Response data:", data);
+                return data;
+
+            } catch (err) {
+                console.error("Network or CORS error:", err);
+                return null;
+            }
         }
 
         async function patchData(avatarID, field, value) {
