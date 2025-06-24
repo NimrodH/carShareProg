@@ -341,7 +341,6 @@ class World {
             console.warn("Failed to receive a response from server.");
             return;
         }
-
         console.log("Server message:", result.message);
         ///if the checkAndUpdate returned "refused" it means that the other avatar is already in a chat         
         if (result.message === "refused") {
@@ -356,7 +355,9 @@ class World {
 
         ///we verified noChat state, so we can send the websocket chat request
         /// HTTP set the status on server (only)
-        console.log("CHAT- chatRequest sent");
+        console.log("CHAT- chatRequest sent and allowed");
+        petchData(this.myAvatar.ID, "status", "inChat")///set the status of the avatar to inChat
+
         this.currChat = new Chat(this.myAvatar, toAvatar, this);
 
         await wsClient.safeSend({
