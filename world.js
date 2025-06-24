@@ -356,7 +356,7 @@ class World {
         ///we verified noChat state, so we can send the websocket chat request
         /// HTTP set the status on server (only)
         console.log("CHAT- chatRequest sent and allowed");
-        petchData(this.myAvatar.ID, "status", "inChat")///set the status of the avatar to inChat
+        patchData(this.myAvatar.ID, "status", "inChat")///set the status of the avatar to inChat
 
         this.currChat = new Chat(this.myAvatar, toAvatar, this);
 
