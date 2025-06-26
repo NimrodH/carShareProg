@@ -880,6 +880,11 @@
             scene.onPointerObservable.add((pointerInfo) => {
                 switch (pointerInfo.type) {
                     case BABYLON.PointerEventTypes.POINTERWHEEL:
+                        if (!myWorld.allowPointer) {
+                            pointerInfo.event.preventDefault();
+                            return; // Ignore zoom if pointer is not allowed
+                        }
+
                         const event = pointerInfo.event;
                         //console.log("event.deltaY: " + event.deltaY);
                         if (event.deltaY < 0) {
