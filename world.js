@@ -464,10 +464,11 @@ class World {
             console.log("CHAT- chatStarted: already in chat");
             if (this.currChat.chatID === chatID) {
                 console.log("CHAT- chatStarted: already in chat with the same ID");
+                ///close current chat????????
+                //this.chatEnded(fromAvatarID, toAvatarID);///close the current chat
                 return;
             }
-            ///close current chat????????
-            //this.chatEnded(fromAvatarID, toAvatarID);///close the current chat
+            console.log("CHAT- chatStarted: already in chat with another ID");
             return;
         }
 
@@ -476,12 +477,14 @@ class World {
         let fromAvatar = this.idToAvatar(fromAvatarID);
         if (this.myAvatar.ID == fromAvatarID) {///I sent the request
             this.idToAvatar(toAvatarID).setState("myChat");//on myworld sign my pair
+            /// the stopPeriodicUpdate will be called in chatRequest for the calling Avatar
         }
         if (this.myAvatar.ID == toAvatarID) {///I got the request
             this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
             ///create the chat object in my world do not update the server (the server already know about the chat)
             this.currChat = new Chat(fromAvatar, toAvatar, this);
             this.allowPointer = false;///disable the pointer to avoid clicks
+            this.stopPeriodicUpdate();///stop the periodic update to avoid conflicts with the chat
         }
         if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
             ///sign the pair in my world
