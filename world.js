@@ -104,12 +104,12 @@ class World {
         this.msg.clearInstance();///clear the message screen
         this.msg = null;///clear the message screen
 
-        this.periodicUpdateInterval = this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
+        this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
         console.log("CC- wellcomeDone: End");
     }
 
     startPeriodicUpdate() {
-        return setInterval(() => {
+        this.periodicUpdateInterval = setInterval(() => {
             this.periodicUpdate()
             console.log('periodicUpdate sent');
         }, 1 * 60 * 1000);///9 instaed of 1
@@ -567,17 +567,19 @@ class World {
     chatEnded(fromAvatarID, toAvatarID, chatID) {
         console.log("CHAT>>>- chatEnded on world from:" + fromAvatarID + "to: " + toAvatarID + "my: " + this.myAvatar.ID);
         ///TODO: we may need to verify its our chat to prevent closing other chat of me if retry comes from the server
-            // to achive it we need to get the chat ID in the message///
+        // to achive it we need to get the chat ID in the message///
         if (this.currChat && (this.currChat.chatID === chatID)) {
             this.periodicUpdate();///update the avatars and signs in the world
             this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
-            this.idToAvatar(fromAvatarID).setState("noChat");
-            this.idToAvatar(toAvatarID).setState("noChat");
             this.allowPointer = true;///disable the pointer to allow clicks
 
             this.currChat.dispose();
             this.currChat = null;
         }
+        ///ask everyone to change the two avatars states to noChat 
+        this.idToAvatar(fromAvatarID).setState("noChat");
+        this.idToAvatar(toAvatarID).setState("noChat");
+
         /////TODO
         //if ( this.myAvatar.ID == fromAvatarID ) {
         //    this.idToAvatar(toAvatarID).setState("afterChat");///on myworld sign my pair to prevent chat again
