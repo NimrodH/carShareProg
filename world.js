@@ -109,6 +109,10 @@ class World {
     }
 
     startPeriodicUpdate() {
+        if (this.periodicUpdateInterval) {
+            console.warn("CC- periodicUpdate: Already running, not starting again.");
+            return;
+        }
         this.periodicUpdateInterval = setInterval(() => {
             this.periodicUpdate()
             console.log('periodicUpdate sent');
