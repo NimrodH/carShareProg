@@ -632,7 +632,7 @@
                                 myWorld.chatUpdated(data.chatText, data.destID);
                                 break;
                             case 'chatEnd':
-                                myWorld.chatEnded(data.fromAvatarID, data.toAvatarID);
+                                myWorld.chatEnded(data.fromAvatarID, data.toAvatarID, data.chatID);
                                 break;
                         }
                         break;
