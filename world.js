@@ -336,6 +336,7 @@ class World {
         if (toAvatar.alreadyTalked) {
             console.error("CHAT- chatRequest: alreadyTalked is true"); 
             toAvatar.setState("alreadyTalked");///set the state of the avatar to alreadyTalked
+            return;///do not allow to chat again with the same avatar
         } else {
             toAvatar.alreadyTalked = true;///set the state of the avatar to alreadyTalked
         }
