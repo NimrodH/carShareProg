@@ -327,10 +327,17 @@ class World {
             console.log("CHAT- chatRequest: already in chat");
             return;
         }
-        this.allowPointer = false;///disable the pointer to avoid clicks
+        
         if (!toID) {
             console.error("CHAT- chatRequest: toID is not defined");
             return;
+        }
+
+        if (toAvatar.alreadyTalked) {
+            console.error("CHAT- chatRequest: alreadyTalked is true"); 
+            toAvatar.setState("alreadyTalked");///set the state of the avatar to alreadyTalked
+        } else {
+            toAvatar.alreadyTalked = true;///set the state of the avatar to alreadyTalked
         }
         /////////checkAndUpdate///////
         let checkMessage = {
@@ -356,7 +363,7 @@ class World {
         }
 
         ///////////end of checkAndUpdate///////
-
+        this.allowPointer = false;///disable the pointer to avoid clicks
         ///we verified noChat state, so we can send the websocket chat request
         /// HTTP set the status on server (only)
         console.log("CHAT- chatRequest sent and allowed");

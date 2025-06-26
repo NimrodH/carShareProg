@@ -158,6 +158,12 @@ class AvatarMessage {
                 this.nextButton.color = "red";
                 this.nextButton.textBlock.text = "סליחה, בנתיים התחלתי שיחה אחרת";
                 break;
+            case "alreadyTalked":
+                this.nextButton.isEnabled = false;
+                this.nextButton.color = "red";
+                this.nextButton.textBlock.text = "כבר דיברנו";
+                break;
+                
         }
     }
 }
@@ -421,7 +427,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;

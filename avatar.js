@@ -8,6 +8,7 @@ class Avatar {
         this.statusData = {}; ///will be updated with the status of the avatar (noChat, myChat, inChat...)
         this.avatarMesh = null; ///the mesh of the avatar
         this.frontSign = null; ///the sign in front of the avatar (AvatarMessage)
+        this.toAvatar.alreadyTalked = false;
 
         //console.log("Avatar ID: " + this.ID);
     }
