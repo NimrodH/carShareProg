@@ -457,7 +457,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
@@ -700,7 +700,7 @@ class MessageScreen {   //plane = BABYLON.Mesh.CreatePlane("plane2",  { height: 
         const gap = 150;
         const topLines = -450;
         const gapLines = -100
-        this.iterationField = this._addTextField(this.msg, 10, -450, 150, 60)
+        this.iterationField = this._addTextField("0/30", 10, -450, 150, 60)
         this.msgField = this._addTextField(this.msg)
 
     }
