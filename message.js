@@ -56,7 +56,7 @@ class AvatarMessage {
         text1.color = "white"
         text1.fontSize = 36;
         text1.top = "-150px";
-        text1.height = "600px"
+        text1.height = "700px"
         this.advancedTexture.addControl(text1);
         this.updateText(this.createMessage(signData));
     }
@@ -103,9 +103,6 @@ class AvatarMessage {
         }
         message += forMessage1 + forMessage3 + forMessage2 + "\n";
 
-        if (signData.isPassenger && signData.isDriver) {
-            message += "המשתתף " + forMessage1 + " ו" + forMessage2 + "\n";
-        }
         if (signData.isMan) {
             travelBack = heTravelBack; //חוזר
             travel = heTravel; //נוסע
@@ -460,7 +457,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
