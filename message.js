@@ -11,7 +11,7 @@ class AvatarMessage {
         //this.plane.position = new BABYLON.Vector3(x, y, z);
         ///this.plane.position = new BABYLON.Vector3(0, 0, 0);///////////////
         //this.plane.setParent(this.myAvatar.avatarMesh);
-//////////////////////////////
+        //////////////////////////////
         //this.avatarMesh.scaling = new BABYLON.Vector3(1, 1, 1);
         const anchor = new BABYLON.TransformNode("anchor", scene);
         anchor.scaling = new BABYLON.Vector3(-1, 1, -1);
@@ -21,7 +21,7 @@ class AvatarMessage {
         this.plane.parent = anchor;
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;
 
-////////////////////
+        ////////////////////
 
         this.plane.setParent(this.myAvatar.avatarMesh);
 
@@ -48,10 +48,10 @@ class AvatarMessage {
         this.advancedTexture.addControl(this.nextButton);
         if (signData.isLoading) {
             this.setState("loading");
-        } else{
+        } else {
             this.setState("noChat");
         }
-    
+
         let text1 = this.textField;
         text1.color = "white"
         text1.fontSize = 36;
@@ -84,18 +84,22 @@ class AvatarMessage {
         let message = signData.userName + "\n\n";
         if (signData.isPassenger) {
             if (signData.isMan) {
-                forMessage1  = hePassenger;
+                forMessage1 = hePassenger;
             } else {
-                forMessage1  = shePassenger;
+                forMessage1 = shePassenger;
             }
+        } else {
+            forMessage1 = "";
         }
         if (signData.isDriver) {
-            if (signData.isMan) { 
-                forMessage2  = heDriver;
+            if (signData.isMan) {
+                forMessage2 = heDriver;
             } else {
-                forMessage2  = sheDriver;;
+                forMessage2 = sheDriver;;
             }
-        } 
+        } else {
+            forMessage2 = "";
+        }
         if (signData.isPassenger && signData.isDriver) {
             forMessage3 = andOr;
         } else {
@@ -193,7 +197,7 @@ class AvatarMessage {
                 this.nextButton.color = "red";
                 this.nextButton.textBlock.text = "כבר דיברנו";
                 break;
-                
+
         }
     }
 }
@@ -509,9 +513,9 @@ class Wellcome {
         this._addTextField("נקבה", 400 - gap * 4.5, topLines - gapLines * 3)
 
         this.buttonPassenger = this._addCheckBox(400 - gap * 1.75, topLines - gapLines * 6.5, false, "passenger");
-        this._addTextField("מצטרף כנוסע", 400 - gap * 0.9, topLines - gapLines *  6.5, 250)
-        this.buttonDriver = this._addCheckBox(400 - gap * 5, topLines - gapLines *  6.5, false, "driver");
-        this._addTextField("ו/או          מסיע ברכבי", 400 - gap * 3.7, topLines - gapLines *  6.5, 300)
+        this._addTextField("מצטרף כנוסע", 400 - gap * 0.9, topLines - gapLines * 6.5, 250)
+        this.buttonDriver = this._addCheckBox(400 - gap * 5, topLines - gapLines * 6.5, false, "driver");
+        this._addTextField("ו/או          מסיע ברכבי", 400 - gap * 3.7, topLines - gapLines * 6.5, 300)
 
 
         ///listen to this event and set the nextButton state
@@ -589,28 +593,28 @@ class Wellcome {
         return radioButton;
     }
 
-_addCheckBox(left, top, checked) {
-    const leftStr = left.toString() + "px";
-    const topStr = top.toString() + "px";
+    _addCheckBox(left, top, checked) {
+        const leftStr = left.toString() + "px";
+        const topStr = top.toString() + "px";
 
-    let checkBox = new BABYLON.GUI.Checkbox();
-    this.advancedTexture.addControl(checkBox);
+        let checkBox = new BABYLON.GUI.Checkbox();
+        this.advancedTexture.addControl(checkBox);
 
-    checkBox.top = topStr;
-    checkBox.left = leftStr;
-    checkBox.height = "50px";
-    checkBox.width = "50px";
-    checkBox.isChecked = checked;
-    checkBox.color = "white";
-    checkBox.background = "black";
+        checkBox.top = topStr;
+        checkBox.left = leftStr;
+        checkBox.height = "50px";
+        checkBox.width = "50px";
+        checkBox.isChecked = checked;
+        checkBox.color = "white";
+        checkBox.background = "black";
 
-    checkBox.onIsCheckedChangedObservable.add((state) => {
-        console.log("Checkbox state: ", state);
-        //this._checkBoxChanged(state); // Replace with your actual handler
-    });
+        checkBox.onIsCheckedChangedObservable.add((state) => {
+            console.log("Checkbox state: ", state);
+            //this._checkBoxChanged(state); // Replace with your actual handler
+        });
 
-    return checkBox;
-}
+        return checkBox;
+    }
 
 
     _checkRadioButton() {
