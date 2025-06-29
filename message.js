@@ -70,9 +70,42 @@ class AvatarMessage {
         const heTravel = "נוסע";
         const sheTravelBack = "חוזרת";
         const heTravelBack = "חוזר";
+        const hePassenger = "מצטרף כנוסע";
+        const shePassenger = "מצטרפת כנוסעת";
+        const heDriver = "מסיע ברכבי";
+        const sheDriver = "מסיעה ברכבי";
+        const andOr = "  ו/או  ";
         let travel;
         let travelBack;
+        let forMessage1;
+        let forMessage2;
+        let forMessage3;
+
         let message = signData.userName + "\n\n";
+        if (signData.isPassenger) {
+            if (signData.isMan) {
+                forMessage1  = hePassenger;
+            } else {
+                forMessage1  = shePassenger;
+            }
+        }
+        if (signData.isDriver) {
+            if (signData.isMan) { 
+                forMessage2  = heDriver;
+            } else {
+                forMessage2  = sheDriver;;
+            }
+        } 
+        if (signData.isPassenger && signData.isDriver) {
+            forMessage3 = andOr;
+        } else {
+            forMessage3 = "";
+        }
+        message += forMessage1 + forMessage3 + forMessage2 + "\n";
+
+        if (signData.isPassenger && signData.isDriver) {
+            message += "המשתתף " + forMessage1 + " ו" + forMessage2 + "\n";
+        }
         if (signData.isMan) {
             travelBack = heTravelBack; //חוזר
             travel = heTravel; //נוסע
@@ -427,7 +460,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
@@ -477,6 +510,11 @@ class Wellcome {
         this._addTextField("זכר", 400 - gap * 3.25, topLines - gapLines * 3)
         this.buttonWoman = this._addRadioButtens(400 - gap * 5, topLines - gapLines * 3, false, "woman");
         this._addTextField("נקבה", 400 - gap * 4.5, topLines - gapLines * 3)
+
+        this.buttonPassenger = this._addCheckBox(400 - gap * 1.75, topLines - gapLines * 6.5, false, "passenger");
+        this._addTextField("מצטרף כנוסע", 400 - gap * 0.9, topLines - gapLines *  6.5, 250)
+        this.buttonDriver = this._addCheckBox(400 - gap * 5, topLines - gapLines *  6.5, false, "driver");
+        this._addTextField("ו/או          מסיע ברכבי", 400 - gap * 3.7, topLines - gapLines *  6.5, 300)
 
 
         ///listen to this event and set the nextButton state
@@ -554,6 +592,30 @@ class Wellcome {
         return radioButton;
     }
 
+_addCheckBox(left, top, checked) {
+    const leftStr = left.toString() + "px";
+    const topStr = top.toString() + "px";
+
+    let checkBox = new BABYLON.GUI.Checkbox();
+    this.advancedTexture.addControl(checkBox);
+
+    checkBox.top = topStr;
+    checkBox.left = leftStr;
+    checkBox.height = "50px";
+    checkBox.width = "50px";
+    checkBox.isChecked = checked;
+    checkBox.color = "white";
+    checkBox.background = "black";
+
+    checkBox.onIsCheckedChangedObservable.add((state) => {
+        console.log("Checkbox state: ", state);
+        //this._checkBoxChanged(state); // Replace with your actual handler
+    });
+
+    return checkBox;
+}
+
+
     _checkRadioButton() {
         //console.log(this.buttonWoman.isChecked)
     }
@@ -577,7 +639,9 @@ class Wellcome {
             day4back: this.day4toHome.text,
             day5to: this.day5fromHome.text,
             day5back: this.day5toHome.text,
-            userName: this.userName.text
+            userName: this.userName.text,
+            isDriver: this.buttonDriver.isChecked,
+            isPassenger: this.buttonPassenger.isChecked
         }
         //console.log(wellcomeData)
         this.world.wellcomeDone(wellcomeData)
