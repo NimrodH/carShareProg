@@ -32,7 +32,7 @@ class Avatar {
         const signZ = 0.18;
         this.userData = signData; ///The data related to the user (the one who own the avatar)
         //console.log("avatarMesh:", this.avatarMesh);
-        
+/*        
         ///if (signData.avatarID[0] == "A") {
         if (this.avatarType === "A") {
             this.avatarMesh.getChildMeshes().forEach(child => {
@@ -41,6 +41,7 @@ class Avatar {
                 child.visibility = 0;
             });
         }
+*/
         //console.log("matchUser: " + JSON.stringify(signData));
         this.frontSign =  new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
 
@@ -94,6 +95,15 @@ class Avatar {
         this.avatarMesh = root;
         //this.avatarMesh.scaling = new BABYLON.Vector3(1, 1, 1);
         ///return root;
+        ///moved to allow implement on all avatars
+        if (this.avatarType === "A") {
+            this.avatarMesh.getChildMeshes().forEach(child => {
+                //child.setEnabled(false); // This will completely disable the mesh
+                // Alternatively, you can use:
+                child.visibility = 0;
+            });
+        }
+
     }
     ///place the avatar in the world
     placeAvatar() {
