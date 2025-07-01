@@ -43,7 +43,8 @@ class World {
                 this.msg.updateIterationText(`${iterationText} / ${avatarsDataArray.length}`);
                 iterationText++;
                 // Create a new Avatar instance
-                const avatar = new Avatar(avatarData, this);
+                //signData.avatarID of this session is only to know if we need to show avatars
+                const avatar = new Avatar(avatarData, this, signData.avatarID[0]);
                 // Optionally, store avatar object if needed
                 // await to ensure mesh is created and placed before continuing
                 await avatar.createAvatarMesh(scene);
