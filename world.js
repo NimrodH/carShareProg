@@ -13,11 +13,22 @@ class World {
     ///will be called by Message
     async wellcomeDone(signData) {
         ///show message: "loading"
-        const loadingMessage = `המתן - טוען אווטרים
+        let loadingMessage
+        if(signData.avatarID[0] == "A") {///if the avatarID starts with "A" it is an unseen avatar
+            loadingMessage = `המתן - טוען אווטרים
 כאשר שלט זה ייסגר חלק מהאווטרים יציגו 
 שלט עם פרטי הנסיעה המעניינים אותם
 ניתן יהיה ללחוץ על הכפתור בשלט
- כדי לקיים שיחת צ'אט עם אווטר רלוונטי`;
+ כדי לקיים שיחת צ'אט עם אווטר רלוונטי
+אווטרים נוספים יתווספו בהמשך`;
+        } else {
+            loadingMessage = `המתן - טוען 
+כאשר שלט זה ייסגר חלק מהמשתתפים יציגו 
+שלט עם פרטי הנסיעה המעניינים אותם
+ניתן יהיה ללחוץ על הכפתור בשלט
+ כדי לקיים שיחת צ'אט עם משתתף רלוונטי
+משתתפים נוספים יתווספו בהמשך`;
+        }
         this.msg = new MessageScreen(this, loadingMessage, 'info');
         ///send HTTP request to create the avatar
         signData.isLoading = true;///set the loading state to true
