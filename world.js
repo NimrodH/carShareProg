@@ -14,7 +14,7 @@ class World {
     async wellcomeDone(signData) {
         ///show message: "loading"
         let loadingMessage
-        if(signData.avatarID[0] == "A") {///if the avatarID starts with "A" it is an unseen avatar
+        if(signData.avatarID[0] !== "A") {///if the avatarID starts with "A" it is an unseen avatar
             loadingMessage = `המתן - טוען אווטרים
 כאשר שלט זה ייסגר חלק מהאווטרים יציגו 
 שלט עם פרטי הנסיעה המעניינים אותם
