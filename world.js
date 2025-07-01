@@ -104,7 +104,7 @@ class World {
         ///hide message "loading"
         this.msg.clearInstance();///clear the message screen
         this.msg = null;///clear the message screen
-
+        this.periodicUpdate()
         this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
         console.log("CC- wellcomeDone: End");
     }
