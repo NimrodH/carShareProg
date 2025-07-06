@@ -512,7 +512,7 @@ class Wellcome {
         this.buttonWoman = this._addRadioButtens(400 - gap * 5, topLines - gapLines * 3, false, "woman");
         this._addTextField("נקבה", 400 - gap * 4.5, topLines - gapLines * 3)
 
-        this.buttonPassenger = this._addCheckBox(400 - gap * 1.75, topLines - gapLines * 6.5, false, "passenger");
+        this.buttonPassenger = this._addCheckBox(400 - gap * 1.87, topLines - gapLines * 6.5, false, "passenger");
         this._addTextField("מצטרף כנוסע", 400 - gap * 0.9, topLines - gapLines * 6.5, 250)
         this.buttonDriver = this._addCheckBox(400 - gap * 5, topLines - gapLines * 6.5, false, "driver");
         this._addTextField("ו/או          מסיע ברכבי", 400 - gap * 3.7, topLines - gapLines * 6.5, 300)
