@@ -392,6 +392,7 @@ class Chat {
     }
 
     closeChat() {
+        clearInterval(this.pollInterval)
         if (this.myWorld.currChat.chatID == this.chatID) {
             this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
         } else {
