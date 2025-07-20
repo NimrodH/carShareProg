@@ -467,7 +467,7 @@ class World {
             await patchData(avatarFromID, "status", "noChat")
             await patchData(avatarToID, "status", "noChat")
             await this.periodicUpdate();
-            this.startPeriodicUpdate();///stop the periodic update to avoid conflicts with the chat
+            this.startPeriodicUpdate();///start the periodic update that we stoped to avoid conflicts with the chat
         } else {
             console.log("CHAT- closeChat: no chat to close");
             this.allowPointer = true;

@@ -311,7 +311,17 @@ class Chat {
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
         this.grid.addControl(this.messageInput, 1, 0);
-
+        ///start loking for new messages
+        this.pollInterval = setInterval(async () => {
+            const res = await getData("chat/getText", `?chatID=${this.chatID}`);
+            if (res && res.chatText) {
+                const linesNow = this.textBlock.text.split(/\r?\n/).length;
+                const linesNew = res.chatText.split(/\r?\n/).length;
+                if (linesNew > linesNow) {
+                    this.updateText(res.chatText);
+                }
+            }
+        }, 3000);
         this.setChatState("start")
     }
 
@@ -326,7 +336,7 @@ class Chat {
         let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
         this.updateText(text);
         this.messageInput.text = "";
-    
+
         /////this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text);
         await postData("chat/sendLine", {
             chatID: this.chatID,
@@ -355,9 +365,15 @@ class Chat {
                 this.myWorld.currChat = null;
             }
         }
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+        }
     }
 
     dispose() {
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+        }
         this.advancedTexture.dispose();
         this.rect1.dispose();
         this.grid.dispose();
@@ -432,7 +448,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
