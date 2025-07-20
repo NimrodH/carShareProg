@@ -322,11 +322,18 @@ class Chat {
         return this.textBlock.text;
     }
 
-    sendLine() {
+    async sendLine() {
         let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
         this.updateText(text);
         this.messageInput.text = "";
-        this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text);
+    
+        /////this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text);
+        await postData("chat/sendLine", {
+            chatID: this.chatID,
+            newLine: `${this.userNameFrom}: ${this.messageInput.text}`
+        }).then(res => {
+            if (res && res.chatText) this.updateText(res.chatText);
+        });
     }
 
     dealDoneSelected() {
@@ -425,7 +432,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
