@@ -267,21 +267,54 @@ def new_item(table_name, item, region="us-east-1"):
     response = table.put_item(Item=item)
     return response
 
-def update_chat(table_name, chat_id, new_text, region="us-east-1"):
-    # Initialize DynamoDB table
-    #dynamodb = boto3.resource('dynamodb', region_name=region)
+def update_chat(table_name, chat_id, new_line, region="us-east-1"):
     table = dynamodb.Table(table_name)
 
-    # Perform the update operation
-    response = table.update_item(
-        Key={"chatID":chat_id},  # Primary key
-        UpdateExpression="SET chatText = :ctxt",
-        ExpressionAttributeValues={
-            ":ctxt": new_text
-        },
-        ReturnValues="UPDATED_NEW"  # Return only the updated attributes
-    )
-    # set message to the other chater
+    try:
+        # Step 1: Read current state
+        item = table.get_item(Key={"chatID": chat_id}).get('Item', {})
+        old_text = item.get("chatText", "")
+        old_count = item.get("lineCount", 0)
+
+        # Step 2: Append the new line
+        new_text = old_text + new_line + "\n"
+        new_count = old_count + 1
+
+        # Step 3: Attempt atomic conditional write
+        table.update_item(
+            Key={"chatID": chat_id},
+            UpdateExpression="SET chatText = :txt, lineCount = :cnt",
+            ConditionExpression="lineCount = :expected OR attribute_not_exists(lineCount)",
+            ExpressionAttributeValues={
+                ":txt": new_text,
+                ":cnt": new_count,
+                ":expected": old_count
+            },
+            ReturnValues="UPDATED_NEW"
+        )
+
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            print("Conflict: lineCount changed. Retrying after re-read.")
+            # Fallback: retry once with fresh read
+            item = table.get_item(Key={"chatID": chat_id}).get('Item', {})
+            old_text = item.get("chatText", "")
+            old_count = item.get("lineCount", 0)
+            new_text = old_text + new_line + "\n"
+            new_count = old_count + 1
+            # Blind write without condition
+            table.update_item(
+                Key={"chatID": chat_id},
+                UpdateExpression="SET chatText = :txt, lineCount = :cnt",
+                ExpressionAttributeValues={
+                    ":txt": new_text,
+                    ":cnt": new_count
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+        else:
+            print("Unexpected error in update_chat:", e)
+            raise
 
 def update_endTime(table_name, chat_id, endTime, region="us-east-1"):
     # Initialize DynamoDB table
