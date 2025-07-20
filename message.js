@@ -312,6 +312,7 @@ class Chat {
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
         this.grid.addControl(this.messageInput, 1, 0);
         ///start loking for new messages
+        console.log("chatID: " + this.chatID);
         this.pollInterval = setInterval(async () => {
             const res = await getData("chat/getText", `?chatID=${this.chatID}`);
             if (res && res.chatText) {
@@ -448,7 +449,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
