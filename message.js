@@ -337,6 +337,18 @@ class Chat {
         //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);
         this.grid.addControl(this.messageInput, 1, 0);//1,0
 
+        ///try to get new the chat text from server
+        this.pollInterval = setInterval(async () => {
+            const res = await getData("chat/getText", `?chatID=${this.chatID}`);
+            if (res && res.chatText) {
+                const linesNow = this.textBlock.text.split(/\r?\n/).length;
+                const linesNew = res.chatText.split(/\r?\n/).length;
+                if (linesNew > linesNow) {
+                    this.updateText(res.chatText);
+                }
+            }
+        }, 3000);
+
         // this.grid.setColumnSpan(this.messageInput, 4);
         this.setChatState("start")
     }
@@ -351,14 +363,20 @@ class Chat {
     }
 
     ///sent from button "שלח ההודעה"
-    sendLine() {
+    async sendLine() {
         //this.myWorld.sendLine(this.chatLine.text);
         //console.log("sendLine clicked: " + this.messageInput.text);
         let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
         this.updateText(text);
         this.messageInput.text = "";
         //TODO: send the message to my avatar 
-        this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text)
+        ////(this.chatID, this.avatarFromID, this.avatarToID, text)
+        await postData("chat/sendLine", {
+            chatID: this.chatID,
+            newLine: `${this.userNameFrom}: ${this.messageInput.text}`
+        }).then(res => {
+            if (res && res.chatText) this.updateText(res.chatText);
+        });
     }
 
     dealDoneSelected() {
