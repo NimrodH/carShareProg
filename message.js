@@ -310,6 +310,12 @@ class Chat {
         this.messageInput.width = 1;
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+        this.messageInput.onKeyboardEventProcessedObservable.add((kbInfo) => {
+            if (kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP && kbInfo.event.key === "Enter") {
+                console.log("Enter pressed: ", input.text);
+                // Your custom logic here
+            }
+        });
         this.grid.addControl(this.messageInput, 1, 0);
         ///start loking for new messages
         console.log("chatID: " + this.chatID);
@@ -334,9 +340,11 @@ class Chat {
     }
 
     async sendLine() {
-        let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
-        this.updateText(text);
-        this.messageInput.text = "";
+        ///add localy
+        ////let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
+        ///////this.updateText(text);
+
+        ///////this.messageInput.text = "";///moved down
 
         /////this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text);
         await postData("chat/sendLine", {
@@ -344,7 +352,12 @@ class Chat {
             newLine: `${this.userNameFrom}: ${this.messageInput.text}`
         }).then(res => {
             if (res && res.chatText) this.updateText(res.chatText);
+            this.messageInput.text = "";///delete message line if we succed to send it
+        }).catch(err => {
+            console.error("Error sending message:", err);
         });
+        this.messageInput.focus()
+
     }
 
     dealDoneSelected() {
@@ -449,7 +462,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
