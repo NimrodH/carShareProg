@@ -25,8 +25,18 @@ def _purge_expired():
 
 
 def lambda_handler(event, context):
-    # TODO implement
-    #body = json.loads(event['body']
+    #RESPONSE TO http calls and if they fit don't use old websocket option
+    method = event.get("httpMethod") or event.get("requestContext", {}).get("http", {}).get("method")
+    path = event.get("rawPath") or event.get("path") or event.get("resource")  # v2 fallback
+
+    print(f"🔍 HTTP Method: {method}")
+    print(f"🔍 Path: {path}")
+    print(f"🔍 Event: {event}")
+    if path == "/V1/chat/sendLine" and method == "POST":
+        return handle_send_line(event)
+    elif path == "/V1/chat/getText" and method == "GET":
+        return handle_get_text(event)
+    #if not return above then ruמ as before the web socket work (i.e for start chat)
     body = json.loads(event['body'])
     print(body)
     connection_id = event['requestContext']['connectionId']
@@ -98,6 +108,35 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': json.dumps('Hello from Lambda!')
         }
+
+def handle_send_line(event):
+    body = json.loads(event.get('body', '{}'))
+    chat_id = body["chatID"]
+    new_line = body["newLine"]
+
+    try:
+        update_chat(chats_table_name, chat_id, new_line)
+        item = dynamodb.Table(chats_table_name).get_item(Key={'chatID': chat_id}).get('Item', {})
+        return {
+            'statusCode': 200,
+            'headers': {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
+            'body': json.dumps({'chatText': item.get('chatText', '')})
+        }
+    except Exception as e:
+        return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
+
+def handle_get_text(event):
+    chat_id = event["queryStringParameters"]["chatID"]
+    try:
+        item = dynamodb.Table(chats_table_name).get_item(Key={'chatID': chat_id}).get('Item', {})
+        return {
+            'statusCode': 200,
+            'headers': {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
+            'body': json.dumps({'chatText': item.get('chatText', '')})
+        }
+    except Exception as e:
+        return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
 
 def send_to_other_clients(the_body):  ###including me  
     response = avatars_table.scan()
@@ -276,45 +315,53 @@ def update_chat(table_name, chat_id, new_line, region="us-east-1"):
         old_text = item.get("chatText", "")
         old_count = item.get("lineCount", 0)
 
-        # Step 2: Append the new line
+        # Step 2: Append new line
         new_text = old_text + new_line + "\n"
         new_count = old_count + 1
 
-        # Step 3: Attempt atomic conditional write
-        table.update_item(
-            Key={"chatID": chat_id},
-            UpdateExpression="SET chatText = :txt, lineCount = :cnt",
-            ConditionExpression="lineCount = :expected OR attribute_not_exists(lineCount)",
-            ExpressionAttributeValues={
-                ":txt": new_text,
-                ":cnt": new_count,
-                ":expected": old_count
-            },
-            ReturnValues="UPDATED_NEW"
-        )
-
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-            print("Conflict: lineCount changed. Retrying after re-read.")
-            # Fallback: retry once with fresh read
-            item = table.get_item(Key={"chatID": chat_id}).get('Item', {})
-            old_text = item.get("chatText", "")
-            old_count = item.get("lineCount", 0)
-            new_text = old_text + new_line + "\n"
-            new_count = old_count + 1
-            # Blind write without condition
-            table.update_item(
+        # Step 3: Try conditional update to avoid race
+        try:
+            response = table.update_item(
                 Key={"chatID": chat_id},
                 UpdateExpression="SET chatText = :txt, lineCount = :cnt",
+                ConditionExpression="lineCount = :expected OR attribute_not_exists(lineCount)",
                 ExpressionAttributeValues={
                     ":txt": new_text,
-                    ":cnt": new_count
+                    ":cnt": new_count,
+                    ":expected": old_count
                 },
                 ReturnValues="UPDATED_NEW"
             )
-        else:
-            print("Unexpected error in update_chat:", e)
-            raise
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                print("🔁 Conflict: lineCount changed. Retrying after re-read.")
+                # Fallback: re-read and retry without condition
+                item = table.get_item(Key={"chatID": chat_id}).get('Item', {})
+                old_text = item.get("chatText", "")
+                old_count = item.get("lineCount", 0)
+                new_text = old_text + new_line + "\n"
+                new_count = old_count + 1
+
+                response = table.update_item(
+                    Key={"chatID": chat_id},
+                    UpdateExpression="SET chatText = :txt, lineCount = :cnt",
+                    ExpressionAttributeValues={
+                        ":txt": new_text,
+                        ":cnt": new_count
+                    },
+                    ReturnValues="UPDATED_NEW"
+                )
+            else:
+                raise
+
+        # Step 4: Return updated paragraph
+        return new_text
+
+    except Exception as e:
+        print("❌ Error in update_chat:", e)
+        raise
+
+    # set message to the other chater
 
 def update_endTime(table_name, chat_id, endTime, region="us-east-1"):
     # Initialize DynamoDB table
