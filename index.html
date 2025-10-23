@@ -51,6 +51,431 @@
     <script>
         ///CAMERA//////LIGHT//////SKYBOX//////GROUND///ELEMENTS MENU///MODEL//////NEAR MENU///messages
         //////////////////// Ort MODE FUNCTIONS/////////////////////////////////
+        const avatarsDataArray = [
+            {
+                "num": 8,
+                "avatarURL": "https://models.readyplayer.me/67ff3e3113b3fb7e8ab511f1.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800943a31f1c6f08b68bf21.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -0.627905,
+                "y": 0.0,
+                "z": 5.97153
+            },
+            {
+                "num": 9,
+                "avatarURL": "https://models.readyplayer.me/67ff3f4564ce38bc90b4529c.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800a94a679b181682ce3dd0.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -1.854102,
+                "y": 0.0,
+                "z": 5.707107
+            },
+            {
+                "num": 6,
+                "avatarURL": "https://models.readyplayer.me/67ff3cdb31f1c6f08b4b7ba1.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/67ff3fa56026f5144da78008.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 1.854102,
+                "y": 0.0,
+                "z": 5.707107
+            },
+            {
+                "num": 5,
+                "avatarURL": "https://models.readyplayer.me/67ff3c7356f46e3036a894b7.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/67ff3e9c31f1c6f08b4b9823.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 3.0,
+                "y": 0.0,
+                "z": 5.196153
+            },
+            {
+                "num": 4,
+                "avatarURL": "https://models.readyplayer.me/67ff3c0613b3fb7e8ab4e847.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/67ff3db06026f5144da76157.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 4.014784,
+                "y": 0.0,
+                "z": 4.458869
+            },
+            {
+                "num": 7,
+                "avatarURL": "https://models.readyplayer.me/67ff3d5e6026f5144da75c16.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/67ff408770502e5738dbd130.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 0.627905,
+                "y": 0.0,
+                "z": 5.97153
+            },
+            {
+                "num": 22,
+                "avatarURL": "https://models.readyplayer.me/67ffb72c56f46e3036ae5ba4.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800ad6613b3fb7e8ad30ba2.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -0.627905,
+                "y": 0.0,
+                "z": -5.97153
+            },
+            {
+                "num": 18,
+                "avatarURL": "https://models.readyplayer.me/6800e47031f1c6f08b6b594e.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800b08cca0bde41411e412b.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -4.854102,
+                "y": 0.0,
+                "z": -3.526712
+            },
+            {
+                "num": 16,
+                "avatarURL": "https://models.readyplayer.me/6800e37231f1c6f08b6b4cfb.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800af64d620f895205e7416.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -5.868886,
+                "y": 0.0,
+                "z": -1.24747
+            },
+            {
+                "num": 2,
+                "avatarURL": "https://models.readyplayer.me/67ff38df13b3fb7e8ab49874.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/67ff3bc270502e5738db802b.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 5.481273,
+                "y": 0.0,
+                "z": 2.44042
+            },
+            {
+                "num": 13,
+                "avatarURL": "https://models.readyplayer.me/6800a816d620f895205e32fe.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800ade66026f5144dc56e9f.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -5.481273,
+                "y": 0.0,
+                "z": 2.44042
+            },
+            {
+                "num": 1,
+                "avatarURL": "https://models.readyplayer.me/67ff35cc679b181682af9337.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/67ff3b6df84012b508258a62.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 5.868886,
+                "y": 0.0,
+                "z": 1.24747
+            },
+            {
+                "num": 28,
+                "avatarURL": "https://models.readyplayer.me/6800e47031f1c6f08b6b594e.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800b08cca0bde41411e412b.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 5.481273,
+                "y": 0.0,
+                "z": -2.44042
+            },
+            {
+                "num": 24,
+                "avatarURL": "https://models.readyplayer.me/6800e2b5679b181682d01664.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 1.854102,
+                "y": 0.0,
+                "z": -5.707107
+            },
+            {
+                "num": 27,
+                "avatarURL": "https://models.readyplayer.me/6800e3e5679b181682d023fb.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800afff647a08a2e396dacc.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 4.854102,
+                "y": 0.0,
+                "z": -3.526712
+            },
+            {
+                "num": 0,
+                "avatarURL": "https://models.readyplayer.me/67ff2fec30c4def57986509d.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/67ff3aab70502e5738db65bc.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 6.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            {
+                "num": 23,
+                "avatarURL": "https://models.readyplayer.me/6800a816d620f895205e32fe.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800ade66026f5144dc56e9f.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 0.627905,
+                "y": 0.0,
+                "z": -5.97153
+            },
+            {
+                "num": 19,
+                "avatarURL": "https://models.readyplayer.me/66d95426b7460aedd5563433.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800b12fca0bde41411e45cf.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -4.014784,
+                "y": 0.0,
+                "z": -4.458869
+            },
+            {
+                "num": 26,
+                "avatarURL": "https://models.readyplayer.me/6800e37231f1c6f08b6b4cfb.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800af64d620f895205e7416.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 4.014784,
+                "y": 0.0,
+                "z": -4.458869
+            },
+            {
+                "num": 11,
+                "avatarURL": "https://models.readyplayer.me/67ffb6a070502e5738e148e4.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800acf031f1c6f08b698e9c.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -4.014784,
+                "y": 0.0,
+                "z": 4.458869
+            },
+            {
+                "num": 3,
+                "avatarURL": "https://models.readyplayer.me/67ff39f4679b181682b011df.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/67ff3d1579474b7a6c733b4a.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 4.854102,
+                "y": 0.0,
+                "z": 3.526712
+            },
+            {
+                "num": 20,
+                "avatarURL": "https://models.readyplayer.me/67ff40e86026f5144da79084.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800ac856026f5144dc56345.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -3.0,
+                "y": 0.0,
+                "z": -5.196153
+            },
+            {
+                "num": 29,
+                "avatarURL": "https://models.readyplayer.me/66d95426b7460aedd5563433.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800b12fca0bde41411e45cf.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 5.868886,
+                "y": 0.0,
+                "z": -1.24747
+            },
+            {
+                "num": 21,
+                "avatarURL": "https://models.readyplayer.me/67ffb6a070502e5738e148e4.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800acf031f1c6f08b698e9c.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -1.854102,
+                "y": 0.0,
+                "z": -5.707107
+            },
+            {
+                "num": 25,
+                "avatarURL": "https://models.readyplayer.me/6800e2fa79474b7a6c9303c1.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800aedb679b181682ce70f0.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": 3.0,
+                "y": 0.0,
+                "z": -5.196153
+            },
+            {
+                "num": 12,
+                "avatarURL": "https://models.readyplayer.me/67ffb72c56f46e3036ae5ba4.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800ad6613b3fb7e8ad30ba2.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -4.854102,
+                "y": 0.0,
+                "z": 3.526712
+            },
+            {
+                "num": 17,
+                "avatarURL": "https://models.readyplayer.me/6800e3e5679b181682d023fb.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800afff647a08a2e396dacc.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -5.481273,
+                "y": 0.0,
+                "z": -2.44042
+            },
+            {
+                "num": 10,
+                "avatarURL": "https://models.readyplayer.me/67ff40e86026f5144da79084.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800ac856026f5144dc56345.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -3.0,
+                "y": 0.0,
+                "z": 5.196153
+            },
+            {
+                "num": 15,
+                "avatarURL": "https://models.readyplayer.me/6800e2fa79474b7a6c9303c1.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800aedb679b181682ce70f0.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -6.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            {
+                "num": 14,
+                "avatarURL": "https://models.readyplayer.me/6800e2b5679b181682d01664.glb",
+                "avatarURLBoy": "https://models.readyplayer.me/6800ae66647a08a2e396ced2.glb",
+                "isUsed": false,
+                "targetX": 0.0,
+                "targetY": 0.0,
+                "targetZ": 0.0,
+                "x": -5.868886,
+                "y": 0.0,
+                "z": 1.24747
+            }
+        ];
+
+        const debugUsersArray = [
+            {
+                "address": "123 Main St",
+                "avatarID": "vatar001",
+                "day1to": "08:00",
+                "day2back": "17:00",
+                "day2to": "08:15",
+                "day3back": "17:10",
+                "day3to": "08:20",
+                "day4back": "17:20",
+                "day4to": "08:30",
+                "day5back": "17:30",
+                "day5to": "08:40",
+                "isMan": true,
+                "userName": "user_one"
+            },
+            {
+                "address": "456 Side Ave",
+                "avatarID": "vatar002",
+                "day1to": "08:05",
+                "day2back": "17:05",
+                "day2to": "08:25",
+                "day3back": "17:15",
+                "day3to": "08:35",
+                "day4back": "17:25",
+                "day4to": "08:45",
+                "day5back": "17:35",
+                "day5to": "08:50",
+                "isMan": false,
+                "userName": "user_two"
+            },
+            {
+                "address": "789 Cross Blvd",
+                "avatarID": "vatar003",
+                "day1to": "08:10",
+                "day2back": "17:10",
+                "day2to": "08:35",
+                "day3back": "17:25",
+                "day3to": "08:50",
+                "day4back": "17:40",
+                "day4to": "09:00",
+                "day5back": "17:50",
+                "day5to": "09:10",
+                "isMan": true,
+                "userName": "user_three"
+            },
+            {
+                "address": "321 Ocean Dr",
+                "avatarID": "vatar004",
+                "day1to": "08:15",
+                "day2back": "17:20",
+                "day2to": "08:45",
+                "day3back": "17:30",
+                "day3to": "09:05",
+                "day4back": "17:55",
+                "day4to": "09:15",
+                "day5back": "18:00",
+                "day5to": "09:20",
+                "isMan": false,
+                "userName": "user_four"
+            }
+        ]
 
 
         const menuX = 1;//1;
@@ -115,22 +540,56 @@
                 }
                 this.socket.onerror = err => console.error('WebSocket error:', err);
             }
-
-            async sendWithAck(payload, timeout = 750) {
-                const messageId = `msg-${++this.counter}`;
-                const message = { ...payload, messageId };
-
-                return new Promise((resolve, reject) => {
-                    this.pending.set(messageId, { resolve, reject });
-                    this.socket.send(JSON.stringify(message));
-                    setTimeout(() => {
-                        if (this.pending.has(messageId)) {
-                            this.pending.delete(messageId);
-                            reject(new Error("ACK timeout"));
+            /*
+                        async sendWithAck(payload, sender, timeout = 750) {
+                            ///const messageId = `msg-${++this.counter}${sender}`;
+                            ///const message = { ...payload, messageId };
+                            const { messageId } = payload;
+                            return new Promise((resolve, reject) => {
+                                this.pending.set(messageId, { resolve, reject });
+                                this.socket.send(JSON.stringify(payload));
+                                setTimeout(() => {
+                                    if (this.pending.has(messageId)) {
+                                        this.pending.delete(messageId);
+                                        reject(new Error("ACK timeout"));
+                                    }
+                                }, timeout);
+                            });
                         }
-                    }, timeout);
-                });
+            */
+
+            async sendWithAck(payload, sender, timeout = 750) {
+                const { messageId } = payload;
+
+                try {
+                    return await new Promise((resolve, reject) => {
+                        try {
+                            this.pending.set(messageId, { resolve, reject });
+
+                            // Attempt to send the message
+                            this.socket.send(JSON.stringify(payload));
+                            console.log(`Message sent with ID: ${messageId} by ${sender}`);
+
+                            setTimeout(() => {
+                                if (this.pending.has(messageId)) {
+                                    this.pending.delete(messageId);
+                                    console.warn(`ACK timeout for message ID: ${messageId}`);
+                                    reject(new Error("ACK timeout"));
+                                }
+                            }, timeout);
+
+                        } catch (sendError) {
+                            console.error(`Failed to send message with ID: ${messageId}`, sendError);
+                            reject(sendError);
+                        }
+                    });
+                } catch (err) {
+                    console.error(`sendWithAck failed for message ID: ${messageId}`, err);
+                    throw err; // rethrow to let caller handle it
+                }
             }
+
+
             async handleServerMessage(data) {
                 switch (data.action) {
                     case "message_done":
@@ -152,35 +611,13 @@
                             console.log(data);
                         }
                         break;
-                    case 'createAvatar':
-                        this.confirm2server(data, "createAvatar")
-                        let isMe = false;
-                        if (data.isMe == "me") {
-                            isMe = true;
-                        } else {
-                            isMe = false;
-                        }
-                        await myWorld.addAvatar2World(data.avatarDetails, data.signData, isMe, scene);
-                        console.log("CC- new Avatar created by server request ID: " + data.signData.avatarID);
-                        break;
-                    case 'createMissingAvatars':
-                        this.confirm2server(data, "createAvatar");
-                        await myWorld.addMissingAvatars2World(data.avatarArray, data.signDataArray, scene);
-                        break;
-                    case 'waitForAck':
-                        this.confirm2server(data, "createAvatar");
-                        ///if we remove conform from here we get alot of waitForAck messages on pendingRetries table
-                        ///and ACK timeout error in the console 
-                        this.socket.send(JSON.stringify({
-                            action: 'createAvatar',
-                            type: 'ack',
-                            ack: data.nextStep,
-                            previousMessage: data.previousMessage || {}
-                        }));
-                        break;
                     case 'avatarLeft':
                         this.confirm2server(data, "avatarLeft");
                         myWorld.doAvatarLeft(data.avatarID);
+                        break;
+                    case 'setStatus':///'avatar_ready'
+                        this.confirm2server(data, "avatarCeated");
+                        myWorld.doSetStatus(data.avatarID, data.status);
                         break;
                     case 'startChat':
                         this.confirm2server(data, "startChat");
@@ -195,23 +632,13 @@
                                 myWorld.chatUpdated(data.chatText, data.destID);
                                 break;
                             case 'chatEnd':
-                                myWorld.chatEnded(data.fromAvatarID, data.toAvatarID);
+                                myWorld.chatEnded(data.fromAvatarID, data.toAvatarID, data.chatID);
                                 break;
                         }
                         break;
                 }
             }
-            /*
-            if (doAnswer) {
-                ///let server know that we got the message
-                this.socket.send(JSON.stringify({
-                    action: data['responseTo'],
-                    serverMsgId: data.serverMsgId,
-                    ack: "serverMsgDone"
-                }));
-                return;
-            }
-*/
+
             ///confirm the message to the server           
             confirm2server(data, destAction) {
                 //console.log ("confirm2server data:")
@@ -220,29 +647,23 @@
                 let confirmMsg = JSON.stringify({
                     action: destAction, //"createAvatar",
                     serverMsgId: data.serverMsgId,
-                    ack: "serverMsgDone"
+                    type: "serverMsgDone"
                 })
                 console.log("send confirm 2 server confirmMsg:")
                 console.log(confirmMsg);
                 this.socket.send(confirmMsg);
-
-                /*
-                 let confirmMsg = {
-                     action: destAction, //"createAvatar",
-                     serverMsgId: data.serverMsgId,
-                     ack: "serverMsgDone"
-                 }
-                 this.safeSend(confirmMsg);
-                 */
             }
 
-            async safeSend(data, maxRetries = 3, retryDelay = 500) {
+            async safeSend(data, sender, maxRetries = 3, retryDelay = 500) {
+                const messageId = `msg-${++this.counter}${sender}`;
+                const payload = { ...data, messageId };
+
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
                     try {
-                        const result = await wsClient.sendWithAck(data); // new ID each time!
+                        const result = await this.sendWithAck(payload, sender); // new ID each time!
                         return result;
                     } catch (error) {
-                        console.warn(`Attempt ${attempt} failed:`, error);
+                        console.warn(`Attempt ${attempt} failed for ${messageId}`);
                         if (attempt === maxRetries) {
                             //throw new Error("Failed after max retries");
                             //we can handle the error here (just by console it), to allow allowPointer in the calling function
@@ -264,17 +685,7 @@
                     type: 'keepalive'   // your server can just ignore or log this
                 }));
                 console.log('keepalive sent');
-            }, 1 * 60 * 1000);///9 instaed of 1
-
-            /// to remain the connection live more thaen 10 munutes
-            ///TODO: clear this interval when the connection is closed
-            /*
-            pingInterval = setInterval(() => {
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'ping' }));
-                }
-            }, 300000); // Send a ping every 5 minutes (300 seconds)
-            */
+            }, 5 * 60 * 1000);///9 instaed of 1
         };
 
         socket.onclose = function (event) {
@@ -293,28 +704,105 @@
         }
 
         // #endregion
-        //#region/////////////////// get/post to html api gateway - not in use /////////////////////
-        function getData(url = '', data = {}) {
-            fullURL = url + '?' + new URLSearchParams(data)
-            return fetch(fullURL)
-                .then((data1) => { return data1.json() });
-        }
 
+        //#region/////////////////// get/post to html api gateway /////////////////////
+        ///const queryParam = `?foo=${encodeURIComponent(fooValue)}`;
+        async function getData(route, queryParam = "") {
+            let baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+            //queryParam4URL = encodeURIComponent(queryParam);////////////
+            //const fullURL = `${baseURL}${route}${queryParam4URL}`;
+            const fullURL = `${baseURL}${route}${queryParam}`;
+            console.log("getData fullURL:", fullURL);
+            try {
+                const response = await fetch(fullURL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
 
-        async function postData(url = '', data = {}) {
-            ////console.log(JSON.stringify(data))
-            fullURL = url + '?' + new URLSearchParams(data)
-            fetch(fullURL, {
-                method: 'POST',
-                body: JSON.stringify(data),
-                headers: {
-                    'Content-Type': 'application/json'
+                if (!response.ok) {
+                    console.error(`Server error: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('Error body:', errorText);
+                    return;
                 }
-            })
-                .then(response => response.json())
-                .then(data2 => console.log("postData done"))
-                .catch(error => console.error("postData error: " + error));
+
+                const data = await response.json();
+                console.log('Response data:', data);
+                return data; // Return the data for further processing
+
+            } catch (error) {
+                console.error('Network or CORS error:', error);
+            }
         }
+
+        async function postData(route, payload = {}) {
+            const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+            const routeURL = baseURL + route;
+            console.log("postData routeURL:", routeURL);
+            console.log(payload);
+
+            try {
+                const res = await fetch(routeURL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error("Server error:", res.status, errorText);
+                    return null;
+                }
+
+                const data = await res.json();
+                console.log("Response data:", data);
+                return data;
+
+            } catch (err) {
+                console.error("Network or CORS error:", err);
+                return null;
+            }
+        }
+
+        async function patchData(avatarID, field, value) {
+            const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+            const route = `/avatars/${encodeURIComponent(avatarID)}`;
+            const url = `${baseURL}${route}`;
+
+            const body = {
+                field: field,
+                value: value
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    console.error("❌ Error updating avatar:", result.error || result);
+                    throw new Error(result.error || "Update failed");
+                }
+
+                console.log("✅ Avatar updated:", result);
+                return result;
+            } catch (error) {
+                console.error("❗ Network or server error:", error);
+                throw error;
+            }
+        }
+
         //#endregion
         //#region///////////////////// VR stansdart issues ///////////////
 
@@ -393,6 +881,11 @@
             scene.onPointerObservable.add((pointerInfo) => {
                 switch (pointerInfo.type) {
                     case BABYLON.PointerEventTypes.POINTERWHEEL:
+                        if (!myWorld.allowPointer) {
+                            pointerInfo.event.preventDefault();
+                            return; // Ignore zoom if pointer is not allowed
+                        }
+
                         const event = pointerInfo.event;
                         //console.log("event.deltaY: " + event.deltaY);
                         if (event.deltaY < 0) {
@@ -457,79 +950,13 @@
             environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
 
             ///INIT///
-            //console.log("scene.meshes 0");
-            //console.log(scene.meshes);
 
             myWorld = await new World(scene);
-
-
-            /*
-           elementsMenu = BABYLON.MeshBuilder.CreateSphere("elementsMenu", { diameter: 0.01 });
-
-           elementsMenu.position.x = menuX;
-           elementsMenu.position.y = elementsMenuY;///position of center of B1X3 TODO:we need to replace it with virtual mesh
-
-          
-           elementsMenu.metadata = {
-               labelObj: new FbMessages("תפריט אבני בניין", 1, 1, 0)
-           }
-           
-
-           const b1X5 = meshBlock(scene, 5);
-           b1X5.setParent(elementsMenu);
-           b1X5.position.x = -7;//
-           const b1X3 = meshBlock(scene, 3);
-           b1X3.setParent(elementsMenu);
-           b1X3.position.x = -1;
-
-           const b1X2 = meshBlock(scene, 2);
-           b1X2.setParent(elementsMenu);
-           b1X2.position.x = 3;
-
-           const c1 = meshWheel(scene, 1);
-           c1.setParent(elementsMenu);
-           c1.position.x = 6;
-
-
-           elementsMenu.scaling = scailingMenuModel;
-*/
-            //const avatar1 = scene.getMeshByName(theName);
-
-            ///end ELEMENTS MENU///
-
-            ///MODEL///
-            //currentModel = createModel("one", -5, 0 ,-5 );
-            ///end MODEL///
-
-            ///NEAR MENU///
-            //near = createNearMenu();///called now from messages. implemented in lego 1
-
-            ///end NEAR MENU///
-            /*////////////////////
-            var newPlane = BABYLON.Mesh.CreatePlane("plane", 10);
-              //newPlane.position.y = 1;
-              newPlane.position.z = -25;
-                    newPlane.position.y = 2;/////2
-                    newPlane.position.x = 0;
-              var newADT = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(newPlane);
-              var newImage = new BABYLON.GUI.Image("erji", "textures/pink_py.png");
-              newADT.addControl(newImage);
-            *////////////////////
-            //////messageBox = new Messages();
 
             const xr = await scene.createDefaultXRExperienceAsync({
                 floorMeshes: [ground]
             });
-            ////console.log("xr"); 
-            ////console.log(xr); 
             xr.pointerSelection.laserPointerDefaultColor = new BABYLON.Color3(1, 1, 0); //....
-
-            /*
-            scene.debugLayer.show({
-                embedMode: true,
-            });
-            */
-            ////scene.debugLayer.show();
             return scene;
         };
         /////// END CREATE SCENE ////////////

@@ -1,36 +1,53 @@
 
 
 class Avatar {
-
-    constructor(avatarID, avatarURL, world) {
+    constructor(avatarData, world, avatarType) {
         this.myWorld = world;
-        this.avatarURL = avatarURL;
-        this.ID = avatarID;
+        this.avatarData = avatarData; ///The data related to the avatar (differ then the user own it) see avatarsDataArray
+        this.userData = {};///will be filled with data from signdata including name and avatarID (see debugUsersArray)
+        this.statusData = {}; ///will be updated with the status of the avatar (noChat, myChat, inChat...)
+        this.avatarMesh = null; ///the mesh of the avatar
+        this.frontSign = null; ///the sign in front of the avatar (AvatarMessage)
+        this.alreadyTalked = false;
+        this.avatarType = avatarType; ///the type of the avatar (A for unSeen avatar)
+
         //console.log("Avatar ID: " + this.ID);
     }
+    ///getters for the avatar data for old code compatibility
+    get ID() {
+        console.log("get avatar ID used")
+        return this.userData.avatarID;
+    }
+    get userName() {
+        return this.userData.userName;
+    }
+    get avatarID() {
+        return this.userData.avatarID;
+    }
 
-    async initAvatar(avatarDetails, signData, scene) {
+    async matchUser(signData) {
         const planeSize = 0.85;
         const signX = 0;
         const signY = 0.55;
         const signZ = 0.18;
-        this.userName = signData.userName;
-        this.avatarMesh = await this.createAvatarMesh(this.avatarURL, scene);
-        if (signData.avatarID[0] == "A") {
+        this.userData = signData; ///The data related to the user (the one who own the avatar)
+        //console.log("avatarMesh:", this.avatarMesh);
+/*        
+        ///if (signData.avatarID[0] == "A") {
+        if (this.avatarType === "A") {
             this.avatarMesh.getChildMeshes().forEach(child => {
                 //child.setEnabled(false); // This will completely disable the mesh
                 // Alternatively, you can use:
                 child.visibility = 0;
             });
         }
-        this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
-        this.avatarMesh.position = new BABYLON.Vector3(avatarDetails.x, avatarDetails.y, avatarDetails.z);
-        this.avatarMesh.lookAt(new BABYLON.Vector3(avatarDetails.targetX, avatarDetails.targetY, avatarDetails.targetZ));
-        this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
+*/
+        //console.log("matchUser: " + JSON.stringify(signData));
+        this.frontSign =  new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
 
     }
 
-    async createAvatarMesh(avatarURL, scene) {
+    async createAvatarMesh(scene) {
         //console.log("avatarURL: " + avatarURL)
         /*        
        await BABYLON.SceneLoader.AppendAsync("", avatarURL, scene);
@@ -38,20 +55,67 @@ class Avatar {
         let avatarMesh = beforeavatarMesh.parent;
         return avatarMesh.parent;
         */
+        /// Load the GLB model from the URL
+        ///select gender by even or odd num
+        /// if we know how mwny boys and have way to set it we can replace it with a better way
+        let avatarURL
+        if (this.avatarData.num % 2 === 0) {
+            avatarURL = this.avatarData.avatarURL;
+            this.avatarData.loadedIsMan = false;
+        } else {
+            avatarURL = this.avatarData.avatarURLBoy;
+            this.avatarData.loadedIsMan = true;
+        }
+
+        const response = await fetch(avatarURL, { method: 'HEAD' });
+
+        if (!response.ok) {
+            console.warn(`GLB file not found at: ${avatarURL}`);
+            return;
+        }
+
+
         const result = await BABYLON.SceneLoader.ImportMeshAsync(
             null,
             "",
             avatarURL,
             scene
         );
-
+/*
         // Find the top-level node among them (those with no parent)
+        result.meshes.forEach(m => {
+            console.log(`Mesh: ${m.name} | Vertices: ${m.getTotalVertices()} | Visible: ${m.isVisible}`);
+        });
+        */
         const root = result.meshes.find(m => !m.parent);
         if (!root) {
             console.warn("No root mesh found in imported GLB!");
             return null;
         }
-        return root;
+        this.avatarMesh = root;
+        //this.avatarMesh.scaling = new BABYLON.Vector3(1, 1, 1);
+        ///return root;
+        ///moved to allow implement on all avatars
+        if (this.avatarType === "A") {
+            this.avatarMesh.getChildMeshes().forEach(child => {
+                //child.setEnabled(false); // This will completely disable the mesh
+                // Alternatively, you can use:
+                child.visibility = 0;
+            });
+        }
+
+    }
+    ///place the avatar in the world
+    placeAvatar() {
+        // Use this.avatarData instead of avatarDetails
+        const data = this.avatarData;
+        if (this.avatarMesh) {
+            //this.avatarMesh.scaling = new BABYLON.Vector3(-1, 1, -1);
+            this.avatarMesh.position = new BABYLON.Vector3(data.x, data.y, data.z);
+            this.avatarMesh.lookAt(new BABYLON.Vector3(data.targetX, data.targetY, data.targetZ));
+            this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
+            
+        }
     }
 
     chatRequest() {
@@ -99,6 +163,14 @@ class Avatar {
         return targetPosition;
     }
     ///noChat, myChat, inChat
+    hideButtons() {
+        //this.statusData = { status: "noChat" };
+        if (this.frontSign) {
+            this.frontSign.hideButtons();
+        }
+
+    }
+
     setState(state) {
         this.frontSign.setState(state);
     }
