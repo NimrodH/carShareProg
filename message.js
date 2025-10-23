@@ -3,28 +3,12 @@
 class AvatarMessage {
     //nextButton;///also sent as parameter in new session and called from there
     constructor(planeSize, x, y, z, signData, avatar) {
-        console.log("in AvatarMessage")
         this.myAvatar = avatar;
         this.plane = BABYLON.MeshBuilder.CreatePlane("plane", { height: planeSize, width: -planeSize });
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
         //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without it its mirror
-        //this.plane.position = new BABYLON.Vector3(x, y, z);
-        ///this.plane.position = new BABYLON.Vector3(0, 0, 0);///////////////
-        //this.plane.setParent(this.myAvatar.avatarMesh);
-        //////////////////////////////
-        //this.avatarMesh.scaling = new BABYLON.Vector3(1, 1, 1);
-        const anchor = new BABYLON.TransformNode("anchor", scene);
-        anchor.scaling = new BABYLON.Vector3(-1, 1, -1);
-        //anchor.scaling = new BABYLON.Vector3(1, 1, 1);
-        anchor.parent = this.myAvatar.avatarMesh;
-        anchor.position = new BABYLON.Vector3(x, y, z); // try different Y/Z to move above chest
-        this.plane.parent = anchor;
-        //this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;
-
-        ////////////////////
-
+        this.plane.position = new BABYLON.Vector3(x, y, z);
         this.plane.setParent(this.myAvatar.avatarMesh);
-
         this.advancedTexture.background = 'green'
 
 
@@ -46,17 +30,12 @@ class AvatarMessage {
         this.nextButton.left = "10px";
         this.nextButton.height = "70px";
         this.advancedTexture.addControl(this.nextButton);
-        if (signData.isLoading) {
-            this.setState("loading");
-        } else {
-            this.setState("noChat");
-        }
-
+        this.setState("noChat");
         let text1 = this.textField;
         text1.color = "white"
         text1.fontSize = 36;
         text1.top = "-150px";
-        text1.height = "700px"
+        text1.height = "600px"
         this.advancedTexture.addControl(text1);
         this.updateText(this.createMessage(signData));
     }
@@ -70,43 +49,9 @@ class AvatarMessage {
         const heTravel = "נוסע";
         const sheTravelBack = "חוזרת";
         const heTravelBack = "חוזר";
-        const hePassenger = "מצטרף כנוסע";
-        const shePassenger = "מצטרפת כנוסעת";
-        const heDriver = "מסיע ברכבי";
-        const sheDriver = "מסיעה ברכבי";
-        const andOr = "  ו/או  ";
         let travel;
         let travelBack;
-        let forMessage1;
-        let forMessage2;
-        let forMessage3;
-
         let message = signData.userName + "\n\n";
-        if (signData.isPassenger) {
-            if (signData.isMan) {
-                forMessage1 = hePassenger;
-            } else {
-                forMessage1 = shePassenger;
-            }
-        } else {
-            forMessage1 = "";
-        }
-        if (signData.isDriver) {
-            if (signData.isMan) {
-                forMessage2 = heDriver;
-            } else {
-                forMessage2 = sheDriver;;
-            }
-        } else {
-            forMessage2 = "";
-        }
-        if (signData.isPassenger && signData.isDriver) {
-            forMessage3 = andOr;
-        } else {
-            forMessage3 = "";
-        }
-        message += forMessage1 + forMessage3 + forMessage2 + "\n";
-
         if (signData.isMan) {
             travelBack = heTravelBack; //חוזר
             travel = heTravel; //נוסע
@@ -177,27 +122,6 @@ class AvatarMessage {
                 this.nextButton.color = "red";
                 this.nextButton.textBlock.text = "סיימתי - לא זמין לשיחה נוספת";
                 break;
-            case "loading":
-                this.nextButton.isEnabled = false;
-                this.nextButton.color = "red";
-                this.nextButton.textBlock.text = "טוען נתונים, נא להמתין";
-                break;
-            case "me":
-                this.nextButton.isEnabled = false;
-                this.nextButton.isVisible = false; //hide the button
-                //this.nextButton.color = "red";
-                break;
-            case "refuseChat":
-                this.nextButton.isEnabled = false;
-                this.nextButton.color = "red";
-                this.nextButton.textBlock.text = "סליחה, בנתיים התחלתי שיחה אחרת";
-                break;
-            case "alreadyTalked":
-                this.nextButton.isEnabled = false;
-                this.nextButton.color = "red";
-                this.nextButton.textBlock.text = "כבר דיברנו";
-                break;
-
         }
     }
 }
@@ -208,6 +132,9 @@ class Chat {
         this.avatarToID = avatarTo.ID;
         this.chatID = this.avatarFromID + "_" + this.avatarToID;
         this.myWorld = world;
+        //console.log("this.myWorld.myAvatar:");
+        //console.log(this.myWorld.myAvatar);
+        //we dont need userNameTo
         if (this.myWorld.myAvatar.ID == this.avatarFromID) {
             this.userNameFrom = avatarFrom.userName;
         } else {
@@ -215,37 +142,50 @@ class Chat {
         }
 
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        //this.advancedTexture.rootContainer.scaleX = 1 / window.devicePixelRatio;
+        //this.advancedTexture.rootContainer.scaleY = 1 / window.devicePixelRatio; 
+        //this didn't work. I set all sizes in %  
 
         this.rect1 = new BABYLON.GUI.Rectangle();
-        this.rect1.width = "35%";
-        this.rect1.height = "85%";
+        this.rect1.width = "35%" //"500px";
+        this.rect1.height = "85%"//"600px";
         this.rect1.cornerRadius = 20;
-        this.rect1.color = "green";
+        this.rect1.color = "Orange";
         this.rect1.thickness = 4;
         this.rect1.background = "black";
         this.rect1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
         this.rect1.left = "-1%";
         this.advancedTexture.addControl(this.rect1);
 
+
         this.grid = new BABYLON.GUI.Grid();
         this.grid.background = "black";
         this.grid.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
         this.grid.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
         this.rect1.addControl(this.grid);
+
         this.grid.width = 0.95;
         this.grid.height = 0.98;
+
 
         this.grid.addRowDefinition(0.76);
         this.grid.addRowDefinition(0.12);
         this.grid.addRowDefinition(0.12);
-
+        /* not working
+        this.grid.addColumnDefinition(0.25); // Column 0       
+        this.grid.addColumnDefinition(0.25); // Column 0       
+        this.grid.addColumnDefinition(0.25); // Column 0       
+        this.grid.addColumnDefinition(0.25); // Column 0       
+        */
         this.scrollViewer = new BABYLON.GUI.ScrollViewer(null, true);
         this.scrollViewer.width = "100%";
         this.scrollViewer.height = 1;
         this.scrollViewer.background = "#CCCCCC";
         this.scrollViewer.color = "black";
         this.scrollViewer.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_STRETCH;
-        this.grid.addControl(this.scrollViewer, 0, 0);
+        this.grid.addControl(this.scrollViewer, 0, 0);//0,0
+        //this.grid.setColumnSpan(this.scrollViewer, 4);
+
 
         this.sendButton = BABYLON.GUI.Button.CreateSimpleButton("sendButton", "שלח ההודעה");
         this.sendButton.width = 0.2;
@@ -253,7 +193,8 @@ class Chat {
         this.sendButton.color = "white";
         this.sendButton.background = "black";
         this.sendButton.onPointerUpObservable.add(this.sendLine.bind(this));
-        this.grid.addControl(this.sendButton, 2, 0);
+        this.grid.addControl(this.sendButton, 2, 0);//2,0
+        //this.sendButton.right = "10px";
         this.sendButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
         this.sendButton.fontSize = "25%";
 
@@ -264,7 +205,8 @@ class Chat {
         this.buttonDeal.background = "green";
         this.buttonDeal.onPointerUpObservable.add(this.dealDoneSelected.bind(this));
         this.buttonDeal.left = "-13%";
-        this.grid.addControl(this.buttonDeal, 2, 1);
+        //this.buttonDeal.paddingRight = 0.35;//"75px"
+        this.grid.addControl(this.buttonDeal, 2, 1);//2,0
         this.buttonDeal.fontSize = "25%";
 
         this.buttonClose = BABYLON.GUI.Button.CreateSimpleButton("closeButton", "סגור");
@@ -273,7 +215,7 @@ class Chat {
         this.buttonClose.color = "white";
         this.buttonClose.background = "green";
         this.buttonClose.onPointerUpObservable.add(this.closeChat.bind(this));
-        this.grid.addControl(this.buttonClose, 2, 0);
+        this.grid.addControl(this.buttonClose, 2, 0);//2,0
         this.buttonClose.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
         this.buttonClose.fontSize = "25%";
 
@@ -284,15 +226,18 @@ class Chat {
         this.buttonNoDeal.background = "red";
         this.buttonNoDeal.onPointerUpObservable.add(this.dealNotDoneSelected.bind(this));
         this.buttonNoDeal.fontSize = "25%";
-        this.grid.addControl(this.buttonNoDeal, 2, 2);
+
+        this.grid.addControl(this.buttonNoDeal, 2, 2);//2,0
         this.buttonNoDeal.left = "13%";
+        //this.buttonNoDeal.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        //this.buttonNoDeal.paddingLeft = "15%"//"75px";
 
         this.textBlock = new BABYLON.GUI.TextBlock();
         this.textBlock.textWrapping = BABYLON.GUI.TextWrapping.WordWrap;
         this.textBlock.resizeToFit = true;
         this.textBlock.paddingTop = "5%";
         this.textBlock.paddingLeft = "30px";
-        this.textBlock.paddingRight = "20px";
+        this.textBlock.paddingRight = "20px"
         this.textBlock.paddingBottom = "5%";
         this.textBlock.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
         this.textBlock.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
@@ -300,72 +245,54 @@ class Chat {
         this.textBlock.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
         this.textBlock.color = "red";
         this.textBlock.background = "yellow";
+        //this.textBlock.text = "שלום";   
         this.textBlock.fontSize = "5%";
         this.scrollViewer.addControl(this.textBlock);
 
         this.messageInput = new BABYLON.GUI.InputText('id', "");
         this.messageInput.height = 0.8;
         this.messageInput.color = "white";
-        this.messageInput.fontSize = "35%";
-        this.messageInput.width = 1;
+        this.messageInput.fontSize = "35%";//24
+        //this.messageInput.paddingRight = "10px";
+        this.messageInput.width = 1;//0.95;
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-        this.messageInput.onKeyboardEventProcessedObservable.add((kbInfo) => {
-            if (kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP && kbInfo.event.key === "Enter") {
-                console.log("Enter pressed: ", input.text);
-                // Your custom logic here
-            }
-        });
-        this.grid.addControl(this.messageInput, 1, 0);
-        ///start loking for new messages
-        console.log("chatID: " + this.chatID);
-        this.pollInterval = setInterval(async () => {
-            const res = await getData("chat/getText", `?chatID=${this.chatID}`);
-            if (res && res.chatText) {
-                const linesNow = this.textBlock.text.split(/\r?\n/).length;
-                const linesNew = res.chatText.split(/\r?\n/).length;
-                if (linesNew > linesNow) {
-                    this.updateText(res.chatText);
-                }
-            }
-        }, 3000);
+
+        //this.messageInput.onTextChangedObservable.add(() => button.isEnabled = true);
+        this.grid.addControl(this.messageInput, 1, 0);//1,0
+
+        // this.grid.setColumnSpan(this.messageInput, 4);
         this.setChatState("start")
     }
 
+    ///sent from sendLine to handle localy.
     updateText(theText) {
         this.textBlock.text = theText;
+        //this.myWorld.chatStarted(this.avatarToID, this.avatarFromID);
     }
     getText() {
         return this.textBlock.text;
     }
 
-    async sendLine() {
-        ///add localy
-        ////let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
-        ///////this.updateText(text);
-
-        ///////this.messageInput.text = "";///moved down
-
-        /////this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text);
-        await postData("chat/sendLine", {
-            chatID: this.chatID,
-            newLine: `${this.userNameFrom}: ${this.messageInput.text}`
-        }).then(res => {
-            if (res && res.chatText) this.updateText(res.chatText);
-            this.messageInput.text = "";///delete message line if we succed to send it
-        }).catch(err => {
-            console.error("Error sending message:", err);
-        });
-        this.messageInput.focus()
-
+    ///sent from button "שלח ההודעה"
+    sendLine() {
+        //this.myWorld.sendLine(this.chatLine.text);
+        //console.log("sendLine clicked: " + this.messageInput.text);
+        let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
+        this.updateText(text);
+        this.messageInput.text = "";
+        //TODO: send the message to my avatar 
+        this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text)
     }
 
     dealDoneSelected() {
+        //console.log("dealDone clicked: ");
         this.buttonClose.isEnabled = true;
         this.myWorld.dealDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
     dealNotDoneSelected() {
+        //console.log("dealNotDone clicked: ");
         this.buttonClose.isEnabled = true;
         this.myWorld.dealNotDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
@@ -374,20 +301,15 @@ class Chat {
         if (this.myWorld.currChat.chatID == this.chatID) {
             this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
         } else {
+            ///somthing wrong, close the chat popup and set currChat to null (to enable other chats)
             this.dispose();
             if (this.myWorld.currChat) {
                 this.myWorld.currChat = null;
             }
         }
-        if (this.pollInterval) {
-            clearInterval(this.pollInterval);
-        }
     }
 
     dispose() {
-        if (this.pollInterval) {
-            clearInterval(this.pollInterval);
-        }
         this.advancedTexture.dispose();
         this.rect1.dispose();
         this.grid.dispose();
@@ -402,10 +324,11 @@ class Chat {
     setChatState(state) {
         switch (state) {
             case "start":
+                //this.textBlock.text = "שלום"
                 this.sendButton.isEnabled = true;
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
-                this.buttonClose.isEnabled = false;
+                this.buttonClose.isEnabled = false;//false; ///true for test to see why other some times not closed
                 break;
             case "refused":
                 this.textBlock.text = "המשתתף השני בחר באפשרות [לא סוכם] לכן הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת.";
@@ -415,11 +338,11 @@ class Chat {
                 this.buttonClose.isEnabled = true;
                 break;
             case "wait":
-                this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן, והקלק שוב על תשובתך";
+                this.textBlock.text = "המשתתף השני עדיין לא בחר, המתן, והקלק שוב על תשובתך"
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = true;
                 this.buttonNoDeal.isEnabled = true;
-                this.buttonClose.isEnabled = true;
+                this.buttonClose.isEnabled = true;//false; ///true for test to see why other some times not closed
                 break;
             case "done":
                 this.textBlock.text = "סוכם על ביצוע נסיעה משותפת. לחץ [סגור] כדי לסיים את השיחה";
@@ -429,14 +352,14 @@ class Chat {
                 this.buttonClose.isEnabled = true;
                 break;
             case "notDone":
-                this.textBlock.text = "לא סוכם על נסיעה. בחר [סגור], ונסה לתאם עם מישהו אחר";
+                this.textBlock.text = "לא סוכם על נסיעה. בחר [סגור], ונסה לתאם עם מישהו אחר"
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = false;
                 this.buttonNoDeal.isEnabled = false;
                 this.buttonClose.isEnabled = true;
                 break;
             case "otherAccepted":
-                this.textBlock.text = "רק המשתתף השני בחר באפשרות [סוכם]. הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת.";
+                this.textBlock.text = "רק המשתתף השני בחר באפשרות [סוכם]. הנסיעה לא נקבעה. בחר סגור. תוכל לנסות לברר איתו למה בחר כך בשיחה נוספת."
                 this.sendButton.isEnabled = false;
                 this.buttonDeal.isEnabled = false;
                 this.buttonNoDeal.isEnabled = false;
@@ -444,8 +367,8 @@ class Chat {
                 break;
         }
     }
-}
 
+}
 
 class Wellcome {
 
@@ -462,7 +385,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green";//green - 'orange' for debug color
+        this.advancedTexture.background = "green"//green - 'red' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
@@ -512,11 +435,6 @@ class Wellcome {
         this._addTextField("זכר", 400 - gap * 3.25, topLines - gapLines * 3)
         this.buttonWoman = this._addRadioButtens(400 - gap * 5, topLines - gapLines * 3, false, "woman");
         this._addTextField("נקבה", 400 - gap * 4.5, topLines - gapLines * 3)
-
-        this.buttonPassenger = this._addCheckBox(400 - gap * 1.87, topLines - gapLines * 6.5, false, "passenger");
-        this._addTextField("מצטרף כנוסע", 400 - gap * 0.9, topLines - gapLines * 6.5, 250)
-        this.buttonDriver = this._addCheckBox(400 - gap * 5, topLines - gapLines * 6.5, false, "driver");
-        this._addTextField("ו/או          מסיע ברכבי", 400 - gap * 3.7, topLines - gapLines * 6.5, 300)
 
 
         ///listen to this event and set the nextButton state
@@ -594,30 +512,6 @@ class Wellcome {
         return radioButton;
     }
 
-    _addCheckBox(left, top, checked) {
-        const leftStr = left.toString() + "px";
-        const topStr = top.toString() + "px";
-
-        let checkBox = new BABYLON.GUI.Checkbox();
-        this.advancedTexture.addControl(checkBox);
-
-        checkBox.top = topStr;
-        checkBox.left = leftStr;
-        checkBox.height = "50px";
-        checkBox.width = "50px";
-        checkBox.isChecked = checked;
-        checkBox.color = "white";
-        checkBox.background = "black";
-
-        checkBox.onIsCheckedChangedObservable.add((state) => {
-            console.log("Checkbox state: ", state);
-            //this._checkBoxChanged(state); // Replace with your actual handler
-        });
-
-        return checkBox;
-    }
-
-
     _checkRadioButton() {
         //console.log(this.buttonWoman.isChecked)
     }
@@ -641,9 +535,7 @@ class Wellcome {
             day4back: this.day4toHome.text,
             day5to: this.day5fromHome.text,
             day5back: this.day5toHome.text,
-            userName: this.userName.text,
-            isDriver: this.buttonDriver.isChecked,
-            isPassenger: this.buttonPassenger.isChecked
+            userName: this.userName.text
         }
         //console.log(wellcomeData)
         this.world.wellcomeDone(wellcomeData)
@@ -665,119 +557,6 @@ class Wellcome {
 
 }
 ////this.nextButton.isEnabled = true;
-
-class MessageScreen {   //plane = BABYLON.Mesh.CreatePlane("plane2",  { height: 1, width: 1 });
-    plane = BABYLON.Mesh.CreatePlane("plane2", 10);
-    advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
-    currentScreen = "info";
-    nextButton;///also sent as parameter in new session and called from there
-
-    constructor(world, msg, screenType = "info") {
-        let showButton = false;
-        this.world = world;
-        this.msg = msg
-        this.screenType = screenType;
-        if (this.screenType == "info") {
-            showButton = false;
-        } else {
-            showButton = true;
-        }
-
-        this.plane.position.z = 20;///-20
-        this.plane.position.y = 4;///
-        this.plane.position.x = 0;
-        this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
-
-        this.advancedTexture.background = "green"
-        if (showButton) {
-            this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
-            this.nextButton.width = 1;
-            this.nextButton.height = 0.4;
-            this.nextButton.color = "white";
-            this.nextButton.fontSize = 50;
-            this.nextButton.background = "green";
-            this.nextButton.onPointerUpObservable.add(this.okClicked.bind(this));
-            this.nextButton.top = "300";//90
-            this.nextButton.left = "10px";
-            this.nextButton.height = "70px";
-            this.advancedTexture.addControl(this.nextButton);
-        }
-        const gap = 150;
-        const topLines = -450;
-        const gapLines = -100
-        this.iterationField = this._addTextField("0/30", 10, -450, 150, 60)
-        this.msgField = this._addTextField(this.msg)
-
-    }
-    _addTextField(text, left = -50, top = -200, width = 800, height = 400) {
-        //"-450px"
-        const leftStr = left.toString() + "px";
-        const topStr = top.toString() + "px";
-        const widthStr = width.toString() + "px";
-        const hight = height.toString() + "px";
-        let text1 = new BABYLON.GUI.TextBlock("upperText");
-        text1.text = text;//"Hello world";
-        text1.color = "white"
-        text1.fontSize = 34;
-
-        text1.top = topStr;///"-450px";
-        text1.left = leftStr;///"400px"
-        text1.height = height;///"660px"
-        text1.width = widthStr;
-        this.advancedTexture.addControl(text1);
-        return text1;
-    }
-
-    _addInputText(left, top, areaWidth = 120, areaHight = 70) {
-        const leftStr = left.toString() + "px";
-        const topStr = top.toString() + "px";
-        const hightStr = areaHight.toString() + "px";
-        const widthStr = areaWidth.toString() + "px";
-        let inputTextArea = new BABYLON.GUI.InputText('id', "");
-        inputTextArea.height = "40px";
-        inputTextArea.color = "white";
-        inputTextArea.fontSize = 34;
-        inputTextArea.top = topStr;
-        inputTextArea.height = hightStr;
-        inputTextArea.width = widthStr;
-        inputTextArea.left = leftStr;
-        inputTextArea.onTextChangedObservable.add(() => this.nextButton.isEnabled = true);
-        this.advancedTexture.addControl(inputTextArea);
-
-
-        //this.keyboard.connect(inputTextArea);//needed for headset not pc. If used, neeed more place & uncomment this._addKeyboard();, too
-
-        return inputTextArea;
-    }
-
-    updateIterationText(iteration) {
-        this.iterationField.text = iteration;
-    }
-
-    updateMessageText(message) {
-        this.msgField.text = message;
-    }
-
-    okClicked() {
-        this.world.okClicked(this.screenType)
-        this.clearInstance();
-    }
-
-    clearInstance() {
-        this.advancedTexture.dispose();
-        this.plane.dispose();
-
-        // Remove reference to the instance itself if needed
-        // Assuming `this` is the only reference to the instance
-        for (let prop in this) {
-            if (this.hasOwnProperty(prop)) {
-                delete this[prop];
-            }
-        }
-    }
-
-}
-
 
 /* + "\n" + "\n" +
     "מאחוריך מספר לבנים לבניית המודל" + "\n" + "\n" + 
