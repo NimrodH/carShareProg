@@ -35,12 +35,8 @@ class World {
         await postData("addAvatar", signData);/// comment for debug without server. change get , too ////////////////////////
         ///open websocket connection to the server and write the connection ID to get updates about others
         ///the original state of the is "loading". we will set it to "noChat" only when all avatars in his world are loaded
-        await wsClient.safeSend({
-            action: 'createAvatar',
-            type: 'createAvatar',
-            avatarID: signData.avatarID,
-            status: "loading"
-        }, signData.avatarID);
+        // WS removed: createAvatar is handled by HTTP addAvatar above
+        console.log("WS SKIP: createAvatar via WS suppressed; HTTP addAvatar already called", signData.avatarID);
 
         ///save myAvatar details (no need to object avatar for my avartar))
         //this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
@@ -94,12 +90,8 @@ class World {
         ///the ones that already rgistered to the server will get this websocket update
         ///others will see the status on the avatars table
         ///(we will reupdate it in seperate http get repeating message, too)
-        await wsClient.safeSend({
-            action: 'createAvatar',
-            type: 'setStatus',
-            avatarID: signData.avatarID,
-            status: "noChat"
-        }, signData.avatarID);
+        // WS removed: setStatus now via HTTP patchData/isLoading=false + periodic GET reconciliation
+        console.log("WS SKIP: setStatus via WS suppressed; relying on HTTP patch & periodic updates", signData.avatarID);
         /// write isLoading=false (to set status) to signData as backup to the setting of stause=noChat in table cs_avatars
         /// we will use it in case that websocket failed(in the periodic update)
         ///  and when we create new user that allready end loading
@@ -186,11 +178,8 @@ class World {
 
             if (!avatars.some(item => item["avatarID"] === this.myAvatar.ID)) {
                 console.log(`CC- periodicUpdate: myAvatar ID ${this.myAvatar.ID} not found in avatars. Sending safeSend`);
-                await wsClient.safeSend({
-                    action: 'createAvatar',
-                    type: 'createAvatar',
-                    avatarID: this.myAvatar.ID
-                }, this.myAvatar.ID);
+                // WS removed: createAvatar via WS suppressed; server reconciliation will occur via HTTP polling
+                console.warn("WS SKIP: attempted WS createAvatar; will rely on HTTP data to reconcile presence", this.myAvatar.ID);
             }
         } else {
             console.warn("CC- periodicUpdate: myAvatar is not set or does not have an ID.");
@@ -253,11 +242,8 @@ class World {
             ///if mayAvatar did not open websocket connection, yet - do it now
             if (this.myAvatar && this.myAvatar.ID) {
                 if (!avatars.some(item => item["avatarID"] === this.myAvatar.ID)) {
-                    await wsClient.safeSend({
-                        action: 'createAvatar',
-                        type: 'createAvatar',
-                        avatarID: this.myAvatar.ID
-                    }, this.myAvatar.ID);
+                    // WS removed in periodic update: relying on HTTP polling to ensure presence
+                    console.warn("WS SKIP: periodic WS createAvatar suppressed", this.myAvatar.ID);
                 } else {
                     console.warn("CC- periodicUpdate: myAvatar is not set or does not have an ID.");
                 }
