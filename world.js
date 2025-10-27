@@ -14,7 +14,7 @@ class World {
     async wellcomeDone(signData) {
         ///show message: "loading"
         let loadingMessage
-        if(signData.avatarID[0] !== "A") {///if the avatarID starts with "A" it is an unseen avatar
+        if (signData.avatarID[0] !== "A") {///if the avatarID starts with "A" it is an unseen avatar
             loadingMessage = `המתן - טוען אווטרים
 כאשר שלט זה ייסגר חלק מהאווטרים יציגו 
 שלט עם פרטי הנסיעה המעניינים אותם
@@ -37,79 +37,114 @@ class World {
         ///the original state of the is "loading". we will set it to "noChat" only when all avatars in his world are loaded
         // WS removed: createAvatar is handled by HTTP addAvatar above
         console.log("WS SKIP: createAvatar via WS suppressed; HTTP addAvatar already called", signData.avatarID);
+        try {
+            ///save myAvatar details (no need to object avatar for my avartar))
+            //this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
+            //this.myAvatar.userData = signData;///save the avatarID of my avatar
+            ///loop avatarsDataArray to create (new Avatar) and then load (use acreateAvatarMesh and placeAvatr from Avatar.js) all avatar images
+            let iterationText = 1;
+            ///avatarsDataArray contains URLs and other constant data for all avatars differ then user data. each iten has unic "num"
+            ///in this loop we create avatarObj with avatarMesh for each item in avatarsDataArray and add it to the _avatarsArr
+            if (Array.isArray(avatarsDataArray)) {
+                for (const avatarData of avatarsDataArray) {
+                    this.msg.updateIterationText(`${iterationText} / ${avatarsDataArray.length}`);
+                    iterationText++;
+                    // Create a new Avatar instance
+                    //signData.avatarID of this session is only to know if we need to show avatars
+                    const avatar = new Avatar(avatarData, this, signData.avatarID[0]);
+                    // Optionally, store avatar object if needed
+                    // await to ensure mesh is created and placed before continuing
+                    await avatar.createAvatarMesh(scene);
+                    await avatar.placeAvatar();
+                    // Add to _avatarsArr for tracking
+                    this._avatarsArr.push(avatar);
+                }
+            }
+            this.msg.updateMessageText("ממתין לאחרים");///update the message to "waiting for others"
+            this.allowPointer = true;
+            ///start update by ping
+            let result = await getData("getAllStatuses");/////get all the signs and avatars from the server////////////
+            //let signs = debugUsersArray;///for debug without server. change post, too.//////////////////
+            ///in this loop for each user (list of them returned from server) we collect free avatr and add to it the user data
+            const signs = result.signs;
+            //const avatars = result.avatars;
 
-        ///save myAvatar details (no need to object avatar for my avartar))
-        //this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
-        //this.myAvatar.userData = signData;///save the avatarID of my avatar
-        ///loop avatarsDataArray to create (new Avatar) and then load (use acreateAvatarMesh and placeAvatr from Avatar.js) all avatar images
-        let iterationText = 1;
-        ///avatarsDataArray contains URLs and other constant data for all avatars differ then user data. each iten has unic "num"
-        ///in this loop we create avatarObj with avatarMesh for each item in avatarsDataArray and add it to the _avatarsArr
-        if (Array.isArray(avatarsDataArray)) {
-            for (const avatarData of avatarsDataArray) {
-                this.msg.updateIterationText(`${iterationText} / ${avatarsDataArray.length}`);
-                iterationText++;
-                // Create a new Avatar instance
-                //signData.avatarID of this session is only to know if we need to show avatars
-                const avatar = new Avatar(avatarData, this, signData.avatarID[0]);
-                // Optionally, store avatar object if needed
-                // await to ensure mesh is created and placed before continuing
-                await avatar.createAvatarMesh(scene);
-                await avatar.placeAvatar();
-                // Add to _avatarsArr for tracking
-                this._avatarsArr.push(avatar);
+
+            const myId = signData.avatarID;
+            let tries = 0;
+            while (tries < 5 && (!Array.isArray(result.signs) || !result.signs.some(s => s.avatarID === myId))) {
+                console.log("Waiting for my sign to appear in getAllStatuses… try", tries + 1);
+                await new Promise(r => setTimeout(r, 250)); // 250ms backoff
+                result = await getData("getAllStatuses");
+                tries++;
+            }
+            const signsRefreshed = result.signs || [];
+
+
+            if (Array.isArray(signsRefreshed)) {
+                for (const sign of signsRefreshed) {
+                    let currAvatar = this.getFreeAvatar(sign.isMan);
+                    if (!currAvatar) { console.warn("No free avatar..."); continue; }
+                    if (sign.avatarID === myId) this.myAvatar = currAvatar;
+                    await currAvatar.matchUser(sign);
+                }
+            } else {
+                console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
+            }
+
+
+            if (this.myAvatar && typeof this.myAvatar.setState === "function") {
+                this.myAvatar.setState("me");
+            } else {
+                console.warn("myAvatar not resolved yet; will mark as 'me' on next update");
+            }        ///after all avatars are loaded we can set the status of my avatar to "noChat" in all sessions
+            ///the ones that already rgistered to the server will get this websocket update
+            ///others will see the status on the avatars table
+            ///(we will reupdate it in seperate http get repeating message, too)
+            // WS removed: setStatus now via HTTP patchData/isLoading=false + periodic GET reconciliation
+            console.log("WS SKIP: setStatus via WS suppressed; relying on HTTP patch & periodic updates", signData.avatarID);
+            /// write isLoading=false (to set status) to signData as backup to the setting of stause=noChat in table cs_avatars
+            /// we will use it in case that websocket failed(in the periodic update)
+            ///  and when we create new user that allready end loading
+            ///set the loading state to false in the server
+            patchData(signData.avatarID, "isLoading", false)
+                .then(res => {
+                    console.log("Update success:", res);
+                })
+                .catch(err => {
+                    console.error("Update failed:", err.message);
+                });
+
+            ///hide message "loading"
+            this.msg.clearInstance();///clear the message screen
+            this.msg = null;///clear the message screen
+            this.periodicUpdate()
+            this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
+            console.log("CC- wellcomeDone: End");
+        } catch (err) {
+            console.error("wellcomeDone failed:", err);
+        } finally {
+            if (this.msg) {
+                this.msg.clearInstance();
+                this.msg = null;
+            }
+
+            try {
+                const myId = signData?.avatarID;
+                if (myId) {
+                    // Flip isLoading=false after a short delay (lets server writes settle)
+                    setTimeout(() => {
+                        patchData(myId, "isLoading", false)
+                            .then(() => console.log("Self-heal: flipped isLoading=false"))
+                            .catch(e => console.warn("Self-heal patch failed:", e));
+                        // Nudge UI to reconcile
+                        this.periodicUpdate?.();
+                    }, 1500);
+                }
+            } catch (e) {
+                console.warn("Self-heal scheduling failed:", e);
             }
         }
-        this.msg.updateMessageText("ממתין לאחרים");///update the message to "waiting for others"
-        this.allowPointer = true;
-        ///start update by ping
-        let result = await getData("getAllStatuses");/////get all the signs and avatars from the server////////////
-        //let signs = debugUsersArray;///for debug without server. change post, too.//////////////////
-        ///in this loop for each user (list of them returned from server) we collect free avatr and add to it the user data
-        const signs = result.signs;
-        //const avatars = result.avatars;
-
-        if (Array.isArray(signs)) {
-            for (const sign of signs) {
-                //console.log("CC- getAllStatuses: " + JSON.stringify(sign));
-                let currAvatar = this.getFreeAvatar(sign.isMan);
-                if (!currAvatar) {
-                    console.warn("No free avatar found to add to the world.");
-                    continue;
-                }
-                if (sign.avatarID == signData.avatarID) {
-                    this.myAvatar = currAvatar;///set myAvatar to the one that my signData post for it before
-                }
-                await currAvatar.matchUser(sign);///match the user to the avatar
-            }
-        } else {
-            console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
-        }
-        this.myAvatar.setState("me");///hide the buttons on my avatar
-        ///after all avatars are loaded we can set the status of my avatar to "noChat" in all sessions
-        ///the ones that already rgistered to the server will get this websocket update
-        ///others will see the status on the avatars table
-        ///(we will reupdate it in seperate http get repeating message, too)
-        // WS removed: setStatus now via HTTP patchData/isLoading=false + periodic GET reconciliation
-        console.log("WS SKIP: setStatus via WS suppressed; relying on HTTP patch & periodic updates", signData.avatarID);
-        /// write isLoading=false (to set status) to signData as backup to the setting of stause=noChat in table cs_avatars
-        /// we will use it in case that websocket failed(in the periodic update)
-        ///  and when we create new user that allready end loading
-        ///set the loading state to false in the server
-        patchData(signData.avatarID, "isLoading", false)
-            .then(res => {
-                console.log("Update success:", res);
-            })
-            .catch(err => {
-                console.error("Update failed:", err.message);
-            });
-
-        ///hide message "loading"
-        this.msg.clearInstance();///clear the message screen
-        this.msg = null;///clear the message screen
-        this.periodicUpdate()
-        this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
-        console.log("CC- wellcomeDone: End");
     }
 
     startPeriodicUpdate() {
@@ -325,14 +360,14 @@ class World {
             console.log("CHAT- chatRequest: already in chat");
             return;
         }
-        
+
         if (!toID) {
             console.error("CHAT- chatRequest: toID is not defined");
             return;
         }
 
         if (toAvatar.alreadyTalked) {
-            console.error("CHAT- chatRequest: alreadyTalked is true"); 
+            console.error("CHAT- chatRequest: alreadyTalked is true");
             toAvatar.setState("alreadyTalked");///set the state of the avatar to alreadyTalked
             return;///do not allow to chat again with the same avatar
         } else {
