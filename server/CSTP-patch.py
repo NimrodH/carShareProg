@@ -1,103 +1,58 @@
-# use cs_sign table for isLoading and csAvatars for other fields i.e. status
-import json
-import os
-import boto3
+import json, os, boto3, base64, time
 from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource('dynamodb')
-SIGNS_TABLE_NAME = os.environ.get("AVATARS_TABLE", "cs_signs")
-AVATARS_TABLE_NAME = os.environ.get("AVATARS_TABLE", "cs_avatars")
-#table will be set in if following the field value (we assume no isLoading field in cs_avatars)
+SIGNS_TABLE = os.environ.get("SIGNS_TABLE", "cs_signs")
+AVATARS_TABLE = os.environ.get("AVATARS_TABLE", "cs_avatars")
+signs = dynamodb.Table(SIGNS_TABLE)
+avatars = dynamodb.Table(AVATARS_TABLE)
 
-myHeaders = {
+CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "https://nimrodh.github.io")
+COMMON_HEADERS = {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "https://nimrodh.github.io",
+    "Access-Control-Allow-Origin": CORS_ORIGIN,
     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
     "Access-Control-Allow-Methods": "PATCH,OPTIONS"
 }
 
+def _parse_body(event):
+    body = event.get("body") or "{}"
+    if event.get("isBase64Encoded"):
+        body = base64.b64decode(body).decode("utf-8")
+    try:
+        return json.loads(body)
+    except Exception:
+        return {}
+
+def _resp(code, payload):
+    return {"statusCode": code, "headers": COMMON_HEADERS, "body": json.dumps(payload)}
+
 def lambda_handler(event, context):
-    print("🔧 Received event:", json.dumps(event))
-
-    # 1. Extract path parameter (avatarID)
-    avatar_id = event.get("pathParameters", {}).get("avatarID")
+    method = (event.get("requestContext", {}).get("http", {}) or {}).get("method", "PATCH")
+    if method == "OPTIONS":
+        return _resp(200, {"ok": True})
+    avatar_id = (event.get("pathParameters") or {}).get("proxy") or (event.get("pathParameters") or {}).get("avatarID")
     if not avatar_id:
-        print("❌ Missing avatarID in path.")
-        return {
-            "statusCode": 400,
-            "headers": myHeaders,
-            "body": json.dumps({"error": "Missing 'avatarID' in path."})
-        }
+        return _resp(400, {"error": "avatarID path parameter missing"})
+    body = _parse_body(event)
+    field = body.get("field")
+    value = body.get("value")
+    if not field:
+        return _resp(400, {"error": "field is required"})
 
-    # 2. Parse and validate body
-    body_raw = event.get("body")
-    if not body_raw:
-        print("❌ Empty request body.")
-        return {
-            "statusCode": 400,
-            "headers": myHeaders,
-            "body": json.dumps({"error": "Empty request body"})
-        }
+    table = signs if field == "isLoading" else avatars
+    update_expr = "SET #f = :v, updatedAt = :u"
+    expr_names = {"#f": field}
+    expr_vals = {":v": value, ":u": int(time.time()*1000)}
 
     try:
-        payload = json.loads(body_raw)
-    except json.JSONDecodeError:
-        print("❌ Invalid JSON format.")
-        return {
-            "statusCode": 400,
-            "headers": myHeaders,
-            "body": json.dumps({"error": "Invalid JSON"})
-        }
-
-    field = payload.get("field")
-    value = payload.get("value")
-    if field == "isLoading":
-        table = dynamodb.Table(SIGNS_TABLE_NAME)
-    else:
-        table = dynamodb.Table(AVATARS_TABLE_NAME)
-
-    if not field or value is None:
-        print("❌ Missing 'field' or 'value' in payload.")
-        return {
-            "statusCode": 400,
-            "headers": myHeaders,
-            "body": json.dumps({"error": "Missing 'field' or 'value' in payload"})
-        }
-
-    print(f"🔁 Request to update avatarID='{avatar_id}' set '{field}' = '{value}'")
-
-    # 3. Attempt update
-    try:
-        response = table.update_item(
-            Key={'avatarID': avatar_id},
-            UpdateExpression=f"SET #attr = :val",
-            ExpressionAttributeNames={'#attr': field},
-            ExpressionAttributeValues={':val': value},
-            ConditionExpression="attribute_exists(avatarID)",  # Fail if the avatar doesn't exist
-            ReturnValues="UPDATED_NEW"
+        resp = table.update_item(
+            Key={"avatarID": avatar_id},
+            UpdateExpression=update_expr,
+            ExpressionAttributeNames=expr_names,
+            ExpressionAttributeValues=expr_vals,
+            ReturnValues="ALL_NEW"
         )
+        return _resp(200, {"message": "Avatar updated successfully", "updated": resp.get("Attributes")})
     except ClientError as e:
-        if e.response['Error']['Code'] == "ConditionalCheckFailedException":
-            print(f"❌ Avatar with ID '{avatar_id}' not found.")
-            return {
-                "statusCode": 404,
-                "headers": myHeaders,
-                "body": json.dumps({"error": f"Avatar '{avatar_id}' not found"})
-            }
-        else:
-            print(f"❌ DynamoDB error: {e}")
-            return {
-                "statusCode": 500,
-                "headers": myHeaders,
-                "body": json.dumps({"error": f"DynamoDB error: {e.response['Error']['Message']}"} )
-            }
-
-    print(f"✅ Updated avatar {avatar_id}: {response.get('Attributes')}")
-    return {
-        "statusCode": 200,
-        "headers": myHeaders,
-        "body": json.dumps({
-            "message": "Avatar updated successfully",
-            "updated": response.get('Attributes')
-        })
-    }
+        return _resp(500, {"error": e.response['Error']['Message']})
