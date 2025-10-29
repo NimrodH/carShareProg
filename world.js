@@ -96,4 +96,205 @@ class World {
   async periodicUpdate() {
     console.log("[UPDATE] Start");
     const result = await getData("getAllStatuses");
-    const signs = r
+    const signs = result.signs || [];
+    const avatars = result.avatars || [];
+
+    // update signs
+    for (const sign of signs) {
+      let currAvatar = this._avatarsArr.find(a => a.avatarID === sign.avatarID);
+      if (!currAvatar) {
+        currAvatar = this.getFreeAvatar(sign.isMan);
+        if (!currAvatar) continue;
+        await currAvatar.matchUser(sign);
+      } else {
+        currAvatar.setState(sign.isLoading ? "loading" : "noChat");
+      }
+    }
+
+    // update avatar statuses
+    for (const a of avatars) {
+      const currAvatar = this._avatarsArr.find(v => v.avatarID === a.avatarID);
+      if (currAvatar) currAvatar.setState(a.status);
+    }
+
+    console.log("[UPDATE] End");
+  }
+
+  // ---------- AVATAR MANAGEMENT ----------
+  getFreeAvatar(isMan) {
+    let genderArray = this._avatarsArr.filter(a => !a.avatarData.isUsed && a.avatarData.loadedIsMan == isMan);
+    if (genderArray.length === 0)
+      genderArray = this._avatarsArr.filter(a => !a.avatarData.isUsed);
+    if (genderArray.length === 0) return false;
+    const avatarObj = genderArray[0];
+    avatarObj.avatarData.isUsed = true;
+    return avatarObj;
+  }
+
+  idToAvatar(id) {
+    return this._avatarsArr.find(a => a.avatarID === id);
+  }
+
+  // ---------- CHAT ----------
+  async chatRequest(toID) {
+    const toAvatar = this.idToAvatar(toID);
+    if (this.currChat || !toAvatar) return;
+
+    console.log("[CHAT] Request to:", toID);
+
+    // verify availability
+    const checkMsg = {
+      avatarID: toID,
+      attr: "status",
+      requiredValue: "noChat",
+      newValue: "inChat"
+    };
+    const result = await postData("checkAndUpdate", checkMsg).catch(e => {
+      console.error("[CHAT] checkAndUpdate failed:", e);
+      return null;
+    });
+
+    if (!result || result.error === "preconditionFailed") {
+      toAvatar.setState("refuseChat");
+      this.allowPointer = true;
+      console.warn("[CHAT] Refused (busy)");
+      return;
+    }
+
+    this.allowPointer = false;
+
+    try {
+      const res = await postData("chat/start", {
+        fromAvatarID: this.myAvatar.ID,
+        toAvatarID: toID,
+        messageId: crypto.randomUUID()
+      });
+      this.currChat = new Chat(this.myAvatar, toAvatar, this);
+      console.log("[CHAT] Started:", res.chatID);
+    } catch (err) {
+      console.error("[CHAT] start failed:", err);
+      this.allowPointer = true;
+    }
+  }
+
+  async closeChat(fromID, toID) {
+    if (!this.currChat) return;
+    try {
+      await postData("chat/end", {
+        chatID: this.currChat.chatID,
+        fromAvatarID: fromID,
+        toAvatarID: toID
+      });
+      await Promise.all([
+        patchData(fromID, "status", "noChat"),
+        patchData(toID, "status", "noChat")
+      ]);
+      console.log("[CHAT] Ended");
+    } catch (e) {
+      console.error("[CHAT] closeChat error:", e);
+    } finally {
+      this.currChat?.dispose?.();
+      this.currChat = null;
+      this.allowPointer = true;
+      await this.periodicUpdate();
+      this.startPeriodicUpdate();
+    }
+  }
+
+  // ---------- DEAL & CHAT UPDATES ----------
+  async dealDoneSelected(chatID, fromID, toID) {
+    await this._sendDealResult(chatID, fromID, toID, "dealDone");
+  }
+
+  async dealNotDoneSelected(chatID, fromID, toID) {
+    await this._sendDealResult(chatID, fromID, toID, "noDeal");
+  }
+
+  async _sendDealResult(chatID, fromID, toID, result) {
+    try {
+      await postData("chat/sendLine", {
+        chatID,
+        fromAvatarID: fromID,
+        toAvatarID: toID,
+        newLine: `[${result}]`
+      });
+      console.log("[CHAT] Deal result sent:", result);
+    } catch (e) {
+      console.error("[CHAT] dealResult failed:", e);
+    }
+  }
+
+  async updateChat(chatID, fromID, toID, text) {
+    try {
+      await postData("chat/sendLine", {
+        chatID,
+        fromAvatarID: fromID,
+        toAvatarID: toID,
+        newLine: text
+      });
+      console.log("[CHAT] Line sent");
+    } catch (e) {
+      console.error("[CHAT] sendLine error:", e);
+    }
+  }
+
+  chatStarted(fromID, toID) {
+    console.log("[CHAT] Started between", fromID, toID);
+  }
+
+  chatUpdated(chatText, destID) {
+    if (this.myAvatar.ID === destID && this.currChat) {
+      this.currChat.updateText(chatText);
+    }
+  }
+
+  dealResult(fromID, toID, senderAnswer, destAnswer) {
+    if (!this.currChat) return;
+    console.log("[CHAT] Deal result:", senderAnswer, destAnswer);
+    if (senderAnswer === "dealDone" && destAnswer === "dealDone")
+      this.currChat.setChatState("done");
+    else if (senderAnswer === "noDeal" && destAnswer === "noDeal")
+      this.currChat.setChatState("notDone");
+    else this.currChat.setChatState("mixed");
+  }
+
+  chatEnded(fromID, toID, chatID) {
+    console.log("[CHAT] End signal from", fromID, toID);
+    if (this.currChat && this.currChat.chatID === chatID) {
+      this.currChat.dispose();
+      this.currChat = null;
+      this.allowPointer = true;
+      this.startPeriodicUpdate();
+    }
+    const fromA = this.idToAvatar(fromID);
+    const toA = this.idToAvatar(toID);
+    if (fromA) fromA.setState("noChat");
+    if (toA) toA.setState("noChat");
+  }
+
+  doAvatarLeft(id) {
+    console.log("[WORLD] Avatar left:", id);
+    const a = this.idToAvatar(id);
+    if (a) a.setDone();
+  }
+
+  doSetStatus(id, status) {
+    const a = this.idToAvatar(id);
+    if (a) a.setState(status);
+  }
+
+  safeStringifySkipMyWorld(obj) {
+    const seen = new WeakSet();
+    return JSON.stringify(obj, (k, v) => {
+      if (k === "myWorld") return undefined;
+      if (typeof v === "object" && v !== null) {
+        if (seen.has(v)) return "[Circular]";
+        seen.add(v);
+      }
+      return v;
+    }, 2);
+  }
+}
+
+// Export globally for index.html and message.js
+window.World = World;
