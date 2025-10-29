@@ -1,381 +1,405 @@
 import json
+import os
 import time
 import boto3
-import os
-import copy
 from botocore.exceptions import ClientError
-from datetime import datetime
+from datetime import datetime, timezone
+from urllib.parse import parse_qs
 
-dynamodb = boto3.resource('dynamodb')
-#dynamodb_client = boto3.client('dynamodb')
-apigatewaymanagementapi = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('API_GATEWAY_ENDPOINT'))
-avatars_table_name = os.environ['AVATARS_TABLE_NAME']
-chats_table_name = os.environ['CHATS_TABLE_NAME']
-retry_table = dynamodb.Table('PendingRetries')
-avatars_table = dynamodb.Table(avatars_table_name)# 
-TTL_SECONDS = 5 * 60 #the time to keep each message (5 min)
-_message_cache = {}      # maps messageId -> timestamp when first seen
+# ---------- Infra & globals ----------
 
-def _purge_expired():
-    """Remove any entries older than TTL_SECONDS."""
-    now = time.time()
-    expired = [mid for mid, ts in _message_cache.items() if (now - ts) > TTL_SECONDS]
-    for mid in expired:
-        del _message_cache[mid]
+dynamodb = boto3.resource("dynamodb")
+ddb_client = boto3.client("dynamodb")
 
+APIGW_MGMT = boto3.client(
+    "apigatewaymanagementapi",
+    endpoint_url=os.getenv("API_GATEWAY_ENDPOINT")
+)
+
+AVATARS_TABLE_NAME = os.environ["AVATARS_TABLE_NAME"]
+CHATS_TABLE_NAME   = os.environ["CHATS_TABLE_NAME"]
+
+AVATARS = dynamodb.Table(AVATARS_TABLE_NAME)
+CHATS   = dynamodb.Table(CHATS_TABLE_NAME)
+
+COMMON_HEADERS = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": os.getenv("CORS_ORIGIN", "*"),
+    "Access-Control-Allow-Credentials": "true",
+}
+
+def _resp(code, payload):
+    return {"statusCode": code, "headers": COMMON_HEADERS, "body": json.dumps(payload)}
+
+def _now_ms():
+    return int(time.time() * 1000)
+
+def _now_iso():
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+def _gen_chat_id(a, b):
+    lo, hi = sorted([a, b])
+    return f"{lo}__{hi}__{_now_iso()}"
+
+# If you maintain a map of avatarID -> connection IDs in DynamoDB,
+# implement this lookup. For now it returns [] to make WS nudges optional.
+def _get_connection_ids_for_avatars(avatar_ids):
+    # TODO: integrate with your connections mapping table if you have one.
+    return []
+
+def _best_effort_ws_nudge(message, connection_ids):
+    for cid in connection_ids:
+        try:
+            APIGW_MGMT.post_to_connection(ConnectionId=cid, Data=json.dumps(message).encode("utf-8"))
+        except Exception:
+            # Ignore; HTTP remains the source of truth
+            pass
+
+# ---------- New: /V1/chat/start ----------
+
+def handle_chat_start(event):
+    """
+    POST /V1/chat/start
+    Body: { "fromAvatarID": "...", "toAvatarID": "...", "messageId": "uuid-optional" }
+    Success: 200 { ok:true, chatID, fromAvatarID, toAvatarID, [idempotent] }
+    Errors:  409 callerBusy | 409 calleeBusy | 409 selfChat | 404 avatarNotFound | 409 conflict
+    """
+    method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
+    if method != "POST":
+        return _resp(405, {"error": "methodNotAllowed"})
+
+    try:
+        body = json.loads(event.get("body") or "{}")
+    except Exception:
+        return _resp(400, {"error": "badJson"})
+
+    from_id   = body.get("fromAvatarID")
+    to_id     = body.get("toAvatarID")
+    message_id = body.get("messageId")  # optional, for idempotent caller retries logging
+
+    if not from_id or not to_id:
+        return _resp(400, {"error": "missingParams", "need": ["fromAvatarID", "toAvatarID"]})
+    if from_id == to_id:
+        return _resp(409, {"error": "selfChat"})
+
+    # Read both avatars
+    try:
+        from_item = AVATARS.get_item(Key={"avatarID": from_id}).get("Item")
+        to_item   = AVATARS.get_item(Key={"avatarID": to_id}).get("Item")
+    except ClientError as e:
+        return _resp(500, {"error": "readFailed", "details": str(e)})
+
+    if not from_item or not to_item:
+        missing = [k for k, v in {from_id: from_item, to_id: to_item}.items() if not v]
+        return _resp(404, {"error": "avatarNotFound", "missing": missing})
+
+    # Idempotency: already in a chat with each other?
+    if (
+        from_item.get("status") == "inChat" and
+        to_item.get("status")   == "inChat" and
+        from_item.get("partnerID") == to_id and
+        to_item.get("partnerID")   == from_id and
+        from_item.get("chatID") and from_item.get("chatID") == to_item.get("chatID")
+    ):
+        return _resp(200, {
+            "ok": True,
+            "chatID": from_item["chatID"],
+            "fromAvatarID": from_id,
+            "toAvatarID": to_id,
+            "idempotent": True
+        })
+
+    # Preconditions
+    if from_item.get("status") != "noChat":
+        return _resp(409, {"error": "callerBusy"})
+    if to_item.get("status") != "noChat":
+        return _resp(409, {"error": "calleeBusy"})
+
+    chat_id = _gen_chat_id(from_id, to_id)
+    now_ms  = _now_ms()
+
+    # Atomic: both avatars -> inChat; create chat row
+    try:
+        ddb_client.transact_write_items(
+            TransactItems=[
+                {
+                    "Update": {
+                        "TableName": AVATARS_TABLE_NAME,
+                        "Key": {"avatarID": {"S": from_id}},
+                        "UpdateExpression": "SET #s=:in, partnerID=:p, chatID=:c, updatedAt=:u",
+                        "ConditionExpression": "#s = :no",
+                        "ExpressionAttributeNames": {"#s": "status"},
+                        "ExpressionAttributeValues": {
+                            ":no": {"S": "noChat"},
+                            ":in": {"S": "inChat"},
+                            ":p":  {"S": to_id},
+                            ":c":  {"S": chat_id},
+                            ":u":  {"N": str(now_ms)},
+                        },
+                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                    }
+                },
+                {
+                    "Update": {
+                        "TableName": AVATARS_TABLE_NAME,
+                        "Key": {"avatarID": {"S": to_id}},
+                        "UpdateExpression": "SET #s=:in, partnerID=:p, chatID=:c, updatedAt=:u",
+                        "ConditionExpression": "#s = :no",
+                        "ExpressionAttributeNames": {"#s": "status"},
+                        "ExpressionAttributeValues": {
+                            ":no": {"S": "noChat"},
+                            ":in": {"S": "inChat"},
+                            ":p":  {"S": from_id},
+                            ":c":  {"S": chat_id},
+                            ":u":  {"N": str(now_ms)},
+                        },
+                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                    }
+                },
+                {
+                    "Put": {
+                        "TableName": CHATS_TABLE_NAME,
+                        "Item": {
+                            "chatID":       {"S": chat_id},
+                            "participants": {"L": [{"S": from_id}, {"S": to_id}]},
+                            "startTime":    {"N": str(now_ms)},
+                            "endTime":      {"NULL": True},
+                            "chatText":     {"S": ""},     # keep schema compatible with your UI
+                            "updatedAt":    {"N": str(now_ms)}
+                        },
+                        "ConditionExpression": "attribute_not_exists(chatID)",
+                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                    }
+                }
+            ]
+        )
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code")
+        if code in ("ConditionalCheckFailedException", "TransactionCanceledException"):
+            # Re-check who is busy to return a clearer error
+            try:
+                fi = AVATARS.get_item(Key={"avatarID": from_id}).get("Item") or {}
+                ti = AVATARS.get_item(Key={"avatarID": to_id}).get("Item") or {}
+                if fi.get("status") != "noChat":
+                    return _resp(409, {"error": "callerBusy"})
+                if ti.get("status") != "noChat":
+                    return _resp(409, {"error": "calleeBusy"})
+            except Exception:
+                pass
+            return _resp(409, {"error": "conflict"})
+        return _resp(500, {"error": "transactFailed", "details": str(e)})
+
+    # Optional: WS nudge (purely best-effort)
+    _best_effort_ws_nudge(
+        {"type": "nudge", "topic": "chat:start", "chatID": chat_id,
+         "fromAvatarID": from_id, "toAvatarID": to_id},
+        _get_connection_ids_for_avatars([from_id, to_id])
+    )
+
+    return _resp(200, {
+        "ok": True,
+        "chatID": chat_id,
+        "fromAvatarID": from_id,
+        "toAvatarID": to_id
+    })
+
+# ---------- Existing HTTP endpoints (typical implementations) ----------
+
+def handle_chat_send_line(event):
+    """
+    POST /V1/chat/sendLine
+    Body: { "chatID": "...", "fromAvatarID": "...", "newLine": "UserName: text ..." }
+    Appends a single line to chatText.
+    """
+    method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
+    if method != "POST":
+        return _resp(405, {"error": "methodNotAllowed"})
+
+    try:
+        body = json.loads(event.get("body") or "{}")
+    except Exception:
+        return _resp(400, {"error": "badJson"})
+
+    chat_id = body.get("chatID")
+    new_line = body.get("newLine", "")
+    if not chat_id or not isinstance(new_line, str) or not new_line.strip():
+        return _resp(400, {"error": "missingParams", "need": ["chatID", "newLine"]})
+
+    now_ms = _now_ms()
+
+    # Read, append, write (keeps schema compatible if chatText is a string)
+    try:
+        item = CHATS.get_item(Key={"chatID": chat_id}).get("Item")
+        if not item:
+            return _resp(404, {"error": "chatNotFound"})
+        current = item.get("chatText") or ""
+        updated = (current + ("\n" if current else "") + new_line)
+        CHATS.update_item(
+            Key={"chatID": chat_id},
+            UpdateExpression="SET chatText = :t, updatedAt = :u",
+            ExpressionAttributeValues={":t": updated, ":u": now_ms},
+            ReturnValues="UPDATED_NEW"
+        )
+    except ClientError as e:
+        return _resp(500, {"error": "updateFailed", "details": str(e)})
+
+    # Optional nudge to both participants
+    participants = item.get("participants", [])
+    ids = []
+    for p in participants:
+        if isinstance(p, dict) and "S" in p:
+            ids.append(p["S"])
+        elif isinstance(p, str):
+            ids.append(p)
+    _best_effort_ws_nudge(
+        {"type": "nudge", "topic": "chat:line", "chatID": chat_id},
+        _get_connection_ids_for_avatars(ids)
+    )
+
+    return _resp(200, {"ok": True, "chatID": chat_id})
+
+def handle_chat_get_text(event):
+    """
+    GET /V1/chat/getText?chatID=...
+    Returns: { chatID, chatText, updatedAt, startTime, endTime }
+    """
+    method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
+    if method != "GET":
+        return _resp(405, {"error": "methodNotAllowed"})
+
+    # Support both HTTP API (rawQueryString) and REST API (queryStringParameters)
+    qs = event.get("rawQueryString")
+    if qs:
+        params = parse_qs(qs)
+        chat_id = (params.get("chatID") or [None])[0]
+    else:
+        params = event.get("queryStringParameters") or {}
+        chat_id = params.get("chatID")
+
+    if not chat_id:
+        return _resp(400, {"error": "missingParams", "need": ["chatID"]})
+
+    try:
+        item = CHATS.get_item(Key={"chatID": chat_id}).get("Item")
+        if not item:
+            return _resp(404, {"error": "chatNotFound"})
+        return _resp(200, {
+            "chatID": item["chatID"],
+            "chatText": item.get("chatText", ""),
+            "updatedAt": item.get("updatedAt"),
+            "startTime": item.get("startTime"),
+            "endTime": item.get("endTime")
+        })
+    except ClientError as e:
+        return _resp(500, {"error": "readFailed", "details": str(e)})
+
+def handle_chat_end(event):
+    """
+    POST /V1/chat/end
+    Body: { "chatID": "...", "fromAvatarID": "...", "toAvatarID": "..." }
+    Sets endTime and (optionally) frees both avatars back to noChat.
+    """
+    method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
+    if method != "POST":
+        return _resp(405, {"error": "methodNotAllowed"})
+
+    try:
+        body = json.loads(event.get("body") or "{}")
+    except Exception:
+        return _resp(400, {"error": "badJson"})
+
+    chat_id = body.get("chatID")
+    from_id = body.get("fromAvatarID")
+    to_id   = body.get("toAvatarID")
+    if not chat_id or not from_id or not to_id:
+        return _resp(400, {"error": "missingParams", "need": ["chatID", "fromAvatarID", "toAvatarID"]})
+
+    now_ms = _now_ms()
+
+    # End chat and free both avatars atomically (best-effort consistent)
+    try:
+        ddb_client.transact_write_items(
+            TransactItems=[
+                {
+                    "Update": {
+                        "TableName": CHATS_TABLE_NAME,
+                        "Key": {"chatID": {"S": chat_id}},
+                        "UpdateExpression": "SET endTime = :e, updatedAt = :u",
+                        "ExpressionAttributeValues": {
+                            ":e": {"N": str(now_ms)},
+                            ":u": {"N": str(now_ms)},
+                        },
+                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                    }
+                },
+                {
+                    "Update": {
+                        "TableName": AVATARS_TABLE_NAME,
+                        "Key": {"avatarID": {"S": from_id}},
+                        "UpdateExpression": "SET #s=:no, partnerID=:z, chatID=:z, updatedAt=:u",
+                        "ExpressionAttributeNames": {"#s": "status"},
+                        "ExpressionAttributeValues": {
+                            ":no": {"S": "noChat"},
+                            ":z":  {"NULL": True},
+                            ":u":  {"N": str(now_ms)},
+                        },
+                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                    }
+                },
+                {
+                    "Update": {
+                        "TableName": AVATARS_TABLE_NAME,
+                        "Key": {"avatarID": {"S": to_id}},
+                        "UpdateExpression": "SET #s=:no, partnerID=:z, chatID=:z, updatedAt=:u",
+                        "ExpressionAttributeNames": {"#s": "status"},
+                        "ExpressionAttributeValues": {
+                            ":no": {"S": "noChat"},
+                            ":z":  {"NULL": True},
+                            ":u":  {"N": str(now_ms)},
+                        },
+                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                    }
+                }
+            ]
+        )
+    except ClientError as e:
+        return _resp(500, {"error": "transactFailed", "details": str(e)})
+
+    # WS nudge (optional)
+    _best_effort_ws_nudge(
+        {"type": "nudge", "topic": "chat:end", "chatID": chat_id},
+        _get_connection_ids_for_avatars([from_id, to_id])
+    )
+
+    return _resp(200, {"ok": True, "chatID": chat_id})
+
+# ---------- Router ----------
 
 def lambda_handler(event, context):
-    #RESPONSE TO http calls and if they fit don't use old websocket option
-    method = event.get("httpMethod") or event.get("requestContext", {}).get("http", {}).get("method")
-    path = event.get("rawPath") or event.get("path") or event.get("resource")  # v2 fallback
+    """
+    Routes:
+      POST /V1/chat/start     -> handle_chat_start   (NEW)
+      POST /V1/chat/sendLine  -> handle_chat_send_line
+      GET  /V1/chat/getText   -> handle_chat_get_text
+      POST /V1/chat/end       -> handle_chat_end
+    """
+    path   = event.get("rawPath") or event.get("path") or ""
+    method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
 
-    print(f"🔍 HTTP Method: {method}")
-    print(f"🔍 Path: {path}")
-    print(f"🔍 Event: {event}")
+    # Normalize path (strip trailing slash)
+    if path.endswith("/") and path != "/":
+        path = path[:-1]
+
+    if path == "/V1/chat/start" and method == "POST":
+        return handle_chat_start(event)
+
     if path == "/V1/chat/sendLine" and method == "POST":
-        return handle_send_line(event)
-    elif path == "/V1/chat/getText" and method == "GET":
-        return handle_get_text(event)
-    #if not return above then ruמ as before the web socket work (i.e for start chat)
-    body = json.loads(event['body'])
-    print(body)
-    connection_id = event['requestContext']['connectionId']
-    _purge_expired()
-    message_id = body.get("messageId")
-    if message_id:
-        id4catch = message_id + "-" + connection_id
-        if id4catch in _message_cache:
-            print(f"Duplicate message {id4catch}")
-            return {
-                'statusCode': 200,
-                'body': json.dumps('Duplicate message')
-            }
-        _message_cache[id4catch] = time.time()
-        
-    if 'ack' in body:
-        #we got approval from client that he got the message and will send him the avatar
-        #print("Received ACK: serverMsgDone")
-        serverMsgId = body.get('serverMsgId')
-        if serverMsgId:                  
-            try:
-                retry_table.delete_item(
-                    Key={
-                        'connectionId': connection_id,
-                        'messageId': serverMsgId
-                    }
-                )
-                print(f"Received serverMsgDone and delete for {serverMsgId}")
-            except Exception as error:
-                print(f"Error saving data serverMsgDone: {error}")
-            
-        return {
-            'statusCode': 200,
-            'body': json.dumps('ACK processed')
-        }
-    else:
-        match body["type"]:
-            case "updateChat":
-                ### new line added we will get and replace all text
-                chat_id = body["chatID"]
-                new_text =body["chatText"]
-                update_chat(chats_table_name, chat_id, new_text, region="us-east-1")
-            case "chatRequest":
-                current_time = datetime.now().strftime("%H:%M:%S")
-                item = {"chatID": body["chatID"], "fromAvatarID": body["fromAvatarID"], "toAvatarID": body["toAvatarID"], "startTime": current_time}
-                new_item(chats_table_name, item)
-            case "dealResult":
-                writeAvatarAnswer(body["chatID"],body["destID"], body["fromAvatarID"], body["toAvatarID"], body["senderAnswer"])
-                result = getAvatarAnswer(body["chatID"],body["destID"], body["fromAvatarID"], body["toAvatarID"])
-                body["destAnswer"] = result
-            case "chatEnd":
-                current_time = datetime.now().strftime("%H:%M:%S")
-                update_endTime(chats_table_name, body["chatID"], current_time, region="us-east-1")
-                ####send_to_pair(body)# will send to pair, and then in the following  we will send to others not including ones "inChat"
-                # do nothing to body we just send the body to all as is
-            case _:
-                print("error: wrong body[type]: " + body["type"])
+        return handle_chat_send_line(event)
 
-        # send confirm to client about getting his message
-        
-        ack_message_done = { "action" : "message_done", "responseTo" : "createAvatar" ,"messageId" : message_id}
-        send2client(connection_id, ack_message_done)
-        #send to pair or all (we allreadychanged body when needed )
-        if body["type"] == "chatRequest" or body["type"] == "chatEnd":
-            send_to_other_clients(body)
-        else: #updateChat, deal result
-            send_to_pair(body)
-        return {
-            'statusCode': 200,
-            'body': json.dumps('Hello from Lambda!')
-        }
+    if path == "/V1/chat/getText" and method == "GET":
+        return handle_chat_get_text(event)
 
-def handle_send_line(event):
-    body = json.loads(event.get('body', '{}'))
-    chat_id = body["chatID"]
-    new_line = body["newLine"]
+    if path == "/V1/chat/end" and method == "POST":
+        return handle_chat_end(event)
 
-    try:
-        update_chat(chats_table_name, chat_id, new_line)
-        item = dynamodb.Table(chats_table_name).get_item(Key={'chatID': chat_id}).get('Item', {})
-        return {
-            'statusCode': 200,
-            'headers': {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
-            'body': json.dumps({'chatText': item.get('chatText', '')})
-        }
-    except Exception as e:
-        return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
-
-
-def handle_get_text(event):
-    chat_id = event["queryStringParameters"]["chatID"]
-    try:
-        item = dynamodb.Table(chats_table_name).get_item(Key={'chatID': chat_id}).get('Item', {})
-        return {
-            'statusCode': 200,
-            'headers': {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
-            'body': json.dumps({'chatText': item.get('chatText', '')})
-        }
-    except Exception as e:
-        return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
-
-def send_to_other_clients(the_body):  ###including me  
-    response = avatars_table.scan()
-
-    for item in response['Items']:
-        connection_id = item['connectionId']
-        itemStatus = item['status']
-        aavatarID = item['avatarID']
-        if itemStatus == "inChat" and aavatarID != the_body["fromAvatarID"] and aavatarID != the_body["toAvatarID"] :
-            continue
-        try:
-            send2client(connection_id, the_body, "multyClients")
-            #response = apigatewaymanagementapi.post_to_connection(
-            #    ConnectionId=connection_id,
-            #    Data=json.dumps(the_body)
-            #)
-            print("sent to others sent to: %s", connection_id)
-        except ClientError as error:
-            print('Error sending message: %s', error)
-            continue
-    return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
-
-### use get_connectionId to find my pair connection_id andd send him the update 
-
-def send_to_pair(the_body):
-    if the_body["type"] == "dealResult":
-        send_to_avatar(the_body, the_body["senderID"])
-    send_to_avatar(the_body, the_body["destID"])
-    
-
-def send_to_avatar(the_body, avatarID):
-    try:
-        dest_con_id = get_connectionId(avatarID)
-        print("send_to_avatar sent to avatarID: " + avatarID)
-    except ClientError as error:
-        print('Error getting connection ID: %s', error)
-
-    send2client(dest_con_id, the_body)
-    #response = apigatewaymanagementapi.post_to_connection(
-    #    #get the connection_id of the pair from table avatars following its ID
-    #    ConnectionId=dest_con_id,
-    #    Data=json.dumps(the_body)
-    #)
-    return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
-
-def send2client(connection_id, the_body, msg_type = "singleClient"):
-    # add serverMsgId. client will send it back to know we don't need to send again
-    payload = copy.deepcopy(the_body)
-    if payload["action"] != "message_done":
-        server_msg_id = f"msg-{datetime.utcnow().timestamp()}"
-        payload['serverMsgId'] = server_msg_id
-    
-    if connection_id:
-        try:
-            response = apigatewaymanagementapi.post_to_connection(
-                ConnectionId=connection_id,
-                Data=json.dumps(payload)
-            )
-            if payload["action"] != "message_done":
-            # Save message into DynamoDB to await for client approval
-                retry_table.put_item(
-                    Item={
-                        'connectionId': connection_id,
-                        'messageId': server_msg_id,
-                        "payload": payload,
-                        'retryCount': 0,
-                        'timestamp': datetime.utcnow().isoformat()
-                    }
-                )
-
-                events = boto3.client('events')
-                EVENTBRIDGE_RULE_NAME = 'RetryEveryMinute'
-                try:
-                    events.enable_rule(
-                        Name=EVENTBRIDGE_RULE_NAME
-                    )
-                    print(f"Enabled EventBridge rule {EVENTBRIDGE_RULE_NAME}")
-                except Exception as e:
-                    print(f"Failed to enable EventBridge rule: {str(e)}")
-
-            return {'statusCode': 200, 'body': json.dumps({'message': 'Message sent successfully'})}
-        except ClientError as error:
-            print('Error sending message: %s', error)
-            # Still save it for retry
-            if payload["action"] != "message_done":
-                retry_table.put_item(
-                    Item={
-                        'connectionId': connection_id,
-                        'messageId': server_msg_id,
-                        "payload": payload,
-                        'retryCount': 0,
-                        "timestamp": datetime.utcnow().isoformat()
-                    }
-                )
-            if msg_type == "multyClients":
-                raise  # allow to the calling function send2client to continue with other avatars
- 
-            return {'statusCode': 500, 'body': json.dumps({'message': 'Failed to send message'})}
-
-
-###wrong comment? find the dest (pair) connection_id by the sender connection_id
-def get_connectionId(dest_id):
-    print("dest_id: " + dest_id)
-    table = dynamodb.Table(avatars_table_name)
-    response = table.get_item(
-        Key={
-            'avatarID': dest_id
-        }
-    )
-    # Check if the item exists and return the value of "connectioID"
-    item = response.get('Item')
-    if item:
-        print (item.get('connectionId'))
-        return item.get('connectionId')
-    else:
-        return None
-
-def getAvatarAnswer(chat_id, dest_id, fromAvatarID, toAvatarID):
-    print("dest_id: " + dest_id)
-    #dynamodb = boto3.resource('dynamodb', region_name=region)
-    table = dynamodb.Table(chats_table_name)
-    response = table.get_item(
-        Key={
-            'chatID': chat_id
-        }
-    )
-    #read answer of the pair
-    if dest_id == fromAvatarID:
-        column = "fromAnswer"
-    else:
-        column = "toAnswer"
-    # Check if the item exists and return the value of "connectioID"
-    item = response.get('Item')
-    if item:
-        if item.get(column):
-            print ("theAnswer: " + item.get(column))
-            return item.get(column)
-        else:
-            print ("theAnswer none" )
-            return None
-    else:
-        return None
-
-def writeAvatarAnswer(chat_id, dest_id, fromAvatarID, toAvatarID, answer):
-    #dynamodb = boto3.resource('dynamodb', region_name=region)
-    table = dynamodb.Table(chats_table_name)
-    #write answer of me
-    if dest_id == fromAvatarID:
-        column = "toAnswer"
-    else:
-        column = "fromAnswer"
-    
-
-    # Perform the update operation
-    response = table.update_item(
-        Key={"chatID":chat_id},  # Primary key
-        UpdateExpression="SET " + column + " = :ctxt",
-        ExpressionAttributeValues={
-            ":ctxt": answer
-        },
-        ReturnValues="UPDATED_NEW"  # Return only the updated attributes
-    )
-
-
-def new_item(table_name, item, region="us-east-1"):
-    table = dynamodb.Table(chats_table_name)
-    response = table.put_item(Item=item)
-    return response
-
-def update_chat(table_name, chat_id, new_line, region="us-east-1"):
-    table = dynamodb.Table(table_name)
-
-    try:
-        # Step 1: Read current state
-        item = table.get_item(Key={"chatID": chat_id}).get('Item', {})
-        old_text = item.get("chatText", "")
-        old_count = item.get("lineCount", 0)
-
-        # Step 2: Append new line
-        new_text = old_text + new_line + "\n"
-        new_count = old_count + 1
-
-        # Step 3: Try conditional update to avoid race
-        try:
-            response = table.update_item(
-                Key={"chatID": chat_id},
-                UpdateExpression="SET chatText = :txt, lineCount = :cnt",
-                ConditionExpression="lineCount = :expected OR attribute_not_exists(lineCount)",
-                ExpressionAttributeValues={
-                    ":txt": new_text,
-                    ":cnt": new_count,
-                    ":expected": old_count
-                },
-                ReturnValues="UPDATED_NEW"
-            )
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                print("🔁 Conflict: lineCount changed. Retrying after re-read.")
-                # Fallback: re-read and retry without condition
-                item = table.get_item(Key={"chatID": chat_id}).get('Item', {})
-                old_text = item.get("chatText", "")
-                old_count = item.get("lineCount", 0)
-                new_text = old_text + new_line + "\n"
-                new_count = old_count + 1
-
-                response = table.update_item(
-                    Key={"chatID": chat_id},
-                    UpdateExpression="SET chatText = :txt, lineCount = :cnt",
-                    ExpressionAttributeValues={
-                        ":txt": new_text,
-                        ":cnt": new_count
-                    },
-                    ReturnValues="UPDATED_NEW"
-                )
-            else:
-                raise
-
-        # Step 4: Return updated paragraph
-        return new_text
-
-    except Exception as e:
-        print("❌ Error in update_chat:", e)
-        raise
-
-    # set message to the other chater
-
-def update_endTime(table_name, chat_id, endTime, region="us-east-1"):
-    # Initialize DynamoDB table
-    #dynamodb = boto3.resource('dynamodb', region_name=region)
-    table = dynamodb.Table(table_name)
-
-    # Perform the update operation
-    response = table.update_item(
-        Key={"chatID":chat_id},  # Primary key
-        UpdateExpression="SET endTime = :ctxt",
-        ExpressionAttributeValues={
-            ":ctxt": endTime
-        },
-        ReturnValues="UPDATED_NEW"  # Return only the updated attributes
-    )
-
-    return response
+    return _resp(404, {"error": "notFound", "path": path, "method": method})

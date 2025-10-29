@@ -71,6 +71,13 @@ def lambda_handler(event, context):
             ExpressionAttributeValues=expr_vals,
             ReturnValues="ALL_NEW"
         )
+        if field == "isLoading" and (value is False or str(value).lower() == "false"):
+            avatars.update_item(
+                Key={"avatarID": avatar_id},
+                UpdateExpression="SET #s = :no, updatedAt = :u",
+                ExpressionAttributeNames={"#s": "status"},
+                ExpressionAttributeValues={":no": "noChat", ":u": int(time.time()*1000)}
+            )        
         return _resp(200, {"message": "Avatar updated successfully", "updated": resp.get("Attributes")})
     except ClientError as e:
         return _resp(500, {"error": e.response['Error']['Message']})
