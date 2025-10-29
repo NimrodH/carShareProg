@@ -1,5 +1,18 @@
+
 import json, os, boto3, base64, time
 from botocore.exceptions import ClientError
+from decimal import Decimal
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            # Convert Decimal to int if no fraction, else to float
+            if obj % 1 == 0:
+                return int(obj)
+            else:
+                return float(obj)
+        return super(DecimalEncoder, self).default(obj)
+
 
 dynamodb = boto3.resource('dynamodb')
 SIGNS_TABLE = os.environ.get("SIGNS_TABLE", "cs_signs")
@@ -8,12 +21,6 @@ signs = dynamodb.Table(SIGNS_TABLE)
 avatars = dynamodb.Table(AVATARS_TABLE)
 
 CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "https://nimrodh.github.io")
-COMMON_HEADERS = {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": CORS_ORIGIN,
-    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
-    "Access-Control-Allow-Methods": "PATCH,OPTIONS"
-}
 
 def _parse_body(event):
     body = event.get("body") or "{}"
@@ -24,8 +31,19 @@ def _parse_body(event):
     except Exception:
         return {}
 
-def _resp(code, payload):
-    return {"statusCode": code, "headers": COMMON_HEADERS, "body": json.dumps(payload)}
+def _resp(status, payload, with_cors=False):
+    headers = {"Content-Type": "application/json"}
+    if with_cors:
+        headers.update({
+            "Access-Control-Allow-Origin": "https://nimrodh.github.io",
+            "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+            "Access-Control-Allow-Methods": "GET,OPTIONS"
+        })
+    return {
+        "statusCode": status,
+        "headers": headers,
+        "body": json.dumps(payload, cls=DecimalEncoder)
+    }
 
 def lambda_handler(event, context):
     method = (event.get("requestContext", {}).get("http", {}) or {}).get("method", "PATCH")

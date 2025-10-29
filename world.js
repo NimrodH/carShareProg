@@ -1,677 +1,243 @@
-//var scene = window.scene;
-///my Avatar is this._avatarsArr[0].avatar
-class World {
-    constructor(scene) {
-        this._avatarsArr = [];///contains objects whith the avata, id and name
-        this._wellcome = new Wellcome(this);
-        this.myAvatar = {};///the avatar of the user that saved inside the _avatarsArr[0].avatar
-        //this.myAvatarID = null;
-        this.allowPointer = false;
-        this.msg = null;/// for messageScreen
+// world.js
+// Client-side world controller for Babylon.js “carShare”
+// HTTP-first flow with optional WS nudges (not required for correctness)
+
+(() => {
+  // ====== CONFIG ======
+  const POLL_MS_IDLE = 5000;
+  const POLL_MS_ACTIVE = 1500;
+
+
+  // ====== WORLD CLASS ======
+  class World {
+    constructor(opts = {}) {
+      // External hooks / UI
+      this.scene = opts.scene || null;
+      this.uiToast = opts.uiToast || null; // function .show(msg)
+
+      // My identity in the world
+      this.avatarID = opts.avatarID || null; // set by your login/bootstrap
+      this.userNameFrom = opts.userNameFrom || null;
+
+      // Avatars currently known (map avatarID -> avatarData)
+      this.avatarsMap = new Map();
+      // Optional: signs cache
+      this.signsMap = new Map();
+
+      // Current open chat (single for now)
+      this.currChat = null;
+
+      // Poll loop
+      this._pollTimer = null;
+      this._lastPollAt = 0;
+      this._isActiveChat = false;
+
+      // Bind if needed
+      this.periodicUpdate = this.periodicUpdate.bind(this);
     }
 
-    ///will be called by Message
-    async wellcomeDone(signData) {
-        ///show message: "loading"
-        let loadingMessage
-        if (signData.avatarID[0] !== "A") {///if the avatarID starts with "A" it is an unseen avatar
-            loadingMessage = `המתן - טוען אווטרים
-כאשר שלט זה ייסגר חלק מהאווטרים יציגו 
-שלט עם פרטי הנסיעה המעניינים אותם
-ניתן יהיה ללחוץ על הכפתור בשלט
- כדי לקיים שיחת צ'אט עם אווטר רלוונטי
-אווטרים נוספים יתווספו בהמשך`;
-        } else {
-            loadingMessage = `המתן - טוען 
-כאשר שלט זה ייסגר חלק מהמשתתפים יציגו 
-שלט עם פרטי הנסיעה המעניינים אותם
-ניתן יהיה ללחוץ על הכפתור בשלט
- כדי לקיים שיחת צ'אט עם משתתף רלוונטי
-משתתפים נוספים יתווספו בהמשך`;
-        }
-        this.msg = new MessageScreen(this, loadingMessage, 'info');
-        ///send HTTP request to create the avatar
-        signData.isLoading = true;///set the loading state to true
-        await postData("addAvatar", signData);/// comment for debug without server. change get , too ////////////////////////
-        ///open websocket connection to the server and write the connection ID to get updates about others
-        ///the original state of the is "loading". we will set it to "noChat" only when all avatars in his world are loaded
-        // WS removed: createAvatar is handled by HTTP addAvatar above
-        console.log("WS SKIP: createAvatar via WS suppressed; HTTP addAvatar already called", signData.avatarID);
-        try {
-            ///save myAvatar details (no need to object avatar for my avartar))
-            //this.myAvatar = new Avatar({}, this);///create the avatar object for my avatar - it will have no mesh and no avatrData
-            //this.myAvatar.userData = signData;///save the avatarID of my avatar
-            ///loop avatarsDataArray to create (new Avatar) and then load (use acreateAvatarMesh and placeAvatr from Avatar.js) all avatar images
-            let iterationText = 1;
-            ///avatarsDataArray contains URLs and other constant data for all avatars differ then user data. each iten has unic "num"
-            ///in this loop we create avatarObj with avatarMesh for each item in avatarsDataArray and add it to the _avatarsArr
-            if (Array.isArray(avatarsDataArray)) {
-                for (const avatarData of avatarsDataArray) {
-                    this.msg.updateIterationText(`${iterationText} / ${avatarsDataArray.length}`);
-                    iterationText++;
-                    // Create a new Avatar instance
-                    //signData.avatarID of this session is only to know if we need to show avatars
-                    const avatar = new Avatar(avatarData, this, signData.avatarID[0]);
-                    // Optionally, store avatar object if needed
-                    // await to ensure mesh is created and placed before continuing
-                    await avatar.createAvatarMesh(scene);
-                    await avatar.placeAvatar();
-                    // Add to _avatarsArr for tracking
-                    this._avatarsArr.push(avatar);
-                }
-            }
-            this.msg.updateMessageText("ממתין לאחרים");///update the message to "waiting for others"
-            this.allowPointer = true;
-            ///start update by ping
-            let result = await getData("getAllStatuses");/////get all the signs and avatars from the server////////////
-            //let signs = debugUsersArray;///for debug without server. change post, too.//////////////////
-            ///in this loop for each user (list of them returned from server) we collect free avatr and add to it the user data
-            const signs = result.signs;
-            //const avatars = result.avatars;
-
-
-            const myId = signData.avatarID;
-            let tries = 0;
-            while (tries < 5 && (!Array.isArray(result.signs) || !result.signs.some(s => s.avatarID === myId))) {
-                console.log("Waiting for my sign to appear in getAllStatuses… try", tries + 1);
-                await new Promise(r => setTimeout(r, 250)); // 250ms backoff
-                result = await getData("getAllStatuses");
-                tries++;
-            }
-            const signsRefreshed = result.signs || [];
-
-
-            if (Array.isArray(signsRefreshed)) {
-                for (const sign of signsRefreshed) {
-                    let currAvatar = this.getFreeAvatar(sign.isMan);
-                    if (!currAvatar) { console.warn("No free avatar..."); continue; }
-                    if (sign.avatarID === myId) this.myAvatar = currAvatar;
-                    await currAvatar.matchUser(sign);
-                }
-            } else {
-                console.warn("CC- getAllStatuses: No signs found or signs is not an array.");
-            }
-
-
-            if (this.myAvatar && typeof this.myAvatar.setState === "function") {
-                this.myAvatar.setState("me");
-            } else {
-                console.warn("myAvatar not resolved yet; will mark as 'me' on next update");
-            }        ///after all avatars are loaded we can set the status of my avatar to "noChat" in all sessions
-            ///the ones that already rgistered to the server will get this websocket update
-            ///others will see the status on the avatars table
-            ///(we will reupdate it in seperate http get repeating message, too)
-            // WS removed: setStatus now via HTTP patchData/isLoading=false + periodic GET reconciliation
-            console.log("WS SKIP: setStatus via WS suppressed; relying on HTTP patch & periodic updates", signData.avatarID);
-            /// write isLoading=false (to set status) to signData as backup to the setting of stause=noChat in table cs_avatars
-            /// we will use it in case that websocket failed(in the periodic update)
-            ///  and when we create new user that allready end loading
-            ///set the loading state to false in the server
-            patchData(signData.avatarID, "isLoading", false)
-                .then(res => {
-                    console.log("Update success:", res);
-                })
-                .catch(err => {
-                    console.error("Update failed:", err.message);
-                });
-
-            ///hide message "loading"
-            this.msg.clearInstance();///clear the message screen
-            this.msg = null;///clear the message screen
-            this.periodicUpdate()
-            this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
-            console.log("CC- wellcomeDone: End");
-        } catch (err) {
-            console.error("wellcomeDone failed:", err);
-        } finally {
-            if (this.msg) {
-                this.msg.clearInstance();
-                this.msg = null;
-            }
-
-            try {
-                const myId = signData?.avatarID;
-                if (myId) {
-                    // Flip isLoading=false after a short delay (lets server writes settle)
-                    setTimeout(() => {
-                        patchData(myId, "isLoading", false)
-                            .then(() => console.log("Self-heal: flipped isLoading=false"))
-                            .catch(e => console.warn("Self-heal patch failed:", e));
-                        // Nudge UI to reconcile
-                        this.periodicUpdate?.();
-                    }, 1500);
-                }
-            } catch (e) {
-                console.warn("Self-heal scheduling failed:", e);
-            }
-        }
+    // ---------- Bootstrap ----------
+    async start() {
+      // Kick off periodic polling
+      this._scheduleNextPoll(250);
     }
 
-    startPeriodicUpdate() {
-        if (this.periodicUpdateInterval) {
-            console.warn("CC- periodicUpdate: Already running, not starting again.");
-            return;
-        }
-        this.periodicUpdateInterval = setInterval(() => {
-            this.periodicUpdate()
-            console.log('periodicUpdate sent');
-        }, 1 * 60 * 1000);///9 instaed of 1
+    // ---------- Poll scheduler ----------
+    _scheduleNextPoll(ms) {
+      if (this._pollTimer) clearTimeout(this._pollTimer);
+      this._pollTimer = setTimeout(this.periodicUpdate, ms);
     }
 
-    stopPeriodicUpdate() {
-        if (this.periodicUpdateInterval) {
-            clearInterval(this.periodicUpdateInterval);
-            this.periodicUpdateInterval = null;
-            console.log("CC- periodicUpdate: Stopped");
-        } else {
-            console.warn("CC- periodicUpdate: No periodic update interval to stop.");
-        }
+    _currentPollInterval() {
+      // faster while in chat
+      return this._isActiveChat ? POLL_MS_ACTIVE : POLL_MS_IDLE;
     }
 
+    // ---------- Main periodic pull ----------
     async periodicUpdate() {
-        console.log("CC- periodicUpdate: Start");
+      try {
+        const data = await getData("getAllStatuses");
+        const { signs = [], avatars = [] } = data || {};
 
-        let result = await getData("getAllStatuses");
-        console.log("CC- periodicUpdate: Received data", result);
+        // 1) Process AVATARS FIRST (UI may mark states)
+        this._applyAvatars(avatars);
 
-        const signs = result.signs;
-        const avatars = result.avatars;
+        // 2) Process SIGNS SECOND (authoritative for loading/noChat visual if you prefer)
+        this._applySigns(signs);
 
-        if (Array.isArray(signs)) {
-            console.log(`CC- periodicUpdate: Processing ${signs.length} signs`);
+        // 3) After both applied, decide if I (callee) should open a chat window
+        this._maybeAutoOpenChatForSelf();
 
-            for (const sign of signs) {
-                console.log("CC- periodicUpdate: Processing sign", sign);
+        // 4) Track whether we are in active chat state (affects poll cadence)
+        const me = this.avatarsMap.get(this.avatarID);
+        this._isActiveChat = !!(me && me.status === "inChat");
 
-                let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == sign.avatarID);
-
-                if (!currAvatar) {
-                    console.log(`CC- periodicUpdate: Avatar with ID ${sign.avatarID} not found in _avatarsArr. Getting free avatar...`);
-                    currAvatar = await this.getFreeAvatar(sign.isMan);
-
-                    if (!currAvatar) {
-                        console.warn("CC- periodicUpdate: No free avatar found to add to the world.");
-                        continue;
-                    }
-                    console.log("CC- periodicUpdate: Matching free avatar with sign", sign);
-                    await currAvatar.matchUser(sign);
-                } else {
-                    console.log(`CC- periodicUpdate: Avatar found for ID ${sign.avatarID}. Setting state based on sign.isLoading`);
-                    if (sign.isLoading) {
-                        currAvatar.setState("loading");
-                    } else {
-                        currAvatar.setState("noChat");
-                    }
-                }
-            }
-        } else {
-            console.warn("CC- periodicUpdate: No signs found or signs is not an array.");
-        }
-
-        if (this.myAvatar && this.myAvatar.ID) {
-            console.log("CC- periodicUpdate: Checking if myAvatar is included in avatars");
-
-            if (!avatars.some(item => item["avatarID"] === this.myAvatar.ID)) {
-                console.log(`CC- periodicUpdate: myAvatar ID ${this.myAvatar.ID} not found in avatars. Sending safeSend`);
-                // WS removed: createAvatar via WS suppressed; server reconciliation will occur via HTTP polling
-                console.warn("WS SKIP: attempted WS createAvatar; will rely on HTTP data to reconcile presence", this.myAvatar.ID);
-            }
-        } else {
-            console.warn("CC- periodicUpdate: myAvatar is not set or does not have an ID.");
-        }
-
-        if (Array.isArray(avatars)) {
-            console.log(`CC- periodicUpdate: Processing ${avatars.length} avatars`);
-
-            for (const avatarData of avatars) {
-                console.log("CC- periodicUpdate: Processing avatarData", avatarData);
-
-                let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarData.avatarID);
-
-                if (currAvatar) {
-                    console.log(`CC- periodicUpdate: Found avatar in _avatarsArr with ID ${avatarData.avatarID}. Setting state to ${avatarData.status}`);
-                    currAvatar.setState(avatarData.status);
-                } else {
-                    console.warn("CC- periodicUpdate: Avatar not found in _avatarsArr for ID:", avatarData.avatarID);
-                }
-            }
-        } else {
-            console.warn("CC- periodicUpdate: No avatars found or avatars is not an array.");
-        }
-
+      } catch (err) {
+        console.error("periodicUpdate error:", err);
+      } finally {
         console.log("CC- periodicUpdate: End");
+        this._scheduleNextPoll(this._currentPollInterval());
+      }
     }
 
+    // ---------- Apply avatars from server ----------
+    _applyAvatars(avatarItems) {
+      // Build/update the map
+      for (const it of avatarItems) {
+        const id = it.avatarID;
+        if (!id) continue;
+        this.avatarsMap.set(id, { ...this.avatarsMap.get(id), ...it });
 
-    /*
-        async periodicUpdate() {
-            let result = await getData("getAllStatuses");/////get all the signs and avatars from the server////////////
-            const signs = result.signs;
-            const avatars = result.avatars;
-            ///console.log("CC- periodicUpdate: " + JSON.stringify(signs));
-            ///find avatars that not added to the world and add them (compare signs with _avatarsArr)
-            if (Array.isArray(signs)) {
-                for (const sign of signs) {
-                    //console.log("CC- periodicUpdate: " + JSON.stringify(sign));
-                    let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == sign.avatarID);
-                    if (!currAvatar) {///if the avatar is not in the world
-                        currAvatar = await this.getFreeAvatar(sign.isMan);///get a free avatar
-                        if (!currAvatar) {
-                            console.warn("No free avatar found to add to the world.");
-                            continue;
-                        }
-                        await currAvatar.matchUser(sign);///match the user to the avatar
-                    } else {
-                        if (sign.isLoading) {
-                            currAvatar.setState("loading");
-                        } else {
-                            currAvatar.setState("noChat");
-                        }
-                    }
-                }
-                ///compare signs to avatars and send websocket createAvatar message to the ones that are missing on avatars
-    
-            } else {
-                console.warn("CC- periodicUpdate: No signs found or signs is not an array.");
-            }
-            ///if mayAvatar did not open websocket connection, yet - do it now
-            if (this.myAvatar && this.myAvatar.ID) {
-                if (!avatars.some(item => item["avatarID"] === this.myAvatar.ID)) {
-                    // WS removed in periodic update: relying on HTTP polling to ensure presence
-                    console.warn("WS SKIP: periodic WS createAvatar suppressed", this.myAvatar.ID);
-                } else {
-                    console.warn("CC- periodicUpdate: myAvatar is not set or does not have an ID.");
-                }
-            }
-     
-            ///for each avatar in avatars get the status from avatar.status and set it to the avatar with the same avatarID in the world
-            if (Array.isArray(avatars)) {
-                for (const avatarData of avatars) {
-                    //console.log("CC- periodicUpdate: " + JSON.stringify(avatarData));
-                    let currAvatar = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarData.avatarID);
-                    if (currAvatar) {
-                        ///set the status of the avatar in the world
-                        currAvatar.setState(avatarData.status);
-                        ///if the avatar is loading, set it to loading
-                   } else {
-                        console.warn("CC- periodicUpdate: Avatar not found in _avatarsArr for ID: " + avatarData.avatarID);
-                    }
-                }
-            } else {
-                console.warn("CC- periodicUpdate: No avatars found or avatars is not an array.");
-            }
-            
-    
+        // Drive avatar visuals if you keep instances on scene
+        const avatarObj = this._getAvatarInstance(id);
+        if (avatarObj && typeof avatarObj.setState === "function") {
+          avatarObj.setState(it.status || "loading");
         }
-    */
-    ///not in use
-    filterByMatching(sourceArray, referenceArray, attributeKey) {
-        ///filter the sourceArray by the IDs in the referenceArray based on the attributeKey
-        ///return the items in sourceArray that have the same attributeKey value as in referenceArray
-        const referenceIDs = new Set(referenceArray.map(item => item[attributeKey])); ///create a set of IDs from the reference array
-        return sourceArray.filter(item => referenceIDs.has(item[attributeKey])); ///filter the source array by the IDs in the reference array
+      }
+
+      // Optionally prune avatars not present anymore
+      // (Not necessary if the server keeps them until stale)
     }
 
-    ///not in use
-    getMissingAttributeValues(sourceArray, referenceArray, attributeKey) {
-        ///get the values of the attributeKey from the sourceArray that are not in the referenceArray
-        const referenceValues = new Set(referenceArray.map(item => item[attributeKey]));
-        return sourceArray
-            .map(item => item[attributeKey])
-            .filter(value => !referenceValues.has(value));
+    // ---------- Apply signs from server ----------
+    _applySigns(signItems) {
+      for (const s of signItems) {
+        const id = s.avatarID || s.id || s.ownerID;
+        if (!id) continue;
+        this.signsMap.set(id, { ...this.signsMap.get(id), ...s });
+
+        // If signs are authoritative for “loading/noChat” UI:
+        const avatarObj = this._getAvatarInstance(id);
+        if (avatarObj && typeof avatarObj.setState === "function") {
+          // Only override for loading/noChat states
+          if (s.isLoading === true) avatarObj.setState("loading");
+          if (s.isLoading === false) avatarObj.setState("noChat");
+        }
+      }
     }
 
-    getFreeAvatar(isMan) {
-        ///get the first avatar that is not in use
-        ///TODO: handel gender and all used condition
-        let genderArray;
-        genderArray = this._avatarsArr.filter(avatarObj => (avatarObj.avatarData.loadedIsMan == isMan) && (avatarObj.avatarData.isUsed == false));
-        if (genderArray.length === 0) {///try on wrong gender
-            genderArray = this._avatarsArr.filter(avatarObj => (avatarObj.avatarData.loadedIsMan == !isMan) && (avatarObj.avatarData.isUsed == false));
-            console.warn("CC- getFreeAvatar: No free avatars found for the specified genger")
-        }
-        if (genderArray.length === 0) {///even on other gender no avatar
-            console.log("CC- getFreeAvatar: no free avatars");
-            return false;
-        }
-        let avatarObj = genderArray[0];///get the first avatar that is not in use
-        avatarObj.avatarData.isUsed = true; ///set the avatar as used
-        //console.log("CC- getFreeAvatar: found free avatar: " + avatarObj.avatarData.num);
-        return avatarObj;
+    // ---------- Decide if callee should open the chat on this poll ----------
+    _maybeAutoOpenChatForSelf() {
+      if (this.currChat) return; // already open
+
+      const me = this.avatarsMap.get(this.avatarID);
+      if (!me) return;
+
+      if (me.status === "inChat" && me.partnerID && me.chatID) {
+        // Callee-side auto-open (or caller recovering from refresh)
+        this.currChat = new Chat({
+          world: this,
+          chatID: me.chatID,
+          partnerID: me.partnerID,
+          isCaller: false
+        });
+      }
     }
-    ///if all avatars are in use return the first one
-    //return this._avatarsArr[0].avatar;
 
+    // ---------- CALLER PATH: start a chat with a target avatar ----------
+    async chatRequest(targetAvatarID) {
+      if (!this.avatarID || !targetAvatarID) return;
 
-    //////////////////FROM CHAT TO THE SERVER//////////////////////////////////
+      try {
+        // HTTP-authoritative start (no WS dependency)
+        const res = await postData("chat/start", {
+          fromAvatarID: this.avatarID,
+          toAvatarID: targetAvatarID,
+          messageId: crypto.randomUUID()
+        });
 
-    /**
-     * create chat on my self following user action and Sends a chat request to server
-        * ask server to send a  chatStarted  to all avatars
-        * the fromAvatarID is the ID of the avatar that is asking for the chat (this.myAvatar.ID)
-        * the toAvatarID is the ID of the avatar that the chat is requested to
-        * serve will use the fromAvatarID and toAvatarID to send the chatStarted to the right avatars and to set the chatID
-     *
-     * @param {string} toID - The ID of the avatar to send the chat request to (toID).
-     */
-    async chatRequest(toID) {
-        let toAvatar = this.idToAvatar(toID)
-        if (this.currChat) {
-            console.log("CHAT- chatRequest: already in chat");
-            return;
-        }
+        // Success → open immediately on caller
+        this.currChat = new Chat({
+          world: this,
+          chatID: res.chatID,
+          partnerID: targetAvatarID,
+          isCaller: true
+        });
 
-        if (!toID) {
-            console.error("CHAT- chatRequest: toID is not defined");
-            return;
-        }
-
-        if (toAvatar.alreadyTalked) {
-            console.error("CHAT- chatRequest: alreadyTalked is true");
-            toAvatar.setState("alreadyTalked");///set the state of the avatar to alreadyTalked
-            return;///do not allow to chat again with the same avatar
+      } catch (err) {
+        // Standardized codes/messages
+        if (err.status === 409) {
+          switch (err.details?.error) {
+            case "callerBusy":
+              this._toast("You’re already in a chat.");
+              break;
+            case "calleeBusy":
+              this._toast("The other user is busy.");
+              break;
+            case "selfChat":
+              this._toast("You can’t chat with yourself.");
+              break;
+            case "conflict":
+              this._toast("Race condition — try again.");
+              break;
+            default:
+              this._toast("Couldn’t start chat.");
+          }
+        } else if (err.status === 404) {
+          this._toast("User not found.");
+        } else if (err.status === 400) {
+          this._toast("Bad request.");
         } else {
-            toAvatar.alreadyTalked = true;///set the state of the avatar to alreadyTalked
+          this._toast("Server error.");
         }
-        /////////checkAndUpdate///////
-        let checkMessage = {
-            "key": toID,
-            "checkAttribute": "status",
-            "requiredValue": "noChat",
-            "newValue": "inChat"
-        }
-
-        const result = await postData("checkAndUpdate", checkMessage)
-        if (!result) {
-            console.warn("Failed to receive a response from server.");
-            return;
-        }
-        console.log("Server message:", result.message);
-        ///if the checkAndUpdate returned "refused" it means that the other avatar is already in a chat         
-        if (result.message === "refused") {
-            console.error("CHAT- chatRequest: refused");
-            //this.msg = new MessageScreen(this, "הצעה זו נדחתה", 'error');///show message that the chat is refused
-            toAvatar.setState("refuseChat");///set the state of the avatar to noChat
-            this.allowPointer = true;///enable the pointer to allow clicks again
-            return;
-        }
-
-        ///////////end of checkAndUpdate///////
-        this.allowPointer = false;///disable the pointer to avoid clicks
-        ///we verified noChat state, so we can send the websocket chat request
-        /// HTTP set the status on server (only)
-        console.log("CHAT- chatRequest sent and allowed");
-        patchData(this.myAvatar.ID, "status", "inChat")///set the status of the avatar to inChat
-
-        this.currChat = new Chat(this.myAvatar, toAvatar, this);
-
-        await wsClient.safeSend({
-            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-            type: 'chatRequest',
-            chatID: this.currChat.chatID,
-            fromAvatarID: this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
-            toAvatarID: toID
-        }, this.myAvatar.ID + this.currChat.chatID);///send the request to the server with my avatar ID
-        this.stopPeriodicUpdate();///stop the periodic update to avoid conflicts with the chat
+        console.warn("chatRequest failed:", err);
+      }
     }
 
-    /**
-      * Asynchronously removes an avatar from the world.
-      * remove the avatar from the _avatarsArr
-      * dispose the avatar mesh
-      *
-      * @param {number} avatarID - The ID of the avatar to be removed.
-      * @returns {Promise<void>} A promise that resolves when the avatar has been removed.
-      */
+    // ---------- Close chat (client action) ----------
+    async closeChat(partnerAvatarID) {
+      if (!this.currChat) return;
+      const chatID = this.currChat.chatID || null;
 
-    /**from button on the chat window to send the message to the server*/
-    dealDoneSelected(chatID, fromAvatarID, toAvatarID) {
-        this.doDealSelected(chatID, fromAvatarID, toAvatarID, "dealDone");
-    }
-
-    /**from button on the chat window to send the message to the server*/
-    dealNotDoneSelected(chatID, fromAvatarID, toAvatarID) {
-        this.doDealSelected(chatID, fromAvatarID, toAvatarID, "noDeal");
-    }
-
-    async doDealSelected(chatID, fromAvatarID, toAvatarID, answer) {
-        let dest_id///send to the other avatar
-        let sender_id//
-        if (this.myAvatar.ID == fromAvatarID) {
-            dest_id = toAvatarID;
-            sender_id = fromAvatarID;
-        } else {
-            dest_id = fromAvatarID;
-            sender_id = toAvatarID
+      try {
+        if (chatID && partnerAvatarID) {
+          await postData("chat/end", {
+            chatID,
+            fromAvatarID: this.avatarID,
+            toAvatarID: partnerAvatarID
+          });
         }
-        console.log("CHAT-doDealSelected");
-        await wsClient.safeSend({
-            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-            type: 'dealResult',
-            chatID: chatID,
-            fromAvatarID: fromAvatarID,///this.myAvatar.ID, ///my Avatar is this._avatarsArr[0].avatar
-            toAvatarID: toAvatarID,
-            senderAnswer: answer,
-            senderID: this.myAvatar.ID,
-            destID: dest_id,
-            senderID: sender_id
-        }, this.myAvatar.ID + chatID);
-
-    }
-
-    ///send all the text with the new line to the server (that will send it to the other avatar)
-    async updateChat(chatID, fromAvatarID, toAvatarID, text) {
-        let avatar_id///send to the other avatar
-        if (this.myAvatar.ID == fromAvatarID) {
-            avatar_id = toAvatarID;
-        } else {
-            avatar_id = fromAvatarID;
+      } catch (err) {
+        console.warn("closeChat error:", err);
+        // Optional fallback: force local state via patch if needed
+        try {
+          await Promise.all([
+            patchData(this.avatarID, "status", "noChat"),
+            patchData(this.avatarID, "partnerID", null),
+            patchData(this.avatarID, "chatID", null)
+          ]);
+        } catch (e2) {
+          console.warn("fallback patches failed:", e2);
         }
-        await wsClient.safeSend({
-            action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-            type: 'updateChat',
-            chatID: chatID,
-            chatText: text,
-            destID: avatar_id
-        }, this.myAvatar.ID + chatID);
+      } finally {
+        // Always tear down local UI
+        try { this.currChat?.dispose?.(); } catch (_) {}
+        this.currChat = null;
+      }
     }
 
-    async closeChat(avatarFromID, avatarToID) {
-        if (this.currChat) {
-            await wsClient.safeSend({
-                action: 'startChat',///wrong route name for message to any message to cs_chat lambda
-                type: 'chatEnd',
-                fromAvatarID: avatarFromID,
-                toAvatarID: avatarToID,
-                chatID: this.currChat.chatID
-            }, this.myAvatar.ID + this.currChat.chatID);
-            await patchData(avatarFromID, "status", "noChat")
-            await patchData(avatarToID, "status", "noChat")
-            await this.periodicUpdate();
-            this.startPeriodicUpdate();///start the periodic update that we stoped to avoid conflicts with the chat
-        } else {
-            console.log("CHAT- closeChat: no chat to close");
-            this.allowPointer = true;
-        }
-        //this.allowPointer = true;///enable the pointer to allow clicks again ///moved to chatEnded
+    // ---------- Helpers ----------
+    _getAvatarInstance(avatarID) {
+      // Integrate with your scene’s avatar registry if you have one.
+      // For now, assume avatar.js stores instances on a global map.
+      if (window.CS_AVATARS && window.CS_AVATARS.get) {
+        return window.CS_AVATARS.get(avatarID);
+      }
+      return null;
     }
 
-    ///////////////////FROM SERVER TO WORLD/////////////////////////////////////
-
-
-    ///got from server when chat requested
-    ///if requested from me I open a chat object. call it currChat
-    ///toAvatarID is alwayes the ID of the avatar that clicked
-    ///fromAvatarID is the ID of the avatar that request the chat
-    chatStarted(fromAvatarID, toAvatarID) {
-        const chatID = `${fromAvatarID}_${toAvatarID}`;
-        if (this.currChat) {
-            console.log("CHAT- chatStarted: already in chat");
-            if (this.currChat.chatID === chatID) {
-                console.log("CHAT- chatStarted: already in chat with the same ID");
-                ///close current chat????????
-                //this.chatEnded(fromAvatarID, toAvatarID);///close the current chat
-                return;
-            }
-            console.log("CHAT- chatStarted: already in chat with another ID");
-            return;
-        }
-
-        console.log("CHAT- chatStarted on world");
-        let toAvatar = this.idToAvatar(toAvatarID);
-        let fromAvatar = this.idToAvatar(fromAvatarID);
-        if (this.myAvatar.ID == fromAvatarID) {///I sent the request
-            this.idToAvatar(toAvatarID).setState("myChat");//on myworld sign my pair
-            /// the stopPeriodicUpdate will be called in chatRequest for the calling Avatar
-        }
-        if (this.myAvatar.ID == toAvatarID) {///I got the request
-            this.idToAvatar(fromAvatarID).setState("myChat");///on myworld sign my pair
-            ///create the chat object in my world do not update the server (the server already know about the chat)
-            this.currChat = new Chat(fromAvatar, toAvatar, this);
-            this.allowPointer = false;///disable the pointer to avoid clicks
-            this.stopPeriodicUpdate();///stop the periodic update to avoid conflicts with the chat
-        }
-        if (this.myAvatar.ID != fromAvatarID && this.myAvatar.ID != toAvatarID) {///Im not one of the one in this chat
-            ///sign the pair in my world
-            fromAvatar.setState("inChat");
-            toAvatar.setState("inChat");
-        }
+    _toast(msg) {
+      if (this.uiToast && typeof this.uiToast.show === "function") {
+        this.uiToast.show(msg);
+      } else {
+        console.log("[Toast]", msg);
+      }
     }
+  }
 
-    idToAvatar(id) {
-        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == id);
-        return avatarObj;
-    }
-    //////only for the pair avatar  
-    chatUpdated(chatText, destID) {
-        if (this.myAvatar.ID == destID) {
-            let currText = this.currChat.getText();
-            if (this.countLines(currText) < this.countLines(chatText)) {
-                this.currChat.updateText(chatText)
-            } else {
-                console.log("new text is shorter than the current text, not updating.");
-            }
-        }
-    }
-
-    countLines(str) {
-        if (!str) return 0;
-        // Split on any common newline sequence
-        const lines = str.split(/\r\n|\r|\n/);
-        return lines.length;
-    }
-
-    ///from the server:
-    //dealResult(fromAvatarID, toAvatarID, fromResult, toResult) {
-    dealResult(fromAvatarID, toAvatarID, senderAnswer, destAnswer, senderID, destID) {
-        console.log("CHAT- dealResult on world dest: " + destAnswer + " sender " + senderAnswer);
-        //signData.action = 'dealNotDone';
-        if (this.myAvatar.ID == fromAvatarID || this.myAvatar.ID == toAvatarID) {
-            ///if the chat is not in my world I will not handle the message
-            if (destAnswer == senderAnswer) {
-                if (destAnswer == "dealDone") {
-                    this.currChat.setChatState("done");
-                    console.log("CHAT- dealDone on world");
-                } else {
-                    this.currChat.setChatState("notDone")
-                    console.log("CHAT-dealNotDone on world");
-                }
-            } else { ///the other avatar answered differently
-                if (this.myAvatar.ID == senderID && destAnswer == null) {///I sent and he didnt answer yet
-                    ///write in the chat object in my world to wait and then click again
-                    this.currChat.setChatState("wait");
-                    console.log("CHAT-dealWait on world");
-                }
-                if (destAnswer == "noDeal") {
-                    if (this.myAvatar.ID == senderID) { ///I sent yes, he refused
-                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
-                        this.currChat.setChatState("refused");
-                        console.log("CHAT-dealRefused on world");
-                    }
-                    if (this.myAvatar.ID == destID) { ///He sent no, I accepted
-                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
-                        this.currChat.setChatState("otherAccepted");
-                        console.log("CHAT-otherAccepted on world");
-                    }
-                }
-                if (destAnswer == "dealDone") {
-                    if (this.myAvatar.ID == senderID) { ///I sent yes, he accepted
-                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
-                        this.currChat.setChatState("otherAccepted");
-                        console.log("CHAT-dealRefused on world");
-                    }
-                    if (this.myAvatar.ID == destID) { ///I sent no, he accepted
-                        ///write in the chat object in my world that the other accepted so click close, you may try to talk with him again
-                        this.currChat.setChatState("refused");
-                        console.log("CHAT-otherAccepted on world");
-                    }
-                }
-
-            }
-        }
-    }
-
-
-    chatEnded(fromAvatarID, toAvatarID, chatID) {
-        console.log("CHAT>>>- chatEnded on world from:" + fromAvatarID + "to: " + toAvatarID + "my: " + this.myAvatar.ID);
-        ///TODO: we may need to verify its our chat to prevent closing other chat of me if retry comes from the server
-        // to achive it we need to get the chat ID in the message///
-        if (this.currChat && (this.currChat.chatID === chatID)) {
-            this.periodicUpdate();///update the avatars and signs in the world
-            this.startPeriodicUpdate();///start the periodic update to get all the avatars and signs
-            this.allowPointer = true;///disable the pointer to allow clicks
-
-            this.currChat.dispose();
-            this.currChat = null;
-        }
-        ///ask everyone to change the two avatars states to noChat 
-        this.idToAvatar(fromAvatarID).setState("noChat");
-        this.idToAvatar(toAvatarID).setState("noChat");
-
-        /////TODO
-        //if ( this.myAvatar.ID == fromAvatarID ) {
-        //    this.idToAvatar(toAvatarID).setState("afterChat");///on myworld sign my pair to prevent chat again
-        //}
-        ///sign the pair in my world
-    }
-
-    doAvatarLeft(avatarID) {
-        console.log("CHAT>>>- avatarLeft on world: " + avatarID);
-        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == avatarID);
-        if (avatarObj) {
-            avatarObj.setDone();
-        }
-    }
-
-    doSetStatus(ID, status) {
-        console.log("CHAT>>>- doSetStatus on world: " + ID);
-        let avatarObj = this._avatarsArr.find(avatarObj => avatarObj.avatarID == ID);
-        if (avatarObj) {
-            avatarObj.setState(status);
-        }
-    }
-
-
-
-
-    ///function to safely stringify an object, skipping the myWorld property
-    /**
-     * Safely stringify an object, skipping the 'myWorld' property.
-     * This is useful for debugging purposes to avoid circular references.
-     *
-     * @param {Object} obj - The object to stringify.
-     * @returns {string} - The JSON string representation of the object, excluding 'myWorld'.
-     */
-    safeStringifySkipMyWorld(obj) {///for debug
-        const seen = new WeakSet();
-        return JSON.stringify(obj, (key, value) => {
-            if (key === "myWorld") return undefined; // Skip this property
-
-            if (typeof value === "object" && value !== null) {
-                if (seen.has(value)) return "[Circular]";
-                seen.add(value);
-            }
-            return value;
-        }, 2); // Pretty-print with 2 spaces
-    }
-}
+  // Expose to global
+  window.World = World;
+  window.cs_postData = postData;   // optional export if others use it
+  window.cs_getData = getData;
+  window.cs_patchData = patchData;
+})();
