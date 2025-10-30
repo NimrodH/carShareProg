@@ -143,6 +143,47 @@ class World {
             if (currAvatar) currAvatar.setState(a.status);
         }
 
+        // Auto-open chat window on the callee when server flipped me to inChat
+        if (this.myAvatar && !this.currChat) {
+            const meSrv = avatars.find(v => v.avatarID === this.myAvatar.ID);
+            if (meSrv && meSrv.status === "inChat" && meSrv.partnerID && meSrv.chatID) {
+                const partner = this.idToAvatar(meSrv.partnerID);
+                if (partner) {
+                    this.currChat = new Chat(this.myAvatar, partner, this, meSrv.chatID);
+                    if (partner.setState) partner.setState("myChat");
+                    if (this.myAvatar.setState) this.myAvatar.setState("myChat");
+                    console.log("[CHAT] Auto-opened incoming chat:", meSrv.chatID);
+                }
+            }
+        }
+
+        // Auto-close my chat if the server shows I'm no longer inChat (remote ended)
+        if (this.myAvatar && this.currChat) {
+            const meSrv = avatars.find(v => v.avatarID === this.myAvatar.ID);
+            if (meSrv) {
+                const partnerID = this.currChat.avatarFromID === this.myAvatar.ID
+                    ? this.currChat.avatarToID
+                    : this.currChat.avatarFromID;
+                const shouldClose =
+                    meSrv.status !== "inChat" ||
+                    !meSrv.chatID ||
+                    meSrv.chatID !== this.currChat.chatID ||
+                    meSrv.partnerID !== partnerID;
+                if (shouldClose) {
+                    // Local close (do NOT call /chat/end again)
+                    this.currChat.dispose?.();
+                    this.currChat = null;
+                    this.allowPointer = true;
+                    // visually reset both sides if present
+                    const p = this.idToAvatar(partnerID);
+                    if (p?.setState) p.setState("noChat");
+                    if (this.myAvatar?.setState) this.myAvatar.setState("noChat");
+                    console.log("[CHAT] Auto-closed (remote end detected)");
+                }
+            }
+        }
+
+
         console.log("[UPDATE] End");
     }
 
