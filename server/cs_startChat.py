@@ -3,7 +3,7 @@ import os
 import time
 import boto3
 from botocore.exceptions import ClientError
-from datetime import datetime, timezone
+#from datetime import datetime, timezone
 from urllib.parse import parse_qs
 
 # ---------- Infra & globals ----------
@@ -16,19 +16,22 @@ APIGW_MGMT = boto3.client(
     endpoint_url=os.getenv("API_GATEWAY_ENDPOINT")
 )
 
-AVATARS_TABLE_NAME = os.environ["AVATARS_TABLE_NAME"]
-CHATS_TABLE_NAME   = os.environ["CHATS_TABLE_NAME"]
+AVATARS_TABLE_NAME = os.getenv("AVATARS_TABLE", "cs_avatars")
+CHATS_TABLE_NAME   = os.getenv("CHATS_TABLE",   "cs_chats")
+#SIGNS_TABLE_NAME   = os.getenv("SIGNS_TABLE",   "cs_signs")
 
 AVATARS = dynamodb.Table(AVATARS_TABLE_NAME)
 CHATS   = dynamodb.Table(CHATS_TABLE_NAME)
-CORS_ORIGIN = os.getenv("CORS_ORIGIN", "https://nimrodh.github.io")
+#SIGNS   = dynamodb.Table(SIGNS_TABLE_NAME)
 
 COMMON_HEADERS = {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": CORS_ORIGIN,
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Origin": os.getenv("CORS_ALLOW_ORIGIN", "*"),
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
 }
+
+# ---------- Helpers ----------
 
 def _resp(code, payload):
     return {"statusCode": code, "headers": COMMON_HEADERS, "body": json.dumps(payload)}
@@ -36,12 +39,34 @@ def _resp(code, payload):
 def _now_ms():
     return int(time.time() * 1000)
 
-def _now_iso():
-    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+#def _now_iso():
+#    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def _parse_body(event):
+    b = event.get("body") or "{}"
+    try:
+        return json.loads(b)
+    except Exception:
+        try:
+            # sometimes form-encoded
+            return {k: v[0] for k, v in parse_qs(b).items()}
+        except Exception:
+            return {}
+
+def _best_effort_ws_nudge(message_obj, connection_ids):
+    # Optional nudge (no WS needed for HTTP flow)
+    if not connection_ids:
+        return
+    data = json.dumps(message_obj).encode("utf-8")
+    for cid in connection_ids:
+        try:
+            APIGW_MGMT.post_to_connection(ConnectionId=cid, Data=data)
+        except Exception:
+            pass
 
 def _gen_chat_id(a, b):
     lo, hi = sorted([a, b])
-    return f"{lo}__{hi}__{_now_iso()}"
+    return f"{lo}_{hi}"
 
 # If you maintain a map of avatarID -> connection IDs in DynamoDB,
 # implement this lookup. For now it returns [] to make WS nudges optional.
@@ -49,22 +74,38 @@ def _get_connection_ids_for_avatars(avatar_ids):
     # TODO: integrate with your connections mapping table if you have one.
     return []
 
-def _best_effort_ws_nudge(message, connection_ids):
-    for cid in connection_ids:
-        try:
-            APIGW_MGMT.post_to_connection(ConnectionId=cid, Data=json.dumps(message).encode("utf-8"))
-        except Exception:
-            # Ignore; HTTP remains the source of truth
-            pass
+# ---------- HTTP router ----------
 
-# ---------- New: /V1/chat/start ----------
+def lambda_handler(event, context):
+    method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
+    if method == "OPTIONS":
+        return _resp(200, {"ok": True})
+
+    raw_path = event.get("rawPath") or event.get("path") or ""
+    path = raw_path  # already absolute like /V1/chat/start
+
+    if path == "/V1/chat/start" and method == "POST":
+        return handle_chat_start(event)
+
+    if path == "/V1/chat/sendLine" and method == "POST":
+        return handle_chat_send_line(event)
+
+    if path == "/V1/chat/getText" and method == "GET":
+        return handle_chat_get_text(event)
+
+    if path == "/V1/chat/end" and method == "POST":
+        return handle_chat_end(event)
+
+    return _resp(404, {"error": "notFound", "path": path, "method": method})
+
+# ---------- /V1/chat/start ----------
 
 def handle_chat_start(event):
     """
     POST /V1/chat/start
     Body: { "fromAvatarID": "...", "toAvatarID": "...", "messageId": "uuid-optional" }
     Success: 200 { ok:true, chatID, fromAvatarID, toAvatarID, [idempotent] }
-    Errors:  409 callerBusy | 409 calleeBusy | 409 selfChat | 404 avatarNotFound | 409 conflict
+    Errors:  409 callerBusy | 409 calleeBusy | 409 selfChat | 404 avatarNotFound | 409 conflict | 409 pairNotAllowed
     """
     method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
     if method != "POST":
@@ -178,6 +219,13 @@ def handle_chat_start(event):
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code")
         if code in ("ConditionalCheckFailedException", "TransactionCanceledException"):
+            # If chat item already exists -> block second chat ever for this pair
+            try:
+                if CHATS.get_item(Key={"chatID": chat_id}).get("Item"):
+                    return _resp(409, {"error": "pairNotAllowed"})
+            except Exception:
+                pass
+
             # Re-check who is busy to return a clearer error
             try:
                 fi = AVATARS.get_item(Key={"avatarID": from_id}).get("Item") or {}
@@ -205,7 +253,7 @@ def handle_chat_start(event):
         "toAvatarID": to_id
     })
 
-# ---------- Existing HTTP endpoints (typical implementations) ----------
+# ---------- /V1/chat/sendLine ----------
 
 def handle_chat_send_line(event):
     """
@@ -217,66 +265,57 @@ def handle_chat_send_line(event):
     if method != "POST":
         return _resp(405, {"error": "methodNotAllowed"})
 
-    try:
-        body = json.loads(event.get("body") or "{}")
-    except Exception:
-        return _resp(400, {"error": "badJson"})
-
+    body = _parse_body(event)
     chat_id = body.get("chatID")
-    new_line = body.get("newLine", "")
-    if not chat_id or not isinstance(new_line, str) or not new_line.strip():
-        return _resp(400, {"error": "missingParams", "need": ["chatID", "newLine"]})
+    from_id = body.get("fromAvatarID")
+    new_line = body.get("newLine")
+
+    if not chat_id or not from_id or new_line is None:
+        return _resp(400, {"error": "missingParams", "need": ["chatID", "fromAvatarID", "newLine"]})
 
     now_ms = _now_ms()
 
-    # Read, append, write (keeps schema compatible if chatText is a string)
     try:
+        # Simple append model: read, append, write (can be refactored to conditional append if needed)
         item = CHATS.get_item(Key={"chatID": chat_id}).get("Item")
         if not item:
-            return _resp(404, {"error": "chatNotFound"})
-        current = item.get("chatText") or ""
-        updated = (current + ("\n" if current else "") + new_line)
+            return _resp(404, {"error": "chatNotFound", "chatID": chat_id})
+
+        text = item.get("chatText") or ""
+        if text and not text.endswith("\n"):
+            text += "\n"
+        text += new_line
+
         CHATS.update_item(
             Key={"chatID": chat_id},
-            UpdateExpression="SET chatText = :t, updatedAt = :u",
-            ExpressionAttributeValues={":t": updated, ":u": now_ms},
-            ReturnValues="UPDATED_NEW"
+            UpdateExpression="SET chatText=:t, updatedAt=:u",
+            ExpressionAttributeValues={
+                ":t": text,
+                ":u": now_ms
+            }
         )
+        return _resp(200, {"ok": True, "chatText": text})
     except ClientError as e:
         return _resp(500, {"error": "updateFailed", "details": str(e)})
 
-    # Optional nudge to both participants
-    participants = item.get("participants", [])
-    ids = []
-    for p in participants:
-        if isinstance(p, dict) and "S" in p:
-            ids.append(p["S"])
-        elif isinstance(p, str):
-            ids.append(p)
-    _best_effort_ws_nudge(
-        {"type": "nudge", "topic": "chat:line", "chatID": chat_id},
-        _get_connection_ids_for_avatars(ids)
-    )
-
-    return _resp(200, {"ok": True, "chatID": chat_id})
+# ---------- /V1/chat/getText ----------
 
 def handle_chat_get_text(event):
     """
     GET /V1/chat/getText?chatID=...
-    Returns: { chatID, chatText, updatedAt, startTime, endTime }
+    Returns { chatText }
     """
     method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
     if method != "GET":
         return _resp(405, {"error": "methodNotAllowed"})
 
-    # Support both HTTP API (rawQueryString) and REST API (queryStringParameters)
-    qs = event.get("rawQueryString")
-    if qs:
-        params = parse_qs(qs)
-        chat_id = (params.get("chatID") or [None])[0]
+    query = event.get("rawQueryString") or ""
+    if not query and "queryStringParameters" in event and event["queryStringParameters"]:
+        # API GW v1
+        chat_id = event["queryStringParameters"].get("chatID")
     else:
-        params = event.get("queryStringParameters") or {}
-        chat_id = params.get("chatID")
+        params = parse_qs(query)
+        chat_id = (params.get("chatID") or [None])[0]
 
     if not chat_id:
         return _resp(400, {"error": "missingParams", "need": ["chatID"]})
@@ -284,41 +323,34 @@ def handle_chat_get_text(event):
     try:
         item = CHATS.get_item(Key={"chatID": chat_id}).get("Item")
         if not item:
-            return _resp(404, {"error": "chatNotFound"})
-        return _resp(200, {
-            "chatID": item["chatID"],
-            "chatText": item.get("chatText", ""),
-            "updatedAt": item.get("updatedAt"),
-            "startTime": item.get("startTime"),
-            "endTime": item.get("endTime")
-        })
+            return _resp(404, {"error": "chatNotFound", "chatID": chat_id})
+        return _resp(200, {"chatText": item.get("chatText", "")})
     except ClientError as e:
         return _resp(500, {"error": "readFailed", "details": str(e)})
+
+# ---------- /V1/chat/end ----------
 
 def handle_chat_end(event):
     """
     POST /V1/chat/end
     Body: { "chatID": "...", "fromAvatarID": "...", "toAvatarID": "..." }
-    Sets endTime and (optionally) frees both avatars back to noChat.
+    Sets endTime and flips both avatars back to noChat.
     """
     method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
     if method != "POST":
         return _resp(405, {"error": "methodNotAllowed"})
 
-    try:
-        body = json.loads(event.get("body") or "{}")
-    except Exception:
-        return _resp(400, {"error": "badJson"})
-
+    body = _parse_body(event)
     chat_id = body.get("chatID")
     from_id = body.get("fromAvatarID")
     to_id   = body.get("toAvatarID")
+
     if not chat_id or not from_id or not to_id:
         return _resp(400, {"error": "missingParams", "need": ["chatID", "fromAvatarID", "toAvatarID"]})
 
     now_ms = _now_ms()
 
-    # End chat and free both avatars atomically (best-effort consistent)
+    # Flip both avatars atomically (best-effort consistent)
     try:
         ddb_client.transact_write_items(
             TransactItems=[
@@ -331,77 +363,47 @@ def handle_chat_end(event):
                             ":e": {"N": str(now_ms)},
                             ":u": {"N": str(now_ms)},
                         },
-                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                        "ReturnValuesOnConditionCheckFailure": "NONE"
                     }
                 },
                 {
                     "Update": {
                         "TableName": AVATARS_TABLE_NAME,
                         "Key": {"avatarID": {"S": from_id}},
-                        "UpdateExpression": "SET #s=:no, partnerID=:z, chatID=:z, updatedAt=:u",
+                        "UpdateExpression": "SET #s=:no, partnerID=:nil, chatID=:nil, updatedAt=:u",
                         "ExpressionAttributeNames": {"#s": "status"},
                         "ExpressionAttributeValues": {
-                            ":no": {"S": "noChat"},
-                            ":z":  {"NULL": True},
-                            ":u":  {"N": str(now_ms)},
+                            ":no":  {"S": "noChat"},
+                            ":nil": {"NULL": True},
+                            ":u":   {"N": str(now_ms)}
                         },
-                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                        "ReturnValuesOnConditionCheckFailure": "NONE"
                     }
                 },
                 {
                     "Update": {
                         "TableName": AVATARS_TABLE_NAME,
                         "Key": {"avatarID": {"S": to_id}},
-                        "UpdateExpression": "SET #s=:no, partnerID=:z, chatID=:z, updatedAt=:u",
+                        "UpdateExpression": "SET #s=:no, partnerID=:nil, chatID=:nil, updatedAt=:u",
                         "ExpressionAttributeNames": {"#s": "status"},
                         "ExpressionAttributeValues": {
-                            ":no": {"S": "noChat"},
-                            ":z":  {"NULL": True},
-                            ":u":  {"N": str(now_ms)},
+                            ":no":  {"S": "noChat"},
+                            ":nil": {"NULL": True},
+                            ":u":   {"N": str(now_ms)}
                         },
-                        "ReturnValuesOnConditionCheckFailure": "NONE",
+                        "ReturnValuesOnConditionCheckFailure": "NONE"
                     }
                 }
             ]
         )
     except ClientError as e:
-        return _resp(500, {"error": "transactFailed", "details": str(e)})
+        return _resp(500, {"error": "endTransactFailed", "details": str(e)})
 
-    # WS nudge (optional)
+    # Optional nudge
     _best_effort_ws_nudge(
-        {"type": "nudge", "topic": "chat:end", "chatID": chat_id},
+        {"type": "nudge", "topic": "chat:end", "chatID": chat_id,
+         "fromAvatarID": from_id, "toAvatarID": to_id},
         _get_connection_ids_for_avatars([from_id, to_id])
     )
 
     return _resp(200, {"ok": True, "chatID": chat_id})
-
-# ---------- Router ----------
-
-def lambda_handler(event, context):
-    """
-    Routes:
-      POST /V1/chat/start     -> handle_chat_start   (NEW)
-      POST /V1/chat/sendLine  -> handle_chat_send_line
-      GET  /V1/chat/getText   -> handle_chat_get_text
-      POST /V1/chat/end       -> handle_chat_end
-    """
-    path   = event.get("rawPath") or event.get("path") or ""
-    method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
-
-    # Normalize path (strip trailing slash)
-    if path.endswith("/") and path != "/":
-        path = path[:-1]
-
-    if path == "/V1/chat/start" and method == "POST":
-        return handle_chat_start(event)
-
-    if path == "/V1/chat/sendLine" and method == "POST":
-        return handle_chat_send_line(event)
-
-    if path == "/V1/chat/getText" and method == "GET":
-        return handle_chat_get_text(event)
-
-    if path == "/V1/chat/end" and method == "POST":
-        return handle_chat_end(event)
-
-    return _resp(404, {"error": "notFound", "path": path, "method": method})

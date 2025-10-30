@@ -203,10 +203,12 @@ class AvatarMessage {
 }
 
 class Chat {
-    constructor(avatarFrom, avatarTo, world) {
+    //constructor(avatarFrom, avatarTo, world) {
+    constructor(avatarFrom, avatarTo, world, chatID) {
         this.avatarFromID = avatarFrom.ID;
         this.avatarToID = avatarTo.ID;
-        this.chatID = this.avatarFromID + "_" + this.avatarToID;
+        //this.chatID = this.avatarFromID + "_" + this.avatarToID;
+        this.chatID = chatID;
         this.myWorld = world;
         if (this.myWorld.myAvatar.ID == this.avatarFromID) {
             this.userNameFrom = avatarFrom.userName;
@@ -462,7 +464,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "red";//green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;

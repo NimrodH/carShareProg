@@ -206,7 +206,8 @@ class World {
                 return;
             }
 
-            this.currChat = new Chat(this.myAvatar, toAvatar, this);
+            //this.currChat = new Chat(this.myAvatar, toAvatar, this);
+            this.currChat = new Chat(this.myAvatar, toAvatar, this, res.chatID);
             console.log("[CHAT] Started:", res.chatID);
         } catch (err) {
             console.error("[CHAT] start failed:", err);
