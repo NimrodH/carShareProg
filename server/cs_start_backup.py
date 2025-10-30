@@ -67,8 +67,8 @@ def handle_chat_start(event):
     Errors:  409 callerBusy | 409 calleeBusy | 409 selfChat | 404 avatarNotFound | 409 conflict
     """
     method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
-    if method != "POST":
-        return _resp(405, {"error": "methodNotAllowed"})
+    #if method != "POST":
+        #return _resp(405, {"error": "methodNotAllowed"})
 
     try:
         body = json.loads(event.get("body") or "{}")
@@ -403,5 +403,8 @@ def lambda_handler(event, context):
 
     if path == "/V1/chat/end" and method == "POST":
         return handle_chat_end(event)
+    
+    if path ==  method == "OPTIONS":
+        return _resp(200, {"ok": True})  # preflight
 
     return _resp(404, {"error": "notFound", "path": path, "method": method})
