@@ -228,6 +228,18 @@ class World {
             }
         } catch (e) {
             console.warn("[CHAT] availability read failed; proceeding", e);
+            // Instant visual feedback based on server error
+            const e = (err && err.error) || (err && err.message) || "";
+            if (e.includes("pairNotAllowed")) {
+                toAvatar.setState?.("alreadyTalked");
+            } else if (e.includes("calleeBusy")) {
+                // (c) target started a different chat before we saw it → show refusal now
+                toAvatar.setState?.("refuseChat");
+            } else if (e.includes("avatarNotFound")) {
+                // (b) target likely gone
+                toAvatar.setState?.("done");
+            }
+
         }
 
         // Single source of truth: server does the atomic flip for both sides
