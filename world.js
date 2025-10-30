@@ -226,8 +226,8 @@ class World {
                 this.allowPointer = true;
                 return;
             }
-        } catch (e) {
-            console.warn("[CHAT] availability read failed; proceeding", e);
+        } catch (err) {
+            console.warn("[CHAT] availability read failed; proceeding", err);
             // Instant visual feedback based on server error
             const e = (err && err.error) || (err && err.message) || "";
             if (e.includes("pairNotAllowed")) {
