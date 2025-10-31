@@ -205,71 +205,84 @@ class World {
     // ---------- CHAT ----------
 
 
-
     async chatRequest(toID) {
-        const toAvatar = this.idToAvatar(toID);
-        if (this.currChat || !toAvatar) return;
-
-        console.log("[CHAT] Request to:", toID);
-        this.allowPointer = false;
-
-        // Read-only availability check (pure UX)
         try {
-            const res = await getData("getAllStatuses"); // { avatars: [...] }
-            const callee = (res?.avatars || []).find(a => a.avatarID === toID);
-            const looksBusy = !!(callee && callee.status && callee.status !== "noChat");
-            if (looksBusy) {
-                // brief visual nudge only; do not write to server
-                const prev = toAvatar.currState || "noChat";
-                toAvatar.setState("refuseChat");
-                setTimeout(() => { if (!this.currChat) toAvatar.setState(prev); }, 1200);
-                this.allowPointer = true;
-                return;
-            }
-        } catch (err) {
-            console.warn("[CHAT] availability read failed; proceeding", err);
-            // Instant visual feedback based on server error
-            const e = (err && err.error) || (err && err.message) || "";
-            if (e.includes("pairNotAllowed")) {
-                toAvatar.setState?.("alreadyTalked");
-            } else if (e.includes("calleeBusy")) {
-                // (c) target started a different chat before we saw it → show refusal now
-                toAvatar.setState?.("refuseChat");
-            } else if (e.includes("avatarNotFound")) {
-                // (b) target likely gone
-                toAvatar.setState?.("done");
-            }
+            // Resolve the target avatar (for UI state changes & logs)
+            const toAvatar = this.idToAvatar ? this.idToAvatar(toID) : null;
+            console.log("[CHAT] Request ->", toID);
 
-        }
+            // Prevent double clicks while we work
+            if (this.allowPointer !== undefined) this.allowPointer = false;
 
-        // Single source of truth: server does the atomic flip for both sides
-        try {
+            // Call server to start the chat (server is the source of truth for chatID)
             const res = await postData("chat/start", {
                 fromAvatarID: this.myAvatar.ID,
                 toAvatarID: toID,
-                messageId: crypto.randomUUID()
+                messageId: (crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`)
             });
 
-            if (!res || !res.chatID) {
-                console.warn("[CHAT] start rejected", res);
-                const prev = toAvatar.currState || "noChat";
-                toAvatar.setState("refuseChat");
-                setTimeout(() => { if (!this.currChat) toAvatar.setState(prev); }, 1200);
-                this.allowPointer = true;
+            // Specific mappings for structured errors returned by postData
+            if (typeof isErrorResponse === "function" && isErrorResponse(res)) {
+                const err = (res.error || "").toString();
+
+                // Pair already chatted (ever) -> permanent "alreadyTalked"
+                if (err === "pairNotAllowed") {
+                    if (toAvatar?.setState) toAvatar.setState("alreadyTalked");
+                    console.log("[CHAT] pairNotAllowed -> alreadyTalked:", toID);
+                    return;
+                }
+
+                // Callee is currently in another chat -> short refusal message
+                if (err === "calleeBusy") {
+                    if (toAvatar?.setState) {
+                        const prev = toAvatar.currState || "noChat";
+                        toAvatar.setState("refuseChat");
+                        setTimeout(() => { if (!this.currChat) toAvatar.setState(prev); }, 1200);
+                    }
+                    console.log("[CHAT] calleeBusy -> temporary refuseChat:", toID);
+                    return;
+                }
+
+                // Other errors -> generic short refusal
+                if (toAvatar?.setState) {
+                    const prev = toAvatar.currState || "noChat";
+                    toAvatar.setState("refuseChat");
+                    setTimeout(() => { if (!this.currChat) toAvatar.setState(prev); }, 1200);
+                }
+                console.warn("[CHAT] start rejected:", res);
                 return;
             }
 
-            //this.currChat = new Chat(this.myAvatar, toAvatar, this);
+            // Must have a chatID on success
+            if (!res || isErrorResponse(res) || !res.chatID) {
+                if (toAvatar?.setState) {
+                    const prev = toAvatar.currState || "noChat";
+                    toAvatar.setState("refuseChat");
+                    setTimeout(() => { if (!this.currChat) toAvatar.setState(prev); }, 1200);
+                }
+                console.warn("[CHAT] start missing chatID:", res);
+                return;
+            }
+
+            // Success: open the chat window using server-authoritative chatID
+            if (!toAvatar) {
+                console.warn("[CHAT] toAvatar not found for id:", toID);
+                return;
+            }
+
             this.currChat = new Chat(this.myAvatar, toAvatar, this, res.chatID);
-            console.log("[CHAT] Started:", res.chatID);
+            if (toAvatar.setState) toAvatar.setState("myChat");
+            if (this.myAvatar?.setState) this.myAvatar.setState("myChat");
+            console.log("[CHAT] Started with chatID:", res.chatID);
+
         } catch (err) {
-            console.error("[CHAT] start failed:", err);
-            const prev = toAvatar.currState || "noChat";
-            toAvatar.setState("refuseChat");
-            setTimeout(() => { if (!this.currChat) toAvatar.setState(prev); }, 1200);
-            this.allowPointer = true;
+            console.warn("[CHAT] start failed:", err);
+        } finally {
+            if (this.allowPointer !== undefined) this.allowPointer = true;
         }
     }
+
+
     /*
       async chatRequest(toID) {
         const toAvatar = this.idToAvatar(toID);

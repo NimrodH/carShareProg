@@ -493,6 +493,10 @@
         ///the  socket URL 
         const socketUrl = 'wss://j5i50qrird.execute-api.us-east-1.amazonaws.com/production/';
 
+        function isErrorResponse(res) {
+            return !!res && ((typeof res.status === "number" && res.status >= 400) || !!res.error);
+        }
+
         class Deduplicator {
             constructor(ttlMs = 5 * 60 * 1000) {  // default: remember IDs for 5 minutes
                 this.seen = new Set();
@@ -754,9 +758,16 @@
                 });
 
                 if (!res.ok) {
-                    const errorText = await res.text();
-                    console.error("Server error:", res.status, errorText);
-                    return null;
+                    const text = await res.text();
+                    console.error("Server error:", res.status, text);
+                    // Try to parse JSON error; fall back to text
+                    let err = { status: res.status, errorText: text };
+                    try {
+                        const j = JSON.parse(text);
+                        // e.g. { "error": "pairNotAllowed" }
+                        err = { status: res.status, ...j };
+                    } catch { }
+                    return err;  // <-- return the error object to caller
                 }
 
                 const data = await res.json();
