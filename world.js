@@ -11,6 +11,7 @@ class World {
         this.msg = null;
         this.currChat = null;
         this.periodicUpdateInterval = null;
+        this.stickyUntilDone = new Set();
     }
 
     // 1) Helper: read current status of a specific avatar (no writes)
@@ -138,9 +139,31 @@ class World {
         }
 
         // update avatar statuses
+        // world.js -> periodicUpdate(), in the “apply statuses” loop
         for (const a of avatars) {
+            const isSticky = this.stickyUntilDone.has(a.avatarID);
+
+            // Maintain the sticky flag even if the avatar UI isn't instantiated
+            if (isSticky && a.status === "done") {
+                this.stickyUntilDone.delete(a.avatarID); // clear persistence as soon as they’re done
+            }
+
             const currAvatar = this._avatarsArr.find(v => v.avatarID === a.avatarID);
-            if (currAvatar) currAvatar.setState(a.status);
+            if (!currAvatar) continue; // avoid UI errors when avatar object isn't available
+
+            if (isSticky) {
+                // While sticky and not yet done -> force "alreadyTalked"
+                if (a.status === "done") {
+                    currAvatar.setState("done");
+                    // sticky already cleared above
+                } else {
+                    currAvatar.setState("alreadyTalked");
+                }
+                continue;
+            }
+
+            // default: follow server status
+            currAvatar.setState(a.status);
         }
 
         // Auto-open chat window on the callee when server flipped me to inChat
@@ -228,6 +251,7 @@ class World {
                 // Pair already chatted (ever) -> permanent "alreadyTalked"
                 if (err === "pairNotAllowed") {
                     if (toAvatar?.setState) toAvatar.setState("alreadyTalked");
+                    this.stickyUntilDone.add(toID);
                     console.log("[CHAT] pairNotAllowed -> alreadyTalked:", toID);
                     return;
                 }
