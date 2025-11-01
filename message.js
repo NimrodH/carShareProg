@@ -342,25 +342,31 @@ class Chat {
     }
 
     async sendLine() {
-        ///add localy
-        ////let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
-        ///////this.updateText(text);
-
-        ///////this.messageInput.text = "";///moved down
-
-        /////this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text);
-        await postData("chat/sendLine", {
+        const payload = {
             chatID: this.chatID,
+            fromAvatarID: this.avatarFromID,
+            toAvatarID: this.avatarToID,
             newLine: `${this.userNameFrom}: ${this.messageInput.text}`
-        }).then(res => {
-            if (res && res.chatText) this.updateText(res.chatText);
-            this.messageInput.text = "";///delete message line if we succed to send it
-        }).catch(err => {
-            console.error("Error sending message:", err);
-        });
-        this.messageInput.focus()
+        };
 
+        const res = await postData("chat/sendLine", payload);
+
+        // index.html defines isErrorResponse(res)
+        if (typeof isErrorResponse === "function" && isErrorResponse(res)) {
+            console.error("[CHAT] sendLine rejected:", res);
+            return; // keep textbox text so user can retry/edit
+        }
+
+        if (res && res.chatText) {
+            this.updateText(res.chatText);   // immediate local refresh
+            this.messageInput.text = "";     // clear only on success
+        } else {
+            console.warn("[CHAT] sendLine ok but no chatText in response:", res);
+        }
+
+        this.messageInput.focus();
     }
+
 
     dealDoneSelected() {
         this.buttonClose.isEnabled = true;
