@@ -206,6 +206,10 @@ class AvatarMessage {
 class Chat {
     //constructor(avatarFrom, avatarTo, world) {
     constructor(avatarFrom, avatarTo, world, chatID) {
+        if (this.myWorld.currChat && this.myWorld.currChat !== this) {
+            // If an older Chat somehow exists, close it before creating a new one.
+            this.myWorld.currChat.dispose?.();
+        }
         this.avatarFromID = avatarFrom.ID;
         this.avatarToID = avatarTo.ID;
         //this.chatID = this.avatarFromID + "_" + this.avatarToID;
@@ -338,7 +342,7 @@ class Chat {
                 */
         }, 2000);
         this.setChatState("start")
-        ///optamization
+            ///optamization
             (async () => {
                 const res = await getData("chat/getText", `?chatID=${this.chatID}`);
                 if (res?.chatText) this.updateText(res.chatText);
@@ -483,7 +487,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange"; //green - 'orange' for debug color
+        this.advancedTexture.background = "red"; //green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;

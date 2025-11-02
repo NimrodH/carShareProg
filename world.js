@@ -3,6 +3,7 @@
 
 class World {
     constructor(scene) {
+        this.chatOpening = false;
         this.PERIODIC_UPDATE_MS = 20000;
         this.scene = scene;
         this._avatarsArr = []; // all avatar objects
@@ -168,7 +169,7 @@ class World {
         }
 
         // Auto-open chat window on the callee when server flipped me to inChat
-        if (this.myAvatar && !this.currChat) {
+        if (this.myAvatar && !this.currChat && !this.chatOpening) {
             const meSrv = avatars.find(v => v.avatarID === this.myAvatar.ID);
             if (meSrv && meSrv.status === "inChat" && meSrv.partnerID && meSrv.chatID) {
                 const partner = this.idToAvatar(meSrv.partnerID);
@@ -176,7 +177,7 @@ class World {
                     this.currChat = new Chat(this.myAvatar, partner, this, meSrv.chatID);
                     if (partner.setState) partner.setState("myChat");
                     if (this.myAvatar.setState) this.myAvatar.setState("myChat");
-                    this.stopPeriodicUpdate(); 
+                    this.stopPeriodicUpdate();
                     console.log("[CHAT] Auto-opened incoming chat:", meSrv.chatID);
                 }
             }
@@ -231,8 +232,11 @@ class World {
 
 
     async chatRequest(toID) {
+        if (this.currChat || this.chatOpening) return;   // <--- guard
+        this.chatOpening = true;                         // <--- mark in-flight
+
         if (!this.periodicUpdateInterval) await this.periodicUpdate();///optimisation
-        this.startPeriodicUpdate();
+        //this.startPeriodicUpdate();
         try {
             // Resolve the target avatar (for UI state changes & logs)
             const toAvatar = this.idToAvatar ? this.idToAvatar(toID) : null;
@@ -308,6 +312,7 @@ class World {
         } catch (err) {
             console.warn("[CHAT] start failed:", err);
         } finally {
+            this.chatOpening = false;
             if (this.allowPointer !== undefined) this.allowPointer = true;
         }
     }
