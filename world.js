@@ -3,6 +3,7 @@
 
 class World {
     constructor(scene) {
+        this.PERIODIC_UPDATE_MS = 20000;
         this.scene = scene;
         this._avatarsArr = []; // all avatar objects
         this._wellcome = new Wellcome(this);
@@ -109,7 +110,7 @@ class World {
         }
         this.periodicUpdateInterval = setInterval(() => {
             this.periodicUpdate();
-        }, 60 * 1000);
+        }, this.PERIODIC_UPDATE_MS);
     }
 
     stopPeriodicUpdate() {
@@ -175,6 +176,7 @@ class World {
                     this.currChat = new Chat(this.myAvatar, partner, this, meSrv.chatID);
                     if (partner.setState) partner.setState("myChat");
                     if (this.myAvatar.setState) this.myAvatar.setState("myChat");
+                    this.stopPeriodicUpdate(); 
                     console.log("[CHAT] Auto-opened incoming chat:", meSrv.chatID);
                 }
             }
@@ -229,6 +231,8 @@ class World {
 
 
     async chatRequest(toID) {
+        if (!this.periodicUpdateInterval) await this.periodicUpdate();///optimisation
+        this.startPeriodicUpdate();
         try {
             // Resolve the target avatar (for UI state changes & logs)
             const toAvatar = this.idToAvatar ? this.idToAvatar(toID) : null;
@@ -263,6 +267,7 @@ class World {
                         toAvatar.setState("refuseChat");
                         setTimeout(() => { if (!this.currChat) toAvatar.setState(prev); }, 1200);
                     }
+                    await this.periodicUpdate();///optimisation
                     console.log("[CHAT] calleeBusy -> temporary refuseChat:", toID);
                     return;
                 }
@@ -297,6 +302,7 @@ class World {
             this.currChat = new Chat(this.myAvatar, toAvatar, this, res.chatID);
             if (toAvatar.setState) toAvatar.setState("myChat");
             if (this.myAvatar?.setState) this.myAvatar.setState("myChat");
+            this.stopPeriodicUpdate();
             console.log("[CHAT] Started with chatID:", res.chatID);
 
         } catch (err) {
@@ -390,18 +396,19 @@ class World {
     async _sendDealResult(chatID, fromID, toID, result) {
         let msg = "";
         if (result == "dealDone") {
-            msg = "בין הזוג אישר את הנסיעה";
+            msg = "סוכמה נסיעה";
         }
         else {
-            msg = "בין הזוג בחר לא סוכם";
+            msg = "לא סוכמה נסיעה";
         }
         try {
-            await postData("chat/sendLine", {
+            const res = await postData("chat/sendLine", {
                 chatID,
                 fromAvatarID: fromID,
                 toAvatarID: toID,
                 newLine: `[${msg}]`
             });
+            if (res?.chatText && this.currChat) this.currChat.updateText(res.chatText);
             console.log("[CHAT] Deal result sent:", result);
         } catch (e) {
             console.error("[CHAT] dealResult failed:", e);
@@ -442,12 +449,13 @@ class World {
         else this.currChat.setChatState("mixed");
     }
 
-    chatEnded(fromID, toID, chatID) {
+    async chatEnded(fromID, toID, chatID) {
         console.log("[CHAT] End signal from", fromID, toID);
         if (this.currChat && this.currChat.chatID === chatID) {
             this.currChat.dispose();
             this.currChat = null;
             this.allowPointer = true;
+            await this.periodicUpdate();
             this.startPeriodicUpdate();
         }
         const fromA = this.idToAvatar(fromID);
