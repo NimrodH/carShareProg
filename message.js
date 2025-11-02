@@ -4,7 +4,6 @@ class AvatarMessage {
     //nextButton;///also sent as parameter in new session and called from there
     constructor(planeSize, x, y, z, signData, avatar) {
         console.log("in AvatarMessage")
-        this.dealResult = null;
         this.myAvatar = avatar;
         this.plane = BABYLON.MeshBuilder.CreatePlane("plane", { height: planeSize, width: -planeSize });
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
@@ -206,10 +205,6 @@ class AvatarMessage {
 class Chat {
     //constructor(avatarFrom, avatarTo, world) {
     constructor(avatarFrom, avatarTo, world, chatID) {
-        if (this.myWorld.currChat && this.myWorld.currChat !== this) {
-            // If an older Chat somehow exists, close it before creating a new one.
-            this.myWorld.currChat.dispose?.();
-        }
         this.avatarFromID = avatarFrom.ID;
         this.avatarToID = avatarTo.ID;
         //this.chatID = this.avatarFromID + "_" + this.avatarToID;
@@ -328,10 +323,6 @@ class Chat {
         console.log("chatID: " + this.chatID);
         this.pollInterval = setInterval(async () => {
             const res = await getData("chat/getText", `?chatID=${this.chatID}`);
-            if (res.chatText !== this.textBlock.text) {
-                this.updateText(res.chatText);
-            }
-            /*
             if (res && res.chatText) {
                 const linesNow = this.textBlock.text.split(/\r?\n/).length;
                 const linesNew = res.chatText.split(/\r?\n/).length;
@@ -339,14 +330,8 @@ class Chat {
                     this.updateText(res.chatText);
                 }
             }
-                */
-        }, 2000);
+        }, 3000);
         this.setChatState("start")
-            ///optamization
-            (async () => {
-                const res = await getData("chat/getText", `?chatID=${this.chatID}`);
-                if (res?.chatText) this.updateText(res.chatText);
-            })();
     }
 
     updateText(theText) {
@@ -357,47 +342,39 @@ class Chat {
     }
 
     async sendLine() {
-        const payload = {
+        ///add localy
+        ////let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
+        ///////this.updateText(text);
+
+        ///////this.messageInput.text = "";///moved down
+
+        /////this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text);
+        await postData("chat/sendLine", {
             chatID: this.chatID,
-            fromAvatarID: this.avatarFromID,
-            toAvatarID: this.avatarToID,
             newLine: `${this.userNameFrom}: ${this.messageInput.text}`
-        };
+        }).then(res => {
+            if (res && res.chatText) this.updateText(res.chatText);
+            this.messageInput.text = "";///delete message line if we succed to send it
+        }).catch(err => {
+            console.error("Error sending message:", err);
+        });
+        this.messageInput.focus()
 
-        const res = await postData("chat/sendLine", payload);
-
-        // index.html defines isErrorResponse(res)
-        if (typeof isErrorResponse === "function" && isErrorResponse(res)) {
-            console.error("[CHAT] sendLine rejected:", res);
-            return; // keep textbox text so user can retry/edit
-        }
-
-        if (res && res.chatText) {
-            this.updateText(res.chatText);   // immediate local refresh
-            this.messageInput.text = "";     // clear only on success
-        } else {
-            console.warn("[CHAT] sendLine ok but no chatText in response:", res);
-        }
-
-        this.messageInput.focus();
     }
-
 
     dealDoneSelected() {
         this.buttonClose.isEnabled = true;
-        this.dealResult = "dealDone";
-        this.myWorld.dealDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);///write to window
+        this.myWorld.dealDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
     dealNotDoneSelected() {
         this.buttonClose.isEnabled = true;
-        this.dealResult = "notDone";
-        this.myWorld.dealNotDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);///write to window
+        this.myWorld.dealNotDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
     closeChat() {
         if (this.myWorld.currChat.chatID == this.chatID) {
-            this.myWorld.closeChat(this.avatarFromID, this.avatarToID, this.dealResult);
+            this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
         } else {
             this.dispose();
             if (this.myWorld.currChat) {
@@ -487,7 +464,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "red"; //green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;

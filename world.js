@@ -3,8 +3,6 @@
 
 class World {
     constructor(scene) {
-        this.chatOpening = false;
-        this.PERIODIC_UPDATE_MS = 20000;
         this.scene = scene;
         this._avatarsArr = []; // all avatar objects
         this._wellcome = new Wellcome(this);
@@ -111,7 +109,7 @@ class World {
         }
         this.periodicUpdateInterval = setInterval(() => {
             this.periodicUpdate();
-        }, this.PERIODIC_UPDATE_MS);
+        }, 60 * 1000);
     }
 
     stopPeriodicUpdate() {
@@ -169,7 +167,7 @@ class World {
         }
 
         // Auto-open chat window on the callee when server flipped me to inChat
-        if (this.myAvatar && !this.currChat && !this.chatOpening) {
+        if (this.myAvatar && !this.currChat) {
             const meSrv = avatars.find(v => v.avatarID === this.myAvatar.ID);
             if (meSrv && meSrv.status === "inChat" && meSrv.partnerID && meSrv.chatID) {
                 const partner = this.idToAvatar(meSrv.partnerID);
@@ -177,7 +175,6 @@ class World {
                     this.currChat = new Chat(this.myAvatar, partner, this, meSrv.chatID);
                     if (partner.setState) partner.setState("myChat");
                     if (this.myAvatar.setState) this.myAvatar.setState("myChat");
-                    this.stopPeriodicUpdate();
                     console.log("[CHAT] Auto-opened incoming chat:", meSrv.chatID);
                 }
             }
@@ -232,11 +229,6 @@ class World {
 
 
     async chatRequest(toID) {
-        if (this.currChat || this.chatOpening) return;   // <--- guard
-        this.chatOpening = true;                         // <--- mark in-flight
-
-        if (!this.periodicUpdateInterval) await this.periodicUpdate();///optimisation
-        //this.startPeriodicUpdate();
         try {
             // Resolve the target avatar (for UI state changes & logs)
             const toAvatar = this.idToAvatar ? this.idToAvatar(toID) : null;
@@ -271,7 +263,6 @@ class World {
                         toAvatar.setState("refuseChat");
                         setTimeout(() => { if (!this.currChat) toAvatar.setState(prev); }, 1200);
                     }
-                    await this.periodicUpdate();///optimisation
                     console.log("[CHAT] calleeBusy -> temporary refuseChat:", toID);
                     return;
                 }
@@ -306,13 +297,11 @@ class World {
             this.currChat = new Chat(this.myAvatar, toAvatar, this, res.chatID);
             if (toAvatar.setState) toAvatar.setState("myChat");
             if (this.myAvatar?.setState) this.myAvatar.setState("myChat");
-            this.stopPeriodicUpdate();
             console.log("[CHAT] Started with chatID:", res.chatID);
 
         } catch (err) {
             console.warn("[CHAT] start failed:", err);
         } finally {
-            this.chatOpening = false;
             if (this.allowPointer !== undefined) this.allowPointer = true;
         }
     }
@@ -361,14 +350,13 @@ class World {
       }
     */
 
-    async closeChat(fromID, toID, result) {
+    async closeChat(fromID, toID) {
         if (!this.currChat) return;
         try {
             await postData("chat/end", {
                 chatID: this.currChat.chatID,
                 fromAvatarID: fromID,
-                toAvatarID: toID,
-                dealResult: result
+                toAvatarID: toID
             });
             /*
             await Promise.all([
@@ -389,7 +377,6 @@ class World {
     }
 
     // ---------- DEAL & CHAT UPDATES ----------
-    ////////////////OPTIONALwrite on the result on the chat window. we write it on column  in server from closeChat
     async dealDoneSelected(chatID, fromID, toID) {
         await this._sendDealResult(chatID, fromID, toID, "dealDone");
     }
@@ -399,27 +386,19 @@ class World {
     }
 
     async _sendDealResult(chatID, fromID, toID, result) {
-        let msg = "";
-        if (result == "dealDone") {
-            msg = "סוכמה נסיעה";
-        }
-        else {
-            msg = "לא סוכמה נסיעה";
-        }
         try {
-            const res = await postData("chat/sendLine", {
+            await postData("chat/sendLine", {
                 chatID,
                 fromAvatarID: fromID,
                 toAvatarID: toID,
-                newLine: `[${msg}]`
+                newLine: `[${result}]`
             });
-            if (res?.chatText && this.currChat) this.currChat.updateText(res.chatText);
             console.log("[CHAT] Deal result sent:", result);
         } catch (e) {
             console.error("[CHAT] dealResult failed:", e);
         }
     }
-    ///////////////////////
+
     async updateChat(chatID, fromID, toID, text) {
         try {
             await postData("chat/sendLine", {
@@ -454,13 +433,12 @@ class World {
         else this.currChat.setChatState("mixed");
     }
 
-    async chatEnded(fromID, toID, chatID) {
+    chatEnded(fromID, toID, chatID) {
         console.log("[CHAT] End signal from", fromID, toID);
         if (this.currChat && this.currChat.chatID === chatID) {
             this.currChat.dispose();
             this.currChat = null;
             this.allowPointer = true;
-            await this.periodicUpdate();
             this.startPeriodicUpdate();
         }
         const fromA = this.idToAvatar(fromID);
