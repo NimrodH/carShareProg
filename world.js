@@ -350,13 +350,14 @@ class World {
       }
     */
 
-    async closeChat(fromID, toID) {
+    async closeChat(fromID, toID, result) {
         if (!this.currChat) return;
         try {
             await postData("chat/end", {
                 chatID: this.currChat.chatID,
                 fromAvatarID: fromID,
-                toAvatarID: toID
+                toAvatarID: toID,
+                dealResult: result
             });
             /*
             await Promise.all([
@@ -377,6 +378,7 @@ class World {
     }
 
     // ---------- DEAL & CHAT UPDATES ----------
+    ////////////////OPTIONALwrite on the result on the chat window. we write it on column  in server from closeChat
     async dealDoneSelected(chatID, fromID, toID) {
         await this._sendDealResult(chatID, fromID, toID, "dealDone");
     }
@@ -386,19 +388,25 @@ class World {
     }
 
     async _sendDealResult(chatID, fromID, toID, result) {
+        if (result == "dealDone") {
+            msg = "בין הזוג אישר את הנסיעה";
+        }
+        else {
+            msg = "בין הזוג בחר לא סוכם";
+        }
         try {
             await postData("chat/sendLine", {
                 chatID,
                 fromAvatarID: fromID,
                 toAvatarID: toID,
-                newLine: `[${result}]`
+                newLine: `[${msg}]`
             });
             console.log("[CHAT] Deal result sent:", result);
         } catch (e) {
             console.error("[CHAT] dealResult failed:", e);
         }
     }
-
+    ///////////////////////
     async updateChat(chatID, fromID, toID, text) {
         try {
             await postData("chat/sendLine", {

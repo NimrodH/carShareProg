@@ -4,6 +4,7 @@ class AvatarMessage {
     //nextButton;///also sent as parameter in new session and called from there
     constructor(planeSize, x, y, z, signData, avatar) {
         console.log("in AvatarMessage")
+        this.dealResult = null;
         this.myAvatar = avatar;
         this.plane = BABYLON.MeshBuilder.CreatePlane("plane", { height: planeSize, width: -planeSize });
         this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(this.plane);
@@ -375,17 +376,19 @@ class Chat {
 
     dealDoneSelected() {
         this.buttonClose.isEnabled = true;
-        this.myWorld.dealDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
+        this.dealResult = "dealDone";
+        this.myWorld.dealDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);///write to window
     }
 
     dealNotDoneSelected() {
         this.buttonClose.isEnabled = true;
-        this.myWorld.dealNotDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
+        this.dealResult = "notDone";
+        this.myWorld.dealNotDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);///write to window
     }
 
     closeChat() {
         if (this.myWorld.currChat.chatID == this.chatID) {
-            this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
+            this.myWorld.closeChat(this.avatarFromID, this.avatarToID, this.dealResult);
         } else {
             this.dispose();
             if (this.myWorld.currChat) {
@@ -475,7 +478,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange"; //green - 'orange' for debug color
+        this.advancedTexture.background = "red"; //green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
