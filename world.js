@@ -388,7 +388,7 @@ class World {
     }
 
     async _sendDealResult(chatID, fromID, toID, result) {
-        let msg;
+        let msg = "";
         if (result == "dealDone") {
             msg = "בין הזוג אישר את הנסיעה";
         }
