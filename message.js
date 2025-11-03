@@ -323,10 +323,9 @@ class Chat {
         console.log("chatID: " + this.chatID);
         this.pollInterval = setInterval(async () => {
             const res = await getData("chat/getText", `?chatID=${this.chatID}`);
-            if (res && res.chatText) {
-                const linesNow = this.textBlock.text.split(/\r?\n/).length;
-                const linesNew = res.chatText.split(/\r?\n/).length;
-                if (linesNew > linesNow) {
+            if (res && typeof res.chatText === "string") {
+                // Update whenever content changed (not only when line count grows)
+                if (res.chatText !== this.textBlock.text) {
                     this.updateText(res.chatText);
                 }
             }
@@ -342,24 +341,29 @@ class Chat {
     }
 
     async sendLine() {
-        ///add localy
-        ////let text = this.textBlock.text + "\n" + this.userNameFrom + ": " + this.messageInput.text;
-        ///////this.updateText(text);
-
-        ///////this.messageInput.text = "";///moved down
-
-        /////this.myWorld.updateChat(this.chatID, this.avatarFromID, this.avatarToID, text);
-        await postData("chat/sendLine", {
+        const payload = {
             chatID: this.chatID,
+            fromAvatarID: this.avatarFromID,
+            toAvatarID: this.avatarToID,
             newLine: `${this.userNameFrom}: ${this.messageInput.text}`
-        }).then(res => {
-            if (res && res.chatText) this.updateText(res.chatText);
-            this.messageInput.text = "";///delete message line if we succed to send it
-        }).catch(err => {
-            console.error("Error sending message:", err);
-        });
-        this.messageInput.focus()
+        };
 
+        const res = await postData("chat/sendLine", payload);
+
+        // index.html defines isErrorResponse(res)
+        if (typeof isErrorResponse === "function" && isErrorResponse(res)) {
+            console.error("[CHAT] sendLine rejected:", res);
+            return; // keep textbox text so user can retry/edit
+        }
+
+        if (res && res.chatText) {
+            this.updateText(res.chatText);   // immediate local refresh
+            this.messageInput.text = "";     // clear only on success
+        } else {
+            console.warn("[CHAT] sendLine ok but no chatText in response:", res);
+        }
+
+        this.messageInput.focus();
     }
 
     dealDoneSelected() {
@@ -464,7 +468,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
