@@ -356,7 +356,7 @@ class World {
             await postData("chat/end", {
                 chatID: this.currChat.chatID,
                 fromAvatarID: fromID,
-                toAvatarID: toID
+                toAvatarID: toID,
                 dealResult: result
             });
             /*
