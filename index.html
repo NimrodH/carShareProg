@@ -709,18 +709,43 @@
 
         // #endregion
 
-        // Most reliable in modern browsers when a page goes to BFCache or closes
-        window.addEventListener('pagehide', markDone, { capture: true });
-        // Fallback for older desktop browsers
-        window.addEventListener('beforeunload', markDone, { capture: true });
+
+        // Run both; guard against double-call
+        let _leaveSent = false;
+
         async function markDone() {
+            if (_leaveSent) return;
+            _leaveSent = true;
+
             console.log("markDone called - notifying server of avatar leaving");
             try {
-                patchData(myWorld.myAvatar.id, "status", "done")
-             } catch (error) {
+                const id =
+                    window?.myWorld?.myAvatar?.ID ??
+                    window?.myWorld?.myAvatar?.avatarID;
+
+                if (!id) {
+                    console.warn("markDone: missing avatar ID");
+                    return;
+                }
+
+                // Use keepalive so it can finish after navigation starts
+                patchData(id, "status", "done", { keepalive: true });
+                // (Do not await here — keep the unload fast)
+            } catch (error) {
                 console.error("Error sending avatarLeft on markDone:", error);
             }
         }
+
+        // Most reliable when page is being closed or put in BFCache
+        window.addEventListener('pagehide', markDone, { capture: true });
+        // Fallback for older desktop browsers
+        window.addEventListener('beforeunload', markDone, { capture: true });
+        // Mobile/soft-close path (gives more time than unload)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') markDone();
+        });
+
+
         //#region/////////////////// get/post to html api gateway /////////////////////
         ///const queryParam = `?foo=${encodeURIComponent(fooValue)}`;
         async function getData(route, queryParam = "") {
@@ -792,30 +817,28 @@
             }
         }
 
-        async function patchData(avatarID, field, value) {
-            const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
-            const route = `/avatars/${encodeURIComponent(avatarID)}`;
-            const url = `${baseURL}${route}`;
+        async function patchData(avatarID, field, value, opts = {}) {
+            const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1'; // no trailing slash
+            const route = `avatars/${encodeURIComponent(avatarID)}`;                       // no leading slash
+            const url = `${baseURL}/${route}`;
 
-            const body = {
-                field: field,
-                value: value
-            };
+            const body = { field, value };
 
             try {
                 const response = await fetch(url, {
                     method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    keepalive: !!opts.keepalive,  // <— allow keepalive during unload
                 });
 
-                const result = await response.json();
+                // In unload flows, you may not get a readable body — guard parse
+                let result = null;
+                try { result = await response.json(); } catch { }
 
                 if (!response.ok) {
-                    console.error("❌ Error updating avatar:", result.error || result);
-                    throw new Error(result.error || "Update failed");
+                    console.error("❌ Error updating avatar:", (result && (result.error || result)) || response.status);
+                    throw new Error((result && (result.error || "Update failed")) || `HTTP ${response.status}`);
                 }
 
                 console.log("✅ Avatar updated:", result);
@@ -825,6 +848,7 @@
                 throw error;
             }
         }
+
 
         //#endregion
         //#region///////////////////// VR stansdart issues ///////////////
