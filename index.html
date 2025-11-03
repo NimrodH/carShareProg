@@ -741,10 +741,7 @@
         // Fallback for older desktop browsers
         window.addEventListener('beforeunload', markDone, { capture: true });
         // Mobile/soft-close path (gives more time than unload)
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') markDone();
-        });
-
+ 
 
         //#region/////////////////// get/post to html api gateway /////////////////////
         ///const queryParam = `?foo=${encodeURIComponent(fooValue)}`;
