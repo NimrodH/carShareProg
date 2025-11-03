@@ -709,6 +709,18 @@
 
         // #endregion
 
+        // Most reliable in modern browsers when a page goes to BFCache or closes
+        window.addEventListener('pagehide', markDone, { capture: true });
+        // Fallback for older desktop browsers
+        window.addEventListener('beforeunload', markDone, { capture: true });
+        async function markDone() {
+            console.log("markDone called - notifying server of avatar leaving");
+            try {
+                patchData(myWorld.myAvatar.id, "status", "done")
+             } catch (error) {
+                console.error("Error sending avatarLeft on markDone:", error);
+            }
+        }
         //#region/////////////////// get/post to html api gateway /////////////////////
         ///const queryParam = `?foo=${encodeURIComponent(fooValue)}`;
         async function getData(route, queryParam = "") {
