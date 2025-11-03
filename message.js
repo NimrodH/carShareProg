@@ -368,17 +368,19 @@ class Chat {
 
     dealDoneSelected() {
         this.buttonClose.isEnabled = true;
+        this.dealResult = "dealDone";
         this.myWorld.dealDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
     dealNotDoneSelected() {
         this.buttonClose.isEnabled = true;
+        this.dealResult = "notDone";
         this.myWorld.dealNotDoneSelected(this.chatID, this.avatarFromID, this.avatarToID);
     }
 
     closeChat() {
         if (this.myWorld.currChat.chatID == this.chatID) {
-            this.myWorld.closeChat(this.avatarFromID, this.avatarToID);
+            this.myWorld.closeChat(this.avatarFromID, this.avatarToID, this.dealResult);
         } else {
             this.dispose();
             if (this.myWorld.currChat) {
@@ -468,7 +470,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "red";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;

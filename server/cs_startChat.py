@@ -344,6 +344,7 @@ def handle_chat_end(event):
     chat_id = body.get("chatID")
     from_id = body.get("fromAvatarID")
     to_id   = body.get("toAvatarID")
+    result  = body.get("dealResult")
 
     if not chat_id or not from_id or not to_id:
         return _resp(400, {"error": "missingParams", "need": ["chatID", "fromAvatarID", "toAvatarID"]})
@@ -358,10 +359,11 @@ def handle_chat_end(event):
                     "Update": {
                         "TableName": CHATS_TABLE_NAME,
                         "Key": {"chatID": {"S": chat_id}},
-                        "UpdateExpression": "SET endTime = :e, updatedAt = :u",
+                        "UpdateExpression": "SET endTime = :e, updatedAt = :u, dealResult = :d",
                         "ExpressionAttributeValues": {
                             ":e": {"N": str(now_ms)},
                             ":u": {"N": str(now_ms)},
+                            ":d": {"S": result},
                         },
                         "ReturnValuesOnConditionCheckFailure": "NONE"
                     }

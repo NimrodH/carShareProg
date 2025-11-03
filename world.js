@@ -350,13 +350,14 @@ class World {
       }
     */
 
-    async closeChat(fromID, toID) {
+    async closeChat(fromID, toID, result) {
         if (!this.currChat) return;
         try {
             await postData("chat/end", {
                 chatID: this.currChat.chatID,
                 fromAvatarID: fromID,
                 toAvatarID: toID
+                dealResult: result
             });
             /*
             await Promise.all([
