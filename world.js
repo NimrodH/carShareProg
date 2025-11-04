@@ -199,7 +199,11 @@ class World {
                     this.allowPointer = true;
                     // visually reset both sides if present
                     const p = this.idToAvatar(partnerID);
-                    if (p?.setState) p.setState("noChat");
+                    // NEW: keep partner as "alreadyTalked" until they leave
+                    if (p?.setState) p.setState("alreadyTalked");
+                    this.stickyUntilDone.add(partnerID);
+
+                    // keep my own state as noChat
                     if (this.myAvatar?.setState) this.myAvatar.setState("noChat");
                     console.log("[CHAT] Auto-closed (remote end detected)");
                 }
@@ -372,6 +376,12 @@ class World {
             this.currChat?.dispose?.();
             this.currChat = null;
             this.allowPointer = true;
+
+            const partnerID = toID;
+            this.stickyUntilDone.add(partnerID);
+            const partner = this.idToAvatar(partnerID);
+            if (partner?.setState) partner.setState("alreadyTalked");
+
             await this.periodicUpdate();
             this.startPeriodicUpdate();
         }
@@ -433,7 +443,7 @@ class World {
             this.currChat.setChatState("notDone");
         else this.currChat.setChatState("mixed");
     }
-
+/// not in use?
     chatEnded(fromID, toID, chatID) {
         console.log("[CHAT] End signal from", fromID, toID);
         if (this.currChat && this.currChat.chatID === chatID) {
