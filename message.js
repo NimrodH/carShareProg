@@ -313,35 +313,7 @@ class Chat {
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
 
-        // Send message when pressing Enter inside the input
-        this.messageInput.onKeyboardEventProcessedObservable.add((kbInfo) => {
-            // Use KEYDOWN so we can prevent the newline before it’s inserted
-            if (
-                kbInfo.type === BABYLON.KeyboardEventTypes.KEYDOWN &&
-                kbInfo.event.key === "Enter"
-            ) {
-                kbInfo.event.preventDefault(); // don't insert a newline
-                const val = (this.messageInput.text || "").trim();
-                if (val) {
-                    this.sendLine();            // same path as the Send button
-                }
-            }
-        });
-
-        /*
-                this.messageInput.onKeyboardEventProcessedObservable.add((kbInfo) => {
-                    if (
-                        kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP &&
-                        kbInfo.event.key === "Enter"
-                    ) {
-                        // Prevent accidental newline and send immediately
-                        kbInfo.event.preventDefault();
-                        if (this.messageInput.text.trim() !== "") {
-                            this.sendLine();    // call the same function used by the Send button
-                        }
-                    }
-                });
-        */
+ 
 
         this.grid.addControl(this.messageInput, 1, 0);
         ///start loking for new messages
@@ -354,7 +326,7 @@ class Chat {
                     this.updateText(res.chatText);
                 }
             }
-        }, 3000);
+        }, 2000);
         this.setChatState("start")
     }
 
@@ -495,7 +467,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "red";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;

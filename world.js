@@ -3,6 +3,7 @@
 
 class World {
     constructor(scene) {
+        this.PERIODIC_UPDATE_MS = 20000; // 20s (safe minimum)
         this.scene = scene;
         this._avatarsArr = []; // all avatar objects
         this._wellcome = new Wellcome(this);
@@ -109,7 +110,7 @@ class World {
         }
         this.periodicUpdateInterval = setInterval(() => {
             this.periodicUpdate();
-        }, 60 * 1000);
+        }, this.PERIODIC_UPDATE_MS);
     }
 
     stopPeriodicUpdate() {
