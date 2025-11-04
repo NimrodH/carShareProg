@@ -96,6 +96,7 @@ class Avatar {
         //this.avatarMesh.scaling = new BABYLON.Vector3(1, 1, 1);
         ///return root;
         ///moved to allow implement on all avatars
+        console.log("avatarType:", this.avatarType);
         if (this.avatarType === "A") {
             this.avatarMesh.getChildMeshes().forEach(child => {
                 //child.setEnabled(false); // This will completely disable the mesh
