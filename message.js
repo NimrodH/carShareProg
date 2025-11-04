@@ -313,11 +313,18 @@ class Chat {
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
 
-        // Send on Enter (works reliably with Babylon GUI InputText)
-        this.messageInput.onEnterKeyObservable.add(() => {
-            const val = (this.messageInput.text || "").trim();
-            if (val) {
-                this.sendLine();        // same path as the Send button
+        // Send message when pressing Enter inside the input
+        this.messageInput.onKeyboardEventProcessedObservable.add((kbInfo) => {
+            // Use KEYDOWN so we can prevent the newline before it’s inserted
+            if (
+                kbInfo.type === BABYLON.KeyboardEventTypes.KEYDOWN &&
+                kbInfo.event.key === "Enter"
+            ) {
+                kbInfo.event.preventDefault(); // don't insert a newline
+                const val = (this.messageInput.text || "").trim();
+                if (val) {
+                    this.sendLine();            // same path as the Send button
+                }
             }
         });
 
@@ -488,7 +495,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green";//green - 'orange' for debug color
+        this.advancedTexture.background = "red";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
