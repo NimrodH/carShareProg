@@ -312,12 +312,21 @@ class Chat {
         this.messageInput.width = 1;
         this.messageInput.placeholderText = "כתוב כאן את ההודעה ולחץ על כפתור שלח";
         this.messageInput.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+
         this.messageInput.onKeyboardEventProcessedObservable.add((kbInfo) => {
-            if (kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP && kbInfo.event.key === "Enter") {
-                console.log("Enter pressed: ", input.text);
-                // Your custom logic here
+            if (
+                kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP &&
+                kbInfo.event.key === "Enter"
+            ) {
+                // Prevent accidental newline and send immediately
+                kbInfo.event.preventDefault();
+                if (this.messageInput.text.trim() !== "") {
+                    this.sendLine();    // call the same function used by the Send button
+                }
             }
         });
+
+
         this.grid.addControl(this.messageInput, 1, 0);
         ///start loking for new messages
         console.log("chatID: " + this.chatID);
@@ -470,7 +479,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "red";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
