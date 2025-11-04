@@ -6,7 +6,7 @@ from decimal import Decimal
 from botocore.exceptions import ClientError
 
 # ---------- Config ----------
-CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "*")
+CORS_ORIGIN = os.environ.get("CORS_ORIGIN",  "https://nimrodh.github.io")
 AVATARS_TABLE_NAME = os.environ.get("AVATARS_TABLE_NAME", "cs_avatars")  # default
 
 dynamodb = boto3.resource("dynamodb")
@@ -26,7 +26,7 @@ COMMON_HEADERS = {
     "Access-Control-Allow-Origin": CORS_ORIGIN,
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-    "Access-Control-Allow-Methods": "POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 }
 
 def _resp(code, payload):

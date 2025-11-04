@@ -37,7 +37,7 @@ def _resp(status, payload, with_cors=False):
         headers.update({
             "Access-Control-Allow-Origin": "https://nimrodh.github.io",
             "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
-            "Access-Control-Allow-Methods": "GET,OPTIONS"
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
         })
     return {
         "statusCode": status,
