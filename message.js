@@ -342,6 +342,46 @@ class Chat {
                         this.updateText(res.chatText);
                     }
                 }
+                // --- NEW: detect remote close while world periodic is paused ---
+                try {
+                    const st = (await getData("getAllStatuses")) || {};
+                    const avatars = st.avatars || [];
+
+                    // Server view of *me*
+                    const meSrv = avatars.find(v => v.avatarID === this.myWorld.myAvatar.ID);
+
+                    if (meSrv) {
+                        const partnerID = meSrv.partnerID || (meSrv.partnerIDs && meSrv.partnerIDs[0]);
+                        const shouldClose =
+                            meSrv.status !== "inChat" ||
+                            !meSrv.chatID ||
+                            meSrv.chatID !== this.chatID ||
+                            // if server points me at someone else or at nobody
+                            (partnerID && partnerID !== this.avatarFromID && partnerID !== this.avatarToID);
+
+                        if (shouldClose) {
+                            // Local close (DO NOT call /chat/end again)
+                            this.dispose();
+                            if (this.myWorld.currChat === this) this.myWorld.currChat = null;
+                            this.myWorld.allowPointer = true;
+
+                            // resume idle polling
+                            this.myWorld.startPeriodicUpdate?.();
+
+                            // visuals: partner becomes "alreadyTalked" and I become "noChat"
+                            const p = this.myWorld.idToAvatar?.(partnerID);
+                            if (p?.setState) p.setState("alreadyTalked");
+                            if (this.myWorld.myAvatar?.setState) this.myWorld.myAvatar.setState("noChat");
+
+                            // end this tick
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // Don’t kill the poller on transient errors
+                    console.warn("[CHAT] remote-close check failed:", e);
+                }
+
             },
             POLL_MS,
             `chatPoll:${this.chatID}`
@@ -501,7 +541,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
