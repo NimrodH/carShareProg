@@ -84,7 +84,7 @@ class World {
             // quick retry after short backoff if we’re online
             await new Promise(r => setTimeout(r, 400));
             result = (await getData("getAllStatuses")) || {};
-        }
+        } 
         const signs = result.signs || [];
         const avatars = result.avatars || [];
 
