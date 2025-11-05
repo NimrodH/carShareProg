@@ -201,6 +201,8 @@ class World {
                     if (partner.setState) partner.setState("myChat");
                     if (this.myAvatar.setState) this.myAvatar.setState("myChat");
                     console.log("[CHAT] Auto-opened incoming chat:", meSrv.chatID);
+                    this.stopPeriodicUpdate();
+                    this.allowPointer = false;
                 }
             }
         }
@@ -222,6 +224,7 @@ class World {
                     this.currChat.dispose?.();
                     this.currChat = null;
                     this.allowPointer = true;
+                    this.startPeriodicUpdate();
                     // visually reset both sides if present
                     const p = this.idToAvatar(partnerID);
                     // NEW: keep partner as "alreadyTalked" until they leave
@@ -324,6 +327,8 @@ class World {
             }
 
             this.currChat = new Chat(this.myAvatar, toAvatar, this, res.chatID);
+            this.stopPeriodicUpdate();
+            this.allowPointer = false;
             if (toAvatar.setState) toAvatar.setState("myChat");
             if (this.myAvatar?.setState) this.myAvatar.setState("myChat");
             console.log("[CHAT] Started with chatID:", res.chatID);

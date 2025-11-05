@@ -210,6 +210,7 @@ class Chat {
         //this.chatID = this.avatarFromID + "_" + this.avatarToID;
         this.chatID = chatID;
         this.myWorld = world;
+        this.myWorld?.stopPeriodicUpdate?.();
         if (this.myWorld.myAvatar.ID == this.avatarFromID) {
             this.userNameFrom = avatarFrom.userName;
         } else {
@@ -500,7 +501,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "red";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
