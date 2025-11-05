@@ -810,7 +810,7 @@
                     console.error(`Server error: ${response.status}`);
                     const errorText = await response.text();
                     console.error('Error body:', errorText);
-                    return;
+                    return {};////{} edded
                 }
 
                 const data = await response.json();
@@ -819,6 +819,7 @@
 
             } catch (error) {
                 console.error('Network or CORS error:', error);
+                return {}///return {} added
             }
         }
 
