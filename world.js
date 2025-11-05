@@ -103,6 +103,7 @@ class World {
     }
 
     // ---------- PERIODIC UPDATE ----------
+    /*
     startPeriodicUpdate() {
         if (this.periodicUpdateInterval) {
             console.warn("[UPDATE] Already running");
@@ -112,15 +113,38 @@ class World {
             this.periodicUpdate();
         }, this.PERIODIC_UPDATE_MS);
     }
+*/
+
+    startPeriodicUpdate() {
+        if (this.periodicHandle) {
+            console.warn("[UPDATE] Already running");
+            return;
+        }
+        // If you sometimes adapt PERIODIC_UPDATE_MS at runtime,
+        // you can pass () => this.PERIODIC_UPDATE_MS instead of the number.
+        this.periodicHandle = startSafePoll(
+            async () => { await this.periodicUpdate(); },
+            this.PERIODIC_UPDATE_MS,
+            "PeriodicUpdate"
+        );
+    }
 
     stopPeriodicUpdate() {
-        if (this.periodicUpdateInterval) {
-            clearInterval(this.periodicUpdateInterval);
-            this.periodicUpdateInterval = null;
-            console.log("[UPDATE] Stopped");
+        if (this.periodicHandle) {
+            this.periodicHandle.stop();
+            this.periodicHandle = null;
         }
     }
 
+    /*
+        stopPeriodicUpdate() {
+            if (this.periodicUpdateInterval) {
+                clearInterval(this.periodicUpdateInterval);
+                this.periodicUpdateInterval = null;
+                console.log("[UPDATE] Stopped");
+            }
+        }
+    */
     async periodicUpdate() {
         console.log("[UPDATE] Start");
         const result = await getData("getAllStatuses");
@@ -444,7 +468,7 @@ class World {
             this.currChat.setChatState("notDone");
         else this.currChat.setChatState("mixed");
     }
-/// not in use?
+    /// not in use?
     chatEnded(fromID, toID, chatID) {
         console.log("[CHAT] End signal from", fromID, toID);
         if (this.currChat && this.currChat.chatID === chatID) {

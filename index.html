@@ -497,6 +497,50 @@
             return !!res && ((typeof res.status === "number" && res.status >= 400) || !!res.error);
         }
 
+        /**
+         * Safe polling loop:
+         * - no overlapping runs
+         * - next tick scheduled after the previous finishes (drift-aware)
+         * - returns { stop() } handle
+         * intervalArg can be a number (ms) or a function () => number to allow adaptive intervals.
+         */
+        function startSafePoll(pollFn, intervalArg, label = "poll") {
+            let stopped = false;
+            let inFlight = false;
+
+            async function loop() {
+                if (stopped) return;
+
+                // get interval (support function for adaptive intervals)
+                const intervalMs = (typeof intervalArg === "function") ? intervalArg() : intervalArg;
+
+                if (inFlight) {
+                    setTimeout(loop, intervalMs);
+                    return;
+                }
+
+                inFlight = true;
+                const t0 = Date.now();
+                try {
+                    await pollFn();
+                } catch (e) {
+                    console.error(`[${label}] error:`, e);
+                } finally {
+                    inFlight = false;
+                    const elapsed = Date.now() - t0;
+                    const drift = Math.max(0, intervalMs - elapsed);
+                    setTimeout(loop, drift);
+                }
+            }
+
+            // kick off
+            setTimeout(loop, 0);
+
+            return {
+                stop() { stopped = true; }
+            };
+        }
+
         class Deduplicator {
             constructor(ttlMs = 5 * 60 * 1000) {  // default: remember IDs for 5 minutes
                 this.seen = new Set();
