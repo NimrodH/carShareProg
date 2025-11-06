@@ -361,18 +361,18 @@ class Chat {
 
                         if (shouldClose) {
                             // Local close (DO NOT call /chat/end again)
-                            
-                            if (this.myWorld.currChat === this) this.myWorld.currChat = null;
+                            console.log("[CHAT] Detected remote close of chat:", this.chatID);
+
                             this.myWorld.allowPointer = true;
-
-                            // resume idle polling
-                            this.myWorld.startPeriodicUpdate?.();
-
+                            console.log("[CHAT] Remote partnerID:", partnerID);
+                            console.log(this.myWorld.idToAvatar(partnerID))
                             // visuals: partner becomes "alreadyTalked" and I become "noChat"
-                            const p = this.myWorld.idToAvatar?.(partnerID);
-                            if (p?.setState) p.setState("alreadyTalked");
-                            if (this.myWorld.myAvatar?.setState) this.myWorld.myAvatar.setState("noChat");
+                            const p = this.myWorld.idToAvatar(partnerID);
+                            p.setState("alreadyTalked");
+                            this.myWorld.myAvatar.setState("noChat");
+                            if (this.myWorld.currChat === this) this.myWorld.currChat = null;
                             this.dispose();
+                            this.myWorld.startPeriodicUpdate?.();
                             // end this tick
                             return;
                         }
