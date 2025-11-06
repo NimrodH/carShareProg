@@ -361,7 +361,7 @@ class Chat {
 
                         if (shouldClose) {
                             // Local close (DO NOT call /chat/end again)
-                            this.dispose();
+                            
                             if (this.myWorld.currChat === this) this.myWorld.currChat = null;
                             this.myWorld.allowPointer = true;
 
@@ -372,7 +372,7 @@ class Chat {
                             const p = this.myWorld.idToAvatar?.(partnerID);
                             if (p?.setState) p.setState("alreadyTalked");
                             if (this.myWorld.myAvatar?.setState) this.myWorld.myAvatar.setState("noChat");
-
+                            this.dispose();
                             // end this tick
                             return;
                         }
@@ -541,7 +541,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "red";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
