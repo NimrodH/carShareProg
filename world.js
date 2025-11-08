@@ -79,7 +79,7 @@ class World {
         this.msg.updateMessageText("ממתין לאחרים");
         this.allowPointer = true;
 
-        const result = (await getData("getAllStatuses")) || {};
+        let  result = (await getData("getAllStatuses")) || {};
         if ((!result.signs || !Array.isArray(result.signs)) && navigator.onLine) {
             // quick retry after short backoff if we’re online
             await new Promise(r => setTimeout(r, 400));

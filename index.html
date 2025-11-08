@@ -792,6 +792,7 @@
 
         //#region/////////////////// get/post to html api gateway /////////////////////
         ///const queryParam = `?foo=${encodeURIComponent(fooValue)}`;
+        /*
         async function getData(route, queryParam = "") {
             let baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
             //queryParam4URL = encodeURIComponent(queryParam);////////////
@@ -810,7 +811,7 @@
                     console.error(`Server error: ${response.status}`);
                     const errorText = await response.text();
                     console.error('Error body:', errorText);
-                    return {};////{} edded
+                    return {};////{}
                 }
 
                 const data = await response.json();
@@ -819,9 +820,35 @@
 
             } catch (error) {
                 console.error('Network or CORS error:', error);
-                return {}///return {} added 
+                return {}
             }
         }
+*/
+        async function getData(route, queryParam = "") {
+            const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+            const fullURL = `${baseURL}${route}${queryParam}`;
+            console.log("getData fullURL:", fullURL);
+
+            for (let attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    const response = await fetch(fullURL, { method: 'GET', headers: { 'Accept': 'application/json' } });
+                    if (!response.ok) {
+                        console.error(`Server error: ${response.status}`);
+                        const errorText = await response.text().catch(() => "");
+                        console.error('Error body:', errorText);
+                        return {};
+                    }
+                    const data = await response.json();
+                    console.log('Response data:', data);
+                    return data;
+                } catch (error) {
+                    console.error(`Network error (attempt ${attempt}):`, error);
+                    if (attempt < 2) await new Promise(r => setTimeout(r, 400)); // short backoff
+                }
+            }
+            return {};
+        }
+
 
         async function postData(route, payload = {}) {
             const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
