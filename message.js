@@ -344,40 +344,36 @@ class Chat {
                 }
                 // --- NEW: detect remote close while world periodic is paused ---
                 try {
+                    // chat poll tick
                     const st = (await getData("getAllStatuses")) || {};
-                    console.log("Polling chat remote-close; got statuses:", st);
-                    const avatars = st.avatars || [];
+                    const meSrv = (st.avatars || []).find(v => v.avatarID === this.myWorld.myAvatar.ID);
+                    if (!meSrv) return;
 
-                    // Server view of *me*
-                    const meSrv = avatars.find(v => v.avatarID === this.myWorld.myAvatar.ID);
+                    const ended =
+                        meSrv.status !== "inChat" ||
+                        !meSrv.chatID ||
+                        meSrv.chatID !== this.chatID;
 
-                    if (meSrv) {
-                        const partnerID = meSrv.partnerID || (meSrv.partnerIDs && meSrv.partnerIDs[0]);
-                        const shouldClose =
-                            meSrv.status !== "inChat" ||
-                            !meSrv.chatID ||
-                            meSrv.chatID !== this.chatID ||
-                            // if server points me at someone else or at nobody
-                            (partnerID && partnerID !== this.avatarFromID && partnerID !== this.avatarToID);
+                    if (ended) {
+                        const partnerID =
+                            (this.myWorld.myAvatar.ID === this.avatarFromID) ? this.avatarToID : this.avatarFromID;
 
-                        if (shouldClose) {
-                            // Local close (DO NOT call /chat/end again)
-                            console.log("[CHAT] Detected remote close of chat:", this.chatID);
+                        const me = this.myWorld.myAvatar;
+                        const partner = this.myWorld.idToAvatar?.(partnerID);
 
-                            this.myWorld.allowPointer = true;
-                            console.log("[CHAT] Remote partnerID:", partnerID);
-                            console.log(this.myWorld.idToAvatar(partnerID))
-                            // visuals: partner becomes "alreadyTalked" and I become "noChat"
-                            const p = this.myWorld.idToAvatar(partnerID);
-                            p.setState("alreadyTalked");
-                            this.myWorld.myAvatar.setState("noChat");
-                            if (this.myWorld.currChat === this) this.myWorld.currChat = null;
-                            this.dispose();
-                            this.myWorld.startPeriodicUpdate?.();
-                            // end this tick
-                            return;
-                        }
+                        partner?.frontSign?.setState?.("alreadyTalked") || partner?.setState?.("alreadyTalked");
+                        me?.frontSign?.setState?.("noChat") || me?.setState?.("noChat");
+
+                        this.myWorld.stickyUntilDone?.add?.(partnerID);
+                        if (partner) partner.alreadyTalked = true;
+
+                        this.dispose();
+                        if (this.myWorld.currChat === this) this.myWorld.currChat = null;
+                        this.myWorld.allowPointer = true;
+                        this.myWorld.startPeriodicUpdate();
+                        return;
                     }
+
                 } catch (e) {
                     // Don’t kill the poller on transient errors
                     console.warn("[CHAT] remote-close check failed:", e);
@@ -542,7 +538,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "green";//green - 'orange' for debug color
+        this.advancedTexture.background = "orange";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
