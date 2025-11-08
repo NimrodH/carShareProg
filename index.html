@@ -761,23 +761,22 @@
         let _leaveSent = false;
 
         async function markDone() {
-            if (_leaveSent) return;
-            _leaveSent = true;
-
             console.log("markDone called - notifying server of avatar leaving");
+
             try {
-                const id =
-                    window?.myWorld?.myAvatar?.ID ??
-                    window?.myWorld?.myAvatar?.avatarID;
+                const id = myWorld?.myAvatar?.id || localStorage.getItem("lastAvatarID");
+                if (!id) return;
 
-                if (!id) {
-                    console.warn("markDone: missing avatar ID");
-                    return;
-                }
+                const baseURL = 'https://t8l4i3853e.execute-api.us-east-1.amazonaws.com/V1/';
+                const url = `${baseURL}avatars/${encodeURIComponent(id)}`;
+                const body = JSON.stringify({ field: "status", value: "done" });
 
-                // Use keepalive so it can finish after navigation starts
-                patchData(id, "status", "done", { keepalive: true });
-                // (Do not await here — keep the unload fast)
+                fetch(url, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body,
+                    keepalive: true        // ← this is the critical addition
+                });
             } catch (error) {
                 console.error("Error sending avatarLeft on markDone:", error);
             }
