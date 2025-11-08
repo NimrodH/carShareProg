@@ -3,7 +3,7 @@
 
 class World {
     constructor(scene) {
-        this.PERIODIC_UPDATE_MS = 20000; // 20s (safe minimum)
+        this.PERIODIC_UPDATE_MS = 10000; // 20000 ->20s (safe minimum)
         this.scene = scene;
         this._avatarsArr = []; // all avatar objects
         this._wellcome = new Wellcome(this);
