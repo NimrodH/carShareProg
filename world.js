@@ -267,6 +267,11 @@ class World {
 
 
     async chatRequest(toID) {
+        if (!this.periodicHandle) {
+            console.warn("[CHAT] periodicUpdate is paused; cannot start chat");
+            this.startPeriodicUpdate();
+            return;
+        }
         try {
             // Resolve the target avatar (for UI state changes & logs)
             const toAvatar = this.idToAvatar ? this.idToAvatar(toID) : null;
