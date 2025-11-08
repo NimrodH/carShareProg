@@ -79,15 +79,16 @@ class World {
         this.msg.updateMessageText("ממתין לאחרים");
         this.allowPointer = true;
 
-        let  result = (await getData("getAllStatuses")) || {};
+        let result = (await getData("getAllStatuses")) || {};
+        console.log("wellcomeDone: getAllStatuses result:", result);
         if ((!result.signs || !Array.isArray(result.signs)) && navigator.onLine) {
             // quick retry after short backoff if we’re online
             await new Promise(r => setTimeout(r, 400));
             result = (await getData("getAllStatuses")) || {};
-        } 
+        }
         const signs = result.signs || [];
         const avatars = result.avatars || [];
-
+        console.log("wellcomeDone: signs:", signs);
         for (const sign of signs) {
             let currAvatar = this.getFreeAvatar(sign.isMan);
             if (!currAvatar) continue;
@@ -96,14 +97,15 @@ class World {
         }
 
         if (this.myAvatar?.setState) this.myAvatar.setState("me");
-
+        console.log("[WORLD] All avatars created and matched");
         await patchData(signData.avatarID, "isLoading", false)
             .then(() => console.log("[WORLD] Avatar loading finished"))
             .catch((err) => console.error("[WORLD] Update failed:", err));
-
+        console.log("[WORLD] wellcomeDone: before first periodicUpdate");
         this.msg.clearInstance();
         this.msg = null;
         await this.periodicUpdate();
+         console.log("[WORLD] wellcomeDone: after first periodicUpdate");
         this.startPeriodicUpdate();
         console.log("[WORLD] Welcome complete");
     }
