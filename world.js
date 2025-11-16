@@ -105,7 +105,7 @@ class World {
         this.msg.clearInstance();
         this.msg = null;
         await this.periodicUpdate();
-         console.log("[WORLD] wellcomeDone: after first periodicUpdate");
+        console.log("[WORLD] wellcomeDone: after first periodicUpdate");
         this.startPeriodicUpdate();
         console.log("[WORLD] Welcome complete");
     }
@@ -155,7 +155,12 @@ class World {
     */
     async periodicUpdate() {
         console.log("[UPDATE] Start");
-        const result = await getData("getAllStatuses");
+
+        // NEW: send my avatarID as a heartbeat (if known)
+        const myID = this.myAvatar && this.myAvatar.ID ? this.myAvatar.ID : null;
+        const query = myID ? `?avatarID=${encodeURIComponent(myID)}` : "";
+
+        const result = await getData("getAllStatuses", query);
         const signs = result.signs || [];
         const avatars = result.avatars || [];
 

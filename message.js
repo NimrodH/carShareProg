@@ -337,18 +337,24 @@ class Chat {
             async () => {
                 const res = await getData("chat/getText", `?chatID=${this.chatID}`);
                 if (res && typeof res.chatText === "string") {
-                    // Keep your dedupe to avoid flicker/extra DOM work
                     if (res.chatText !== this.textBlock.text) {
                         this.updateText(res.chatText);
                     }
                 }
-                // --- NEW: detect remote close while world periodic is paused ---
+                // --- detect remote close while world periodic is paused ---
                 try {
-                    // chat poll tick
-                    const st = (await getData("getAllStatuses")) || {};
-                    const meSrv = (st.avatars || []).find(v => v.avatarID === this.myWorld.myAvatar.ID);
-                    if (!meSrv) return;
+                    const myID = this.myWorld &&
+                        this.myWorld.myAvatar &&
+                        this.myWorld.myAvatar.ID
+                        ? this.myWorld.myAvatar.ID
+                        : null;
 
+                    const query = myID ? `?avatarID=${encodeURIComponent(myID)}` : "";
+
+                    // chat poll tick + heartbeat
+                    const st = (await getData("getAllStatuses", query)) || {};
+                    const meSrv = (st.avatars || []).find(v => v.avatarID === myID);
+                    if (!meSrv) return;
                     const ended =
                         meSrv.status !== "inChat" ||
                         !meSrv.chatID ||
@@ -538,7 +544,7 @@ class Wellcome {
         this.plane.position.x = 0;
         this.plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y;///without iא its mirror
 
-        this.advancedTexture.background = "orange";//green - 'orange' for debug color
+        this.advancedTexture.background = "green";//green - 'orange' for debug color
 
         this.nextButton = BABYLON.GUI.Button.CreateSimpleButton("but1", "המשך");
         this.nextButton.width = 1;
