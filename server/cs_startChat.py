@@ -1,9 +1,10 @@
 import json
 import os
 import time
+import base64
 import boto3
 from botocore.exceptions import ClientError
-#from datetime import datetime, timezone
+# from datetime import datetime, timezone
 from urllib.parse import parse_qs
 
 # ---------- Infra & globals ----------
@@ -18,11 +19,11 @@ APIGW_MGMT = boto3.client(
 
 AVATARS_TABLE_NAME = os.getenv("AVATARS_TABLE", "cs_avatars")
 CHATS_TABLE_NAME   = os.getenv("CHATS_TABLE",   "cs_chats")
-#SIGNS_TABLE_NAME   = os.getenv("SIGNS_TABLE",   "cs_signs")
+# SIGNS_TABLE_NAME   = os.getenv("SIGNS_TABLE",   "cs_signs")
 
 AVATARS = dynamodb.Table(AVATARS_TABLE_NAME)
 CHATS   = dynamodb.Table(CHATS_TABLE_NAME)
-#SIGNS   = dynamodb.Table(SIGNS_TABLE_NAME)
+# SIGNS   = dynamodb.Table(SIGNS_TABLE_NAME)
 
 COMMON_HEADERS = {
     "Content-Type": "application/json",
@@ -30,6 +31,13 @@ COMMON_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
 }
+
+# 1x1 transparent GIF (for pixel responses)
+_PIXEL_GIF = (
+    b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!"
+    b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00"
+    b"\x00\x02\x02D\x01\x00;"
+)
 
 # ---------- Helpers ----------
 
@@ -39,8 +47,8 @@ def _resp(code, payload):
 def _now_ms():
     return int(time.time() * 1000)
 
-#def _now_iso():
-#    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+# def _now_iso():
+#     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def _parse_body(event):
     b = event.get("body") or "{}"
@@ -304,19 +312,50 @@ def handle_chat_get_text(event):
     """
     GET /V1/chat/getText?chatID=...
     Returns { chatText }
+    Also handles: GET /V1/chat/getText?leave=1&avatarID=...  (pixel for tab-close)
     """
     method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
     if method != "GET":
         return _resp(405, {"error": "methodNotAllowed"})
 
-    query = event.get("rawQueryString") or ""
-    if not query and "queryStringParameters" in event and event["queryStringParameters"]:
-        # API GW v1
-        chat_id = event["queryStringParameters"].get("chatID")
-    else:
-        params = parse_qs(query)
-        chat_id = (params.get("chatID") or [None])[0]
+    # Parse query string once
+    raw_qs = event.get("rawQueryString") or ""
+    params = parse_qs(raw_qs) if raw_qs else {}
+    # v1 compatibility
+    if not params and "queryStringParameters" in event and event["queryStringParameters"]:
+        params = {k: [v] for k, v in event["queryStringParameters"].items() if v is not None}
 
+    # --- NEW: tab-close "pixel" handling (no change to existing flows) ---
+    leave = (params.get("leave") or ["0"])[0]
+    avatar_id = (params.get("avatarID") or [None])[0]
+    if leave == "1" and avatar_id:
+        # Best-effort: mark avatar as done (idempotent)
+        try:
+            AVATARS.update_item(
+                Key={"avatarID": avatar_id},
+                UpdateExpression="SET #s = :done, updatedAt = :u",
+                ExpressionAttributeNames={"#s": "status"},
+                ExpressionAttributeValues={":done": "done", ":u": _now_ms()}
+            )
+        except Exception:
+            # swallow errors — we still return the pixel so the browser completes unload
+            pass
+
+        # Return a 1x1 GIF so <img> completes successfully
+        return {
+            "statusCode": 200,
+            "headers": {
+                **COMMON_HEADERS,
+                "Content-Type": "image/gif",
+                "Cache-Control": "no-store, max-age=0"
+            },
+            "isBase64Encoded": True,
+            "body": base64.b64encode(_PIXEL_GIF).decode("ascii"),
+        }
+    # --- END NEW ---
+
+    # Normal path: return chat text
+    chat_id = (params.get("chatID") or [None])[0]
     if not chat_id:
         return _resp(400, {"error": "missingParams", "need": ["chatID"]})
 
