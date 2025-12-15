@@ -45,7 +45,7 @@ class World {
     async wellcomeDone(signData) {
         console.log("[WORLD] Welcome started");
         let loadingMessage;
-        if (signData.avatarID[0] !== "A") {
+        if (signData.avatarID[0] !== "A") { //can be C
             loadingMessage = `המתן - טוען אווטרים
 כאשר שלט זה ייסגר חלק מהאווטרים יציגו 
 שלט עם פרטי הנסיעה המעניינים אותם

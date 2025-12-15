@@ -32,18 +32,18 @@ class Avatar {
         const signZ = 0.18;
         this.userData = signData; ///The data related to the user (the one who own the avatar)
         //console.log("avatarMesh:", this.avatarMesh);
-/*        
-        ///if (signData.avatarID[0] == "A") {
-        if (this.avatarType === "A") {
-            this.avatarMesh.getChildMeshes().forEach(child => {
-                //child.setEnabled(false); // This will completely disable the mesh
-                // Alternatively, you can use:
-                child.visibility = 0;
-            });
-        }
-*/
+        /*        
+                ///if (signData.avatarID[0] == "A") {
+                if (this.avatarType === "A") {
+                    this.avatarMesh.getChildMeshes().forEach(child => {
+                        //child.setEnabled(false); // This will completely disable the mesh
+                        // Alternatively, you can use:
+                        child.visibility = 0;
+                    });
+                }
+        */
         //console.log("matchUser: " + JSON.stringify(signData));
-        this.frontSign =  new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
+        this.frontSign = new AvatarMessage(planeSize, signX, signY, signZ, signData, this)
 
     }
 
@@ -59,14 +59,18 @@ class Avatar {
         ///select gender by even or odd num
         /// if we know how mwny boys and have way to set it we can replace it with a better way
         let avatarURL
-        if (this.avatarData.num % 2 === 0) {
-            avatarURL = this.avatarData.avatarURL;
-            this.avatarData.loadedIsMan = false;
+        if (this.avatarType === "C") {
+            avatarURL = "https://models.readyplayer.me/67ff3e3113b3fb7e8ab511f1.glb";
+            this.avatarData.loadedIsMan = null; //not relevant
         } else {
-            avatarURL = this.avatarData.avatarURLBoy;
-            this.avatarData.loadedIsMan = true;
+            if (this.avatarData.num % 2 === 0) {
+                avatarURL = this.avatarData.avatarURL;
+                this.avatarData.loadedIsMan = false;
+            } else {
+                avatarURL = this.avatarData.avatarURLBoy;
+                this.avatarData.loadedIsMan = true;
+            }
         }
-
         const response = await fetch(avatarURL, { method: 'HEAD' });
 
         if (!response.ok) {
@@ -81,12 +85,12 @@ class Avatar {
             avatarURL,
             scene
         );
-/*
-        // Find the top-level node among them (those with no parent)
-        result.meshes.forEach(m => {
-            console.log(`Mesh: ${m.name} | Vertices: ${m.getTotalVertices()} | Visible: ${m.isVisible}`);
-        });
-        */
+        /*
+                // Find the top-level node among them (those with no parent)
+                result.meshes.forEach(m => {
+                    console.log(`Mesh: ${m.name} | Vertices: ${m.getTotalVertices()} | Visible: ${m.isVisible}`);
+                });
+                */
         const root = result.meshes.find(m => !m.parent);
         if (!root) {
             console.warn("No root mesh found in imported GLB!");
@@ -115,7 +119,7 @@ class Avatar {
             this.avatarMesh.position = new BABYLON.Vector3(data.x, data.y, data.z);
             this.avatarMesh.lookAt(new BABYLON.Vector3(data.targetX, data.targetY, data.targetZ));
             this.avatarMesh.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
-            
+
         }
     }
 
