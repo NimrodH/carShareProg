@@ -60,7 +60,7 @@ class Avatar {
         /// if we know how mwny boys and have way to set it we can replace it with a better way
         let avatarURL
         if (this.avatarType === "C") {
-            avatarURL = "https://models.readyplayer.me/67ff3e3113b3fb7e8ab511f1.glb";
+            avatarURL = "Avatars/weman/67ff3e3113b3fb7e8ab511f1.glb";
             this.avatarData.loadedIsMan = null; //not relevant
         } else {
             if (this.avatarData.num % 2 === 0) {
@@ -71,20 +71,21 @@ class Avatar {
                 this.avatarData.loadedIsMan = true;
             }
         }
-        const response = await fetch(avatarURL, { method: 'HEAD' });
-
-        if (!response.ok) {
-            console.warn(`GLB file not found at: ${avatarURL}`);
-            return;
+        let result;
+        try {
+            result = await BABYLON.SceneLoader.ImportMeshAsync(
+                null,
+                "",
+                avatarURL,
+                scene
+            );
+        } catch (error) {
+            if (window.location.protocol === "file:") {
+                console.error("Failed to load avatar model while running from file://. Serve the project via http://localhost (for example: python -m http.server) and open index.html through that server.");
+            }
+            console.error(`Failed to import GLB: ${avatarURL}`, error);
+            return null;
         }
-
-
-        const result = await BABYLON.SceneLoader.ImportMeshAsync(
-            null,
-            "",
-            avatarURL,
-            scene
-        );
         /*
                 // Find the top-level node among them (those with no parent)
                 result.meshes.forEach(m => {
